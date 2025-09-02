@@ -221,18 +221,41 @@ async function login(req, res, body, log) {
 
     log(`Session created for user: ${session.userId}`);
 
-    // Return session details - JWT creation will be handled separately
-    return res.json({
-      success: true,
-      data: {
-        session: {
-          id: session.$id,
-          userId: session.userId,
-          secret: session.secret,
+    // In Appwrite functions, after creating a session, we need to set it on the client
+    // to create JWT tokens. The secret is typically the session token.
+    sessionClient.setSession(session.$id);
+
+    try {
+      // Attempt to create JWT immediately since we have the session
+      const jwt = await sessionAccount.createJWT();
+
+      return res.json({
+        success: true,
+        data: {
+          session: {
+            id: session.$id,
+            userId: session.userId,
+            secret: session.$id,
+          },
+          jwt: jwt.jwt,
         },
-      },
-      error: null,
-    });
+        error: null,
+      });
+    } catch (jwtError) {
+      log(`JWT creation failed: ${jwtError.message}`);
+      // Return session only if JWT creation fails
+      return res.json({
+        success: true,
+        data: {
+          session: {
+            id: session.$id,
+            userId: session.userId,
+            secret: session.$id,
+          },
+        },
+        error: null,
+      });
+    }
   } catch (err) {
     log(`Login error: ${err.message}`);
     log(`Error code: ${err.code}`);

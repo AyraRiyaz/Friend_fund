@@ -110,6 +110,11 @@
                   "        pm.environment.set('SESSION_SECRET', jsonData.data.session.secret);",
                   "        pm.environment.set('USER_ID', jsonData.data.session.userId);",
                   "    }",
+                  "    // Check if JWT is also returned",
+                  "    if (jsonData.success && jsonData.data && jsonData.data.jwt) {",
+                  "        pm.environment.set('JWT_TOKEN', jsonData.data.jwt);",
+                  "        console.log('JWT token received with login');",
+                  "    }",
                   "});"
                 ],
                 "type": "text/javascript"
