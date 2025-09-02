@@ -59,10 +59,17 @@ module.exports = async ({ req, res, log, error }) => {
       }
     }
 
-    // Extract JWT token for authentication
+    // Extract session token for authentication
     const authHeader =
       req.headers["authorization"] || req.headers["Authorization"];
     const token = authHeader ? authHeader.replace("Bearer ", "") : null;
+
+    if (authHeader) {
+      log(`Auth header received: ${authHeader.substring(0, 20)}...`);
+      log(
+        `Extracted token: ${token ? token.substring(0, 10) + "..." : "null"}`
+      );
+    }
 
     // Route the request based on method and path
     const route = `${req.method} ${req.path}`;
@@ -122,8 +129,13 @@ module.exports = async ({ req, res, log, error }) => {
  */
 async function getUserFromToken(sessionToken, log) {
   if (!sessionToken) {
+    log("No authentication token provided");
     throw new Error("Authentication token required");
   }
+
+  log(
+    `Attempting authentication with token: ${sessionToken.substring(0, 10)}...`
+  );
 
   try {
     // Use session token instead of JWT
@@ -141,6 +153,8 @@ async function getUserFromToken(sessionToken, log) {
     return user;
   } catch (err) {
     log(`Authentication error: ${err.message}`);
+    log(`Error code: ${err.code}`);
+    log(`Error type: ${err.type}`);
     throw new Error("Invalid or expired session");
   }
 }
@@ -218,15 +232,24 @@ async function login(req, res, body, log) {
     );
 
     log(`Session created for user: ${session.userId}`);
+    log(`Full session object keys: ${Object.keys(session).join(", ")}`);
 
-    // Return session details only - no JWT creation in function
+    // Try to get the session token from the client after session creation
+    // This is a hack, but might be necessary for Functions
+    const sessionCookies = sessionClient.headers?.["set-cookie"] || [];
+    log(`Session cookies: ${JSON.stringify(sessionCookies)}`);
+
     return res.json({
       success: true,
       data: {
         session: {
           id: session.$id,
           userId: session.userId,
-          secret: session.$id, // Use session ID as the secret for client-side usage
+          secret: session.$id, // We'll use session ID for now and debug
+        },
+        debug: {
+          sessionKeys: Object.keys(session),
+          sessionData: session,
         },
       },
       error: null,
