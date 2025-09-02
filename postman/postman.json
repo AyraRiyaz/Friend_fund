@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "friendfund-api-collection",
     "name": "FriendFund API",
-    "description": "Complete API collection for FriendFund Backend - A fundraising platform supporting donations and loans",
+    "description": "Complete API collection for FriendFund Backend - A fundraising platform supporting donations and loans\n\nAuthentication Flow:\n1. Use 'Signup' to create a new account\n2. Use 'Login' to authenticate and get both session + JWT token automatically\n3. The JWT token is automatically saved and used for protected endpoints\n4. 'Create JWT Token' is optional - only use if you need to refresh JWT from existing session",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "version": {
       "major": 1,
@@ -102,12 +102,17 @@
                   "    pm.response.to.have.status(200);",
                   "});",
                   "",
-                  "pm.test('Session created successfully', function () {",
+                  "pm.test('Session and JWT created successfully', function () {",
                   "    const jsonData = pm.response.json();",
                   "    pm.expect(jsonData).to.have.property('success');",
-                  "    if (jsonData.success && jsonData.data && jsonData.data.session) {",
-                  "        pm.environment.set('SESSION_ID', jsonData.data.session.id);",
-                  "        pm.environment.set('SESSION_SECRET', jsonData.data.session.secret);",
+                  "    if (jsonData.success && jsonData.data) {",
+                  "        if (jsonData.data.session) {",
+                  "            pm.environment.set('SESSION_ID', jsonData.data.session.id);",
+                  "            pm.environment.set('SESSION_SECRET', jsonData.data.session.secret);",
+                  "        }",
+                  "        if (jsonData.data.jwt) {",
+                  "            pm.environment.set('JWT_TOKEN', jsonData.data.jwt);",
+                  "        }",
                   "    }",
                   "});"
                 ],
@@ -144,7 +149,7 @@
             }
           },
           "response": [],
-          "description": "Login with email and password to create a session"
+          "description": "Login with email and password to create a session and get JWT token"
         },
         {
           "name": "Create JWT Token",
@@ -198,7 +203,7 @@
             }
           },
           "response": [],
-          "description": "Create a JWT token from session credentials"
+          "description": "[OPTIONAL] Create a JWT token from session credentials - Login now returns JWT directly"
         },
         {
           "name": "Get Account Info",

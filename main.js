@@ -221,14 +221,19 @@ async function login(req, res, body, log) {
 
     log(`Session created for user: ${session.userId}`);
 
+    // Set the session on the client and create JWT immediately
+    sessionClient.setSession(session.secret);
+    const jwt = await sessionAccount.createJWT();
+
     return res.json({
       success: true,
       data: {
         session: {
           id: session.$id,
           userId: session.userId,
-          secret: session.$id, // Use session ID as the secret for JWT creation
+          secret: session.secret,
         },
+        jwt: jwt.jwt,
       },
       error: null,
     });
@@ -257,13 +262,13 @@ async function createJWT(req, res, body, log) {
       });
     }
 
-    // Create client with session
+    // Create client with session - the secret should be the actual session secret
     const sessionClient = new Client()
       .setEndpoint(
         process.env.APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1"
       )
       .setProject(process.env.APPWRITE_PROJECT)
-      .setSession(secret);
+      .setSession(secret); // Use the session secret directly
 
     const sessionAccount = new Account(sessionClient);
 
@@ -284,7 +289,7 @@ async function createJWT(req, res, body, log) {
     return res.json({
       success: false,
       data: null,
-      error: "Invalid session credentials",
+      error: "Failed to create JWT. Please ensure you have a valid session.",
     });
   }
 }
