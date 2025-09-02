@@ -68,12 +68,27 @@ module.exports = async ({ req, res, log, error }) => {
     const route = `${req.method} ${req.path}`;
 
     switch (true) {
+      // Authentication routes
+      case route === "POST /auth/signup":
+        return await signup(req, res, body, log);
+
+      case route === "POST /auth/login":
+        return await login(req, res, body, log);
+
+      case route === "POST /auth/jwt":
+        return await createJWT(req, res, body, log);
+
+      case route === "GET /auth/account":
+        return await getAccount(req, res, token, log);
+
+      // Campaign routes
       case route === "POST /campaigns":
         return await createCampaign(req, res, body, token, log);
 
       case route === "GET /campaigns":
         return await getCampaigns(req, res, token, log);
 
+      // Contribution routes
       case route === "POST /contributions":
         return await createContribution(req, res, body, token, log);
 
@@ -129,6 +144,178 @@ async function getUserFromToken(token, log) {
     return user;
   } catch (err) {
     throw new Error("Invalid or expired token");
+  }
+}
+
+/**
+ * AUTH: POST /auth/signup - Create a new user account
+ */
+async function signup(req, res, body, log) {
+  try {
+    const { email, password, name, phone } = body;
+
+    if (!email || !password || !name) {
+      return res.json({
+        success: false,
+        data: null,
+        error: "Missing required fields: email, password, name",
+      });
+    }
+
+    // Create user account
+    const user = await users.create(ID.unique(), email, phone, password, name);
+
+    log(`User created: ${user.$id}`);
+
+    return res.json({
+      success: true,
+      data: {
+        user: {
+          id: user.$id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+        },
+      },
+      error: null,
+    });
+  } catch (err) {
+    log(`Signup error: ${err.message}`);
+    return res.json({
+      success: false,
+      data: null,
+      error: err.message,
+    });
+  }
+}
+
+/**
+ * AUTH: POST /auth/login - Create a session for existing user
+ */
+async function login(req, res, body, log) {
+  try {
+    const { email, password } = body;
+
+    if (!email || !password) {
+      return res.json({
+        success: false,
+        data: null,
+        error: "Missing required fields: email, password",
+      });
+    }
+
+    // Create a temporary client for session creation
+    const sessionClient = new Client()
+      .setEndpoint(
+        process.env.APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1"
+      )
+      .setProject(process.env.APPWRITE_PROJECT);
+
+    const sessionAccount = new Account(sessionClient);
+
+    // Create session
+    const session = await sessionAccount.createEmailPasswordSession(
+      email,
+      password
+    );
+
+    log(`Session created for user: ${session.userId}`);
+
+    return res.json({
+      success: true,
+      data: {
+        session: {
+          id: session.$id,
+          userId: session.userId,
+          secret: session.secret,
+        },
+      },
+      error: null,
+    });
+  } catch (err) {
+    log(`Login error: ${err.message}`);
+    return res.json({
+      success: false,
+      data: null,
+      error: "Invalid email or password",
+    });
+  }
+}
+
+/**
+ * AUTH: POST /auth/jwt - Create JWT token from session
+ */
+async function createJWT(req, res, body, log) {
+  try {
+    const { sessionId, secret } = body;
+
+    if (!sessionId || !secret) {
+      return res.json({
+        success: false,
+        data: null,
+        error: "Missing required fields: sessionId, secret",
+      });
+    }
+
+    // Create client with session
+    const sessionClient = new Client()
+      .setEndpoint(
+        process.env.APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1"
+      )
+      .setProject(process.env.APPWRITE_PROJECT)
+      .setSession(secret);
+
+    const sessionAccount = new Account(sessionClient);
+
+    // Create JWT token
+    const jwt = await sessionAccount.createJWT();
+
+    log(`JWT created for session: ${sessionId}`);
+
+    return res.json({
+      success: true,
+      data: {
+        jwt: jwt.jwt,
+      },
+      error: null,
+    });
+  } catch (err) {
+    log(`Create JWT error: ${err.message}`);
+    return res.json({
+      success: false,
+      data: null,
+      error: "Invalid session credentials",
+    });
+  }
+}
+
+/**
+ * AUTH: GET /auth/account - Get current user account info
+ */
+async function getAccount(req, res, token, log) {
+  try {
+    const user = await getUserFromToken(token, log);
+
+    return res.json({
+      success: true,
+      data: {
+        user: {
+          id: user.$id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          registration: user.registration,
+        },
+      },
+      error: null,
+    });
+  } catch (err) {
+    log(`Get account error: ${err.message}`);
+    return res.json({
+      success: false,
+      data: null,
+      error: err.message,
+    });
   }
 }
 
