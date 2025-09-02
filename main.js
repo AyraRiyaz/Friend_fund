@@ -75,9 +75,6 @@ module.exports = async ({ req, res, log, error }) => {
       case route === "POST /auth/login":
         return await login(req, res, body, log);
 
-      case route === "POST /auth/jwt":
-        return await createJWT(req, res, body, log);
-
       case route === "GET /auth/account":
         return await getAccount(req, res, token, log);
 
@@ -121,21 +118,21 @@ module.exports = async ({ req, res, log, error }) => {
 };
 
 /**
- * Helper function to get user from JWT token
+ * Helper function to get user from session token
  */
-async function getUserFromToken(token, log) {
-  if (!token) {
+async function getUserFromToken(sessionToken, log) {
+  if (!sessionToken) {
     throw new Error("Authentication token required");
   }
 
   try {
-    // Set the JWT token for this request
+    // Use session token instead of JWT
     const userClient = new Client()
       .setEndpoint(
         process.env.APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1"
       )
       .setProject(process.env.APPWRITE_PROJECT)
-      .setJWT(token);
+      .setSession(sessionToken); // Use session instead of JWT
 
     const userAccount = new Account(userClient);
     const user = await userAccount.get();
@@ -143,7 +140,8 @@ async function getUserFromToken(token, log) {
     log(`Authenticated user: ${user.$id}`);
     return user;
   } catch (err) {
-    throw new Error("Invalid or expired token");
+    log(`Authentication error: ${err.message}`);
+    throw new Error("Invalid or expired session");
   }
 }
 
@@ -221,41 +219,18 @@ async function login(req, res, body, log) {
 
     log(`Session created for user: ${session.userId}`);
 
-    // In Appwrite functions, after creating a session, we need to set it on the client
-    // to create JWT tokens. The secret is typically the session token.
-    sessionClient.setSession(session.$id);
-
-    try {
-      // Attempt to create JWT immediately since we have the session
-      const jwt = await sessionAccount.createJWT();
-
-      return res.json({
-        success: true,
-        data: {
-          session: {
-            id: session.$id,
-            userId: session.userId,
-            secret: session.$id,
-          },
-          jwt: jwt.jwt,
+    // Return session details only - no JWT creation in function
+    return res.json({
+      success: true,
+      data: {
+        session: {
+          id: session.$id,
+          userId: session.userId,
+          secret: session.$id, // Use session ID as the secret for client-side usage
         },
-        error: null,
-      });
-    } catch (jwtError) {
-      log(`JWT creation failed: ${jwtError.message}`);
-      // Return session only if JWT creation fails
-      return res.json({
-        success: true,
-        data: {
-          session: {
-            id: session.$id,
-            userId: session.userId,
-            secret: session.$id,
-          },
-        },
-        error: null,
-      });
-    }
+      },
+      error: null,
+    });
   } catch (err) {
     log(`Login error: ${err.message}`);
     log(`Error code: ${err.code}`);
@@ -278,58 +253,6 @@ async function login(req, res, body, log) {
       success: false,
       data: null,
       error: errorMessage,
-    });
-  }
-}
-
-/**
- * AUTH: POST /auth/jwt - Create JWT token from session
- */
-async function createJWT(req, res, body, log) {
-  try {
-    const { sessionId, secret } = body;
-
-    if (!sessionId || !secret) {
-      return res.json({
-        success: false,
-        data: null,
-        error: "Missing required fields: sessionId, secret",
-      });
-    }
-
-    log(`Attempting to create JWT for session: ${sessionId}`);
-
-    // Create a fresh client with the session
-    const jwtClient = new Client()
-      .setEndpoint(
-        process.env.APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1"
-      )
-      .setProject(process.env.APPWRITE_PROJECT)
-      .setSession(secret);
-
-    const jwtAccount = new Account(jwtClient);
-
-    // Create JWT token
-    const jwt = await jwtAccount.createJWT();
-
-    log(`JWT created successfully for session: ${sessionId}`);
-
-    return res.json({
-      success: true,
-      data: {
-        jwt: jwt.jwt,
-      },
-      error: null,
-    });
-  } catch (err) {
-    log(`Create JWT error: ${err.message}`);
-    log(`JWT Error code: ${err.code}`);
-    log(`JWT Error type: ${err.type}`);
-
-    return res.json({
-      success: false,
-      data: null,
-      error: `Failed to create JWT: ${err.message}`,
     });
   }
 }

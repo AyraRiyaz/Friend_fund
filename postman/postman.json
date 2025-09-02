@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "friendfund-api-collection",
     "name": "FriendFund API",
-    "description": "Complete API collection for FriendFund Backend - A fundraising platform supporting donations and loans\n\nAuthentication Flow:\n1. Use 'Signup' to create a new account\n2. Use 'Login' to authenticate and get both session + JWT token automatically\n3. The JWT token is automatically saved and used for protected endpoints\n4. 'Create JWT Token' is optional - only use if you need to refresh JWT from existing session",
+    "description": "Complete API collection for FriendFund Backend - A fundraising platform supporting donations and loans\n\nAuthentication Flow:\n1. Use 'Signup' to create a new account\n2. Use 'Login' to authenticate and get session token\n3. The session token is automatically saved as AUTH_TOKEN and used for protected endpoints\n4. All authenticated requests use session-based authentication",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "version": {
       "major": 1,
@@ -15,7 +15,7 @@
     "bearer": [
       {
         "key": "token",
-        "value": "{{JWT_TOKEN}}",
+        "value": "{{AUTH_TOKEN}}",
         "type": "string"
       }
     ]
@@ -109,11 +109,8 @@
                   "        pm.environment.set('SESSION_ID', jsonData.data.session.id);",
                   "        pm.environment.set('SESSION_SECRET', jsonData.data.session.secret);",
                   "        pm.environment.set('USER_ID', jsonData.data.session.userId);",
-                  "    }",
-                  "    // Check if JWT is also returned",
-                  "    if (jsonData.success && jsonData.data && jsonData.data.jwt) {",
-                  "        pm.environment.set('JWT_TOKEN', jsonData.data.jwt);",
-                  "        console.log('JWT token received with login');",
+                  "        // Use session secret as the authentication token",
+                  "        pm.environment.set('AUTH_TOKEN', jsonData.data.session.secret);",
                   "    }",
                   "});"
                 ],
@@ -150,61 +147,7 @@
             }
           },
           "response": [],
-          "description": "Login with email and password to create a session. Use the session details with the 'Create JWT Token' endpoint to get a JWT token for authenticated requests."
-        },
-        {
-          "name": "Create JWT Token",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status code is 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test('JWT token created successfully', function () {",
-                  "    const jsonData = pm.response.json();",
-                  "    pm.expect(jsonData).to.have.property('success');",
-                  "    if (jsonData.success && jsonData.data && jsonData.data.jwt) {",
-                  "        pm.environment.set('JWT_TOKEN', jsonData.data.jwt);",
-                  "    }",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"sessionId\": \"{{SESSION_ID}}\",\n  \"secret\": \"{{SESSION_SECRET}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{API_URL}}/auth/jwt",
-              "host": [
-                "{{API_URL}}"
-              ],
-              "path": [
-                "auth",
-                "jwt"
-              ]
-            }
-          },
-          "response": [],
-          "description": "[OPTIONAL] Create a JWT token from session credentials - Login now returns JWT directly"
+          "description": "Login with email and password to create a session. Session token is used for authentication."
         },
         {
           "name": "Get Account Info",
@@ -232,7 +175,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{JWT_TOKEN}}"
+                "value": "Bearer {{AUTH_TOKEN}}"
               }
             ],
             "url": {
@@ -291,7 +234,7 @@
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{JWT_TOKEN}}"
+                "value": "Bearer {{AUTH_TOKEN}}"
               }
             ],
             "body": {
@@ -322,7 +265,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Bearer {{JWT_TOKEN}}"
+                    "value": "Bearer {{AUTH_TOKEN}}"
                   }
                 ],
                 "body": {
@@ -407,7 +350,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{JWT_TOKEN}}"
+                "value": "Bearer {{AUTH_TOKEN}}"
               }
             ],
             "url": {
@@ -544,7 +487,7 @@
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{JWT_TOKEN}}"
+                "value": "Bearer {{AUTH_TOKEN}}"
               }
             ],
             "body": {
@@ -591,7 +534,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{JWT_TOKEN}}"
+                "value": "Bearer {{AUTH_TOKEN}}"
               }
             ],
             "url": {
@@ -609,7 +552,7 @@
                 "header": [
                   {
                     "key": "Authorization",
-                    "value": "Bearer {{JWT_TOKEN}}"
+                    "value": "Bearer {{AUTH_TOKEN}}"
                   }
                 ],
                 "url": {
@@ -668,7 +611,7 @@
       "description": "Session secret from login"
     },
     {
-      "key": "JWT_TOKEN",
+      "key": "AUTH_TOKEN",
       "value": "",
       "description": "JWT authentication token from JWT creation endpoint"
     },
