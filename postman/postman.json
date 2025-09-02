@@ -102,17 +102,13 @@
                   "    pm.response.to.have.status(200);",
                   "});",
                   "",
-                  "pm.test('Session and JWT created successfully', function () {",
+                  "pm.test('Session created successfully', function () {",
                   "    const jsonData = pm.response.json();",
                   "    pm.expect(jsonData).to.have.property('success');",
-                  "    if (jsonData.success && jsonData.data) {",
-                  "        if (jsonData.data.session) {",
-                  "            pm.environment.set('SESSION_ID', jsonData.data.session.id);",
-                  "            pm.environment.set('SESSION_SECRET', jsonData.data.session.secret);",
-                  "        }",
-                  "        if (jsonData.data.jwt) {",
-                  "            pm.environment.set('JWT_TOKEN', jsonData.data.jwt);",
-                  "        }",
+                  "    if (jsonData.success && jsonData.data && jsonData.data.session) {",
+                  "        pm.environment.set('SESSION_ID', jsonData.data.session.id);",
+                  "        pm.environment.set('SESSION_SECRET', jsonData.data.session.secret);",
+                  "        pm.environment.set('USER_ID', jsonData.data.session.userId);",
                   "    }",
                   "});"
                 ],
@@ -149,7 +145,7 @@
             }
           },
           "response": [],
-          "description": "Login with email and password to create a session and get JWT token"
+          "description": "Login with email and password to create a session. Use the session details with the 'Create JWT Token' endpoint to get a JWT token for authenticated requests."
         },
         {
           "name": "Create JWT Token",

@@ -221,10 +221,7 @@ async function login(req, res, body, log) {
 
     log(`Session created for user: ${session.userId}`);
 
-    // Set the session on the client and create JWT immediately
-    sessionClient.setSession(session.secret);
-    const jwt = await sessionAccount.createJWT();
-
+    // Return session details - JWT creation will be handled separately
     return res.json({
       success: true,
       data: {
@@ -233,7 +230,6 @@ async function login(req, res, body, log) {
           userId: session.userId,
           secret: session.secret,
         },
-        jwt: jwt.jwt,
       },
       error: null,
     });
@@ -278,20 +274,22 @@ async function createJWT(req, res, body, log) {
       });
     }
 
-    // Create client with session - the secret should be the actual session secret
-    const sessionClient = new Client()
+    log(`Attempting to create JWT for session: ${sessionId}`);
+
+    // Create a fresh client with the session
+    const jwtClient = new Client()
       .setEndpoint(
         process.env.APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1"
       )
       .setProject(process.env.APPWRITE_PROJECT)
-      .setSession(secret); // Use the session secret directly
+      .setSession(secret);
 
-    const sessionAccount = new Account(sessionClient);
+    const jwtAccount = new Account(jwtClient);
 
     // Create JWT token
-    const jwt = await sessionAccount.createJWT();
+    const jwt = await jwtAccount.createJWT();
 
-    log(`JWT created for session: ${sessionId}`);
+    log(`JWT created successfully for session: ${sessionId}`);
 
     return res.json({
       success: true,
@@ -302,10 +300,13 @@ async function createJWT(req, res, body, log) {
     });
   } catch (err) {
     log(`Create JWT error: ${err.message}`);
+    log(`JWT Error code: ${err.code}`);
+    log(`JWT Error type: ${err.type}`);
+
     return res.json({
       success: false,
       data: null,
-      error: "Failed to create JWT. Please ensure you have a valid session.",
+      error: `Failed to create JWT: ${err.message}`,
     });
   }
 }
