@@ -227,7 +227,7 @@ async function login(req, res, body, log) {
         session: {
           id: session.$id,
           userId: session.userId,
-          secret: session.secret,
+          secret: session.$id, // Use session ID as the secret for JWT creation
         },
       },
       error: null,
