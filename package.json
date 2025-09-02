@@ -1,0 +1,26 @@
+{
+  "name": "friendfund-backend",
+  "version": "1.0.0",
+  "description": "FriendFund Appwrite Function - Complete backend for fundraising campaigns",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [
+    "appwrite",
+    "fundraising",
+    "campaigns",
+    "donations",
+    "loans",
+    "flutter"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "node-appwrite": "^13.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
