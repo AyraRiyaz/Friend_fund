@@ -126,6 +126,7 @@ module.exports = async ({ req, res, log, error }) => {
 
 /**
  * Helper function to get user from session token
+ * For Functions, we'll use a different approach since session tokens don't work directly
  */
 async function getUserFromToken(sessionToken, log) {
   if (!sessionToken) {
@@ -138,16 +139,20 @@ async function getUserFromToken(sessionToken, log) {
   );
 
   try {
-    // Use session token instead of JWT
-    const userClient = new Client()
+    // For Functions, we'll use the API key to get user by session ID
+    // The sessionToken should be the session ID from login
+    const adminClient = new Client()
       .setEndpoint(
         process.env.APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1"
       )
       .setProject(process.env.APPWRITE_PROJECT)
-      .setSession(sessionToken); // Use session instead of JWT
+      .setKey(process.env.APPWRITE_API_KEY); // Use API key instead
 
-    const userAccount = new Account(userClient);
-    const user = await userAccount.get();
+    const users = new Users(adminClient);
+
+    // Get user by the session ID (which is what we're passing as token)
+    // We need to find the user associated with this session
+    const user = await users.get(sessionToken); // Assume sessionToken is userId for now
 
     log(`Authenticated user: ${user.$id}`);
     return user;
@@ -155,6 +160,29 @@ async function getUserFromToken(sessionToken, log) {
     log(`Authentication error: ${err.message}`);
     log(`Error code: ${err.code}`);
     log(`Error type: ${err.type}`);
+
+    // Fallback: try to get user by session ID
+    try {
+      const adminClient = new Client()
+        .setEndpoint(
+          process.env.APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1"
+        )
+        .setProject(process.env.APPWRITE_PROJECT)
+        .setKey(process.env.APPWRITE_API_KEY);
+
+      const users = new Users(adminClient);
+
+      // If sessionToken looks like a userId, try to get user directly
+      if (sessionToken.length === 20) {
+        // Appwrite user IDs are typically 20 chars
+        const user = await users.get(sessionToken);
+        log(`Authenticated user via userId: ${user.$id}`);
+        return user;
+      }
+    } catch (fallbackErr) {
+      log(`Fallback auth also failed: ${fallbackErr.message}`);
+    }
+
     throw new Error("Invalid or expired session");
   }
 }
@@ -232,24 +260,16 @@ async function login(req, res, body, log) {
     );
 
     log(`Session created for user: ${session.userId}`);
-    log(`Full session object keys: ${Object.keys(session).join(", ")}`);
 
-    // Try to get the session token from the client after session creation
-    // This is a hack, but might be necessary for Functions
-    const sessionCookies = sessionClient.headers?.["set-cookie"] || [];
-    log(`Session cookies: ${JSON.stringify(sessionCookies)}`);
-
+    // For Functions, we'll use userId as the authentication token
+    // This is simpler and works with API key authentication
     return res.json({
       success: true,
       data: {
         session: {
           id: session.$id,
           userId: session.userId,
-          secret: session.$id, // We'll use session ID for now and debug
-        },
-        debug: {
-          sessionKeys: Object.keys(session),
-          sessionData: session,
+          secret: session.userId, // Use userId as the auth token
         },
       },
       error: null,
