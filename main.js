@@ -239,10 +239,26 @@ async function login(req, res, body, log) {
     });
   } catch (err) {
     log(`Login error: ${err.message}`);
+    log(`Error code: ${err.code}`);
+    log(`Error type: ${err.type}`);
+
+    // Provide more specific error messages
+    let errorMessage = "Invalid email or password";
+    if (err.code === 401) {
+      errorMessage = "Invalid email or password";
+    } else if (err.code === 400) {
+      errorMessage =
+        "Bad request - please check your email and password format";
+    } else if (err.code === 429) {
+      errorMessage = "Too many login attempts - please try again later";
+    } else if (err.message.includes("user_not_found")) {
+      errorMessage = "User not found - please sign up first";
+    }
+
     return res.json({
       success: false,
       data: null,
-      error: "Invalid email or password",
+      error: errorMessage,
     });
   }
 }
