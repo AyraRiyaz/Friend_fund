@@ -1,33 +1,24 @@
 {
-  "projectId": "friendfund",
-  "projectName": "FriendFund Backend",
+  "projectId": "friend-fund",
+  "projectName": "FriendFund",
   "functions": [
     {
-      "id": "friendfund-api",
+      "functionId": "friend-fund-api",
       "name": "FriendFund API",
       "runtime": "node-18.0",
-      "source": ".",
+      "source": "./",
       "entrypoint": "main.js",
       "ignore": [
         "node_modules",
         ".git",
-        ".env",
-        "README.md",
-        ".env.example"
+        "*.md",
+        ".env"
       ],
       "execute": ["any"],
       "events": [],
       "schedule": "",
       "timeout": 30,
-      "enabled": true,
-      "logging": true,
-      "variables": {
-        "APPWRITE_ENDPOINT": "https://cloud.appwrite.io/v1",
-        "DATABASE_ID": "friendfundDB",
-        "COLLECTION_USERS": "users",
-        "COLLECTION_CAMPAIGNS": "campaigns", 
-        "COLLECTION_CONTRIBUTIONS": "contributions"
-      }
+      "enabled": true
     }
   ]
 }

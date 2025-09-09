@@ -1,203 +1,97 @@
-# FriendFund Appwrite Function Deployment Guide
+# Deployment Guide for FriendFund API
 
-## Quick Deployment Steps
+## Prerequisites
 
-### 1. Push to GitHub
+1. **Appwrite Account**: Create an account at [Appwrite Cloud](https://cloud.appwrite.io/)
+2. **Appwrite CLI**: Install the Appwrite CLI tool
+3. **Node.js**: Ensure Node.js 18+ is installed
 
-```bash
-git init
-git add .
-git commit -m "Initial commit: FriendFund backend"
-git branch -M main
-git remote add origin <your-github-repo-url>
-git push -u origin main
-```
+## Setup Steps
 
-### 2. Deploy via Appwrite Dashboard
-
-#### Method A: GitHub Integration (Recommended)
-
-1. Go to Appwrite Dashboard → Functions
-2. Click "Create Function"
-3. Choose "Git Integration"
-4. Connect your GitHub repository
-5. Set:
-   - **Runtime**: Node.js 18
-   - **Entry Point**: `main.js`
-   - **Branch**: `main`
-   - **Root Directory**: `/` (or your function folder)
-
-#### Method B: Manual Upload
-
-1. Zip your project files (excluding node_modules)
-2. Go to Appwrite Dashboard → Functions
-3. Click "Create Function"
-4. Choose "Manual Upload"
-5. Upload your zip file
-6. Set **Runtime**: Node.js 18
-
-### 3. Configure Environment Variables
-
-In your Appwrite Function settings, add:
-
-```
-APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
-APPWRITE_PROJECT=your-actual-project-id
-APPWRITE_API_KEY=your-server-api-key
-DATABASE_ID=friendfundDB
-COLLECTION_USERS=users
-COLLECTION_CAMPAIGNS=campaigns
-COLLECTION_CONTRIBUTIONS=contributions
-
-# Optional for SMS:
-TWILIO_SID=your-twilio-sid
-TWILIO_AUTH=your-twilio-auth-token
-TWILIO_PHONE=your-twilio-phone
-```
-
-### 4. Set Function Permissions
-
-- **Execute**: Any (for public endpoints)
-- **Events**: None (HTTP-triggered only)
-- **Timeout**: 30 seconds
-- **Memory**: 512 MB
-
-### 5. Test Your Function
-
-Your function will be available at:
-
-```
-https://cloud.appwrite.io/v1/functions/{function-id}/executions
-```
-
-## Database Setup Checklist
-
-### Create Collections in Appwrite Console:
-
-#### 1. Users Collection
-
-- ID: `users`
-- Permissions: Users can read/write their own documents
-
-#### 2. Campaigns Collection
-
-- ID: `campaigns`
-- Permissions:
-  - Read: Any
-  - Write: Users (authenticated)
-
-**Attributes:**
-
-- `title` (string, required)
-- `description` (string, required)
-- `purpose` (string, required)
-- `targetAmount` (double, required)
-- `collectedAmount` (double, default: 0)
-- `repaymentDueDate` (string, required)
-- `upiId` (string, required)
-- `hostId` (string, required)
-- `hostName` (string, required)
-- `status` (string, required, default: "active")
-- `createdAt` (string, required)
-- `updatedAt` (string, required)
-
-#### 3. Contributions Collection
-
-- ID: `contributions`
-- Permissions:
-  - Read: Users (authenticated)
-  - Write: Users (authenticated)
-
-**Attributes:**
-
-- `campaignId` (string, required)
-- `contributorId` (string)
-- `contributorName` (string, required)
-- `amount` (double, required)
-- `utr` (string, required)
-- `type` (string, required) // "donation" or "loan"
-- `isAnonymous` (boolean, default: false)
-- `isRepaid` (boolean, default: false)
-- `repaymentDueDate` (string)
-- `repaidAt` (string)
-- `lastReminderSent` (string)
-- `createdAt` (string, required)
-
-### Create Indexes (Optional but Recommended)
-
-- `campaigns`: Index on `status` and `hostId`
-- `contributions`: Index on `campaignId` and `type`
-
-## Testing Your Deployment
-
-### 1. Test via Appwrite Console
-
-1. Go to Functions → Your Function → Execute
-2. Test with sample requests
-
-### 2. Test via Postman/cURL
+### 1. Install Appwrite CLI
 
 ```bash
-# Test campaign creation
-curl -X POST "https://cloud.appwrite.io/v1/functions/{function-id}/executions" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer {jwt-token}" \
-  -d '{
-    "path": "/campaigns",
-    "method": "POST",
-    "body": {
-      "title": "Test Campaign",
-      "description": "Testing the API",
-      "purpose": "Test",
-      "targetAmount": 1000,
-      "repaymentDueDate": "2025-12-31",
-      "upiId": "test@paytm"
-    }
-  }'
+npm install -g appwrite-cli
 ```
+
+### 2. Login to Appwrite
+
+```bash
+appwrite login
+```
+
+### 3. Initialize Project
+
+```bash
+appwrite init project
+```
+
+### 4. Create Database and Collections
+
+1. Go to your Appwrite console
+2. Create a new database named `friend-fund-db`
+3. Create the following collections with attributes as specified in `database-schema.md`:
+   - `users`
+   - `campaigns`
+   - `contributions`
+
+### 5. Configure Environment Variables
+
+1. Copy `.env.example` to `.env`
+2. Update the values with your Appwrite project details:
+   - `APPWRITE_FUNCTION_PROJECT_ID`: Your project ID from Appwrite console
+   - `APPWRITE_FUNCTION_API_KEY`: Create an API key in Appwrite console with appropriate permissions
+
+### 6. Deploy Function
+
+```bash
+appwrite functions deploy friend-fund-api
+```
+
+### 7. Set Function Variables
+
+In the Appwrite console, go to Functions > friend-fund-api > Settings > Variables and add:
+
+- `APPWRITE_FUNCTION_ENDPOINT`
+- `APPWRITE_FUNCTION_PROJECT_ID`
+- `APPWRITE_FUNCTION_API_KEY`
+
+### 8. Test the Deployment
+
+1. Get the function URL from the Appwrite console
+2. Update the `baseUrl` in your Postman collection
+3. Run the Postman tests to verify all endpoints are working
+
+## Function URL
+
+After deployment, your function will be available at:
+
+```
+https://[your-project-id].appwrite.global/functions/friend-fund-api/executions
+```
+
+## Testing
+
+1. Import the Postman collection: `FriendFund-API.postman_collection.json`
+2. Import the environment: `FriendFund-Development.postman_environment.json`
+3. Update the `baseUrl` variable with your function URL
+4. Run the collection to test all endpoints
+
+## Monitoring
+
+- Check function logs in the Appwrite console
+- Monitor function execution metrics
+- Set up alerts for errors or performance issues
 
 ## Troubleshooting
 
-### Common Issues:
+### Common Issues
 
-1. **"Function not found"**
+1. **Function timeout**: Increase timeout in `appwrite.json`
+2. **Permission errors**: Check API key permissions
+3. **Database errors**: Verify collection names and attributes
+4. **CORS errors**: Ensure proper headers are set in responses
 
-   - Check function ID in URL
-   - Ensure function is deployed and active
+### Logs
 
-2. **"Authentication required"**
-
-   - Add JWT token to Authorization header
-   - Ensure user is authenticated via Appwrite Auth
-
-3. **"Database not found"**
-
-   - Verify DATABASE_ID environment variable
-   - Check if database exists in Appwrite Console
-
-4. **"Collection not found"**
-
-   - Verify collection IDs in environment variables
-   - Check if collections exist with correct names
-
-5. **SMS not working**
-   - Verify Twilio credentials
-   - Check Twilio phone number format (+country code)
-
-### Debugging:
-
-- Check function logs in Appwrite Console
-- Use `log()` statements for debugging
-- Test individual endpoints one by one
-
-## Security Checklist
-
-- ✅ Environment variables set securely
-- ✅ JWT authentication implemented
-- ✅ User authorization checks in place
-- ✅ Input validation for all endpoints
-- ✅ No sensitive data in error messages
-- ✅ CORS headers configured for Flutter
-- ✅ API key has appropriate permissions only
-
-Your FriendFund backend is now ready for production! 🚀
+Check function logs in the Appwrite console under Functions > friend-fund-api > Executions.

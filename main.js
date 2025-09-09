@@ -1,695 +1,701 @@
-const {
-  Client,
-  Databases,
-  Users,
-  Account,
-  ID,
-  Query,
-} = require("node-appwrite");
+const sdk = require("node-appwrite");
 
-// Initialize Appwrite Client
-const client = new Client()
-  .setEndpoint(process.env.APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1")
-  .setProject(process.env.APPWRITE_PROJECT)
-  .setKey(process.env.APPWRITE_API_KEY);
+// Initialize Appwrite SDK
+const client = new sdk.Client();
+const account = new sdk.Account(client);
+const databases = new sdk.Databases(client);
+const users = new sdk.Users(client);
 
-const databases = new Databases(client);
-const users = new Users(client);
-const account = new Account(client);
+// Database and Collection IDs
+const DATABASE_ID = "68b5433d0004cadff5ff";
+const USERS_COLLECTION_ID = "68b5437f000585a01be6";
+const CAMPAIGNS_COLLECTION_ID = "68b54652001a8a757571";
+const CONTRIBUTIONS_COLLECTION_ID = "68b54a0700208ba7fdaa";
 
-// Environment Variables
-const DATABASE_ID = process.env.DATABASE_ID || "friendfundDB";
-const COLLECTION_USERS = process.env.COLLECTION_USERS || "users";
-const COLLECTION_CAMPAIGNS = process.env.COLLECTION_CAMPAIGNS || "campaigns";
-const COLLECTION_CONTRIBUTIONS =
-  process.env.COLLECTION_CONTRIBUTIONS || "contributions";
+// Initialize Appwrite client
+function initializeAppwrite(req) {
+  client
+    .setEndpoint(
+      process.env.APPWRITE_FUNCTION_ENDPOINT || "https://cloud.appwrite.io/v1"
+    )
+    .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID || "")
+    .setKey(process.env.APPWRITE_FUNCTION_API_KEY || "");
 
-/**
- * Main Function - Routes all HTTP requests
- */
-module.exports = async ({ req, res, log, error }) => {
-  try {
-    // Set CORS headers
-    res.headers = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  // Set session if available
+  if (req.headers["authorization"]) {
+    client.setJWT(req.headers["authorization"].replace("Bearer ", ""));
+  }
+}
+
+// Utility function to generate unique IDs
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+// Response helper
+function createResponse(data, status = 200, message = "Success") {
+  return {
+    statusCode: status,
+    headers: {
       "Content-Type": "application/json",
-    };
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+    body: JSON.stringify({
+      success: status < 400,
+      message,
+      data,
+      timestamp: new Date().toISOString(),
+    }),
+  };
+}
 
-    // Handle preflight OPTIONS request
-    if (req.method === "OPTIONS") {
-      return res.json({ success: true });
-    }
+// Error handler
+function handleError(error, defaultMessage = "An error occurred") {
+  console.error("Error:", error);
+  const status = error.code || 500;
+  const message = error.message || defaultMessage;
+  return createResponse(null, status, message);
+}
 
-    log(`Incoming request: ${req.method} ${req.path}`);
+// Route handlers
 
-    // Parse request body for POST/PATCH requests
-    let body = {};
-    if (req.method === "POST" || req.method === "PATCH") {
-      try {
-        body =
-          typeof req.body === "string" ? JSON.parse(req.body) : req.body || {};
-      } catch (e) {
-        return res.json({
-          success: false,
-          data: null,
-          error: "Invalid JSON body",
-        });
-      }
-    }
+// Authentication handlers
+async function registerUser(req) {
+  try {
+    const { mobileNumber, upiId, name } = JSON.parse(req.body || "{}");
 
-    // Extract session token for authentication
-    const authHeader =
-      req.headers["authorization"] || req.headers["Authorization"];
-    const token = authHeader ? authHeader.replace("Bearer ", "") : null;
-
-    if (authHeader) {
-      log(`Auth header received: ${authHeader.substring(0, 20)}...`);
-      log(
-        `Extracted token: ${token ? token.substring(0, 10) + "..." : "null"}`
+    if (!mobileNumber || !upiId || !name) {
+      return createResponse(
+        null,
+        400,
+        "Mobile number, UPI ID, and name are required"
       );
     }
 
-    // Route the request based on method and path
-    const route = `${req.method} ${req.path}`;
+    // Create user in Appwrite Auth with email format (using mobile as email)
+    const email = `${mobileNumber.replace("+", "")}@friendfund.app`;
+    const password = generateId(); // Temporary password
 
-    switch (true) {
-      // Authentication routes
-      case route === "POST /auth/signup":
-        return await signup(req, res, body, log);
-
-      case route === "POST /auth/login":
-        return await login(req, res, body, log);
-
-      case route === "GET /auth/account":
-        return await getAccount(req, res, token, log);
-
-      // Campaign routes
-      case route === "POST /campaigns":
-        return await createCampaign(req, res, body, token, log);
-
-      case route === "GET /campaigns":
-        return await getCampaigns(req, res, token, log);
-
-      // Contribution routes
-      case route === "POST /contributions":
-        return await createContribution(req, res, body, token, log);
-
-      case route.startsWith("PATCH /contributions/") &&
-        route.endsWith("/repaid"):
-        const contributionId = req.path.split("/")[2];
-        return await markContributionRepaid(
-          req,
-          res,
-          contributionId,
-          token,
-          log
-        );
-
-      default:
-        return res.json({
-          success: false,
-          data: null,
-          error: `Route not found: ${route}`,
-        });
-    }
-  } catch (err) {
-    error(`Global error: ${err.message}`);
-    return res.json({
-      success: false,
-      data: null,
-      error: "Internal server error",
-    });
-  }
-};
-
-/**
- * Helper function to get user from session token
- * For Functions, we'll use a different approach since session tokens don't work directly
- */
-async function getUserFromToken(sessionToken, log) {
-  if (!sessionToken) {
-    log("No authentication token provided");
-    throw new Error("Authentication token required");
-  }
-
-  log(
-    `Attempting authentication with token: ${sessionToken.substring(0, 10)}...`
-  );
-
-  try {
-    // For Functions, we'll use the API key to get user by session ID
-    // The sessionToken should be the session ID from login
-    const adminClient = new Client()
-      .setEndpoint(
-        process.env.APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1"
-      )
-      .setProject(process.env.APPWRITE_PROJECT)
-      .setKey(process.env.APPWRITE_API_KEY); // Use API key instead
-
-    const users = new Users(adminClient);
-
-    // Get user by the session ID (which is what we're passing as token)
-    // We need to find the user associated with this session
-    const user = await users.get(sessionToken); // Assume sessionToken is userId for now
-
-    log(`Authenticated user: ${user.$id}`);
-    return user;
-  } catch (err) {
-    log(`Authentication error: ${err.message}`);
-    log(`Error code: ${err.code}`);
-    log(`Error type: ${err.type}`);
-
-    // Fallback: try to get user by session ID
-    try {
-      const adminClient = new Client()
-        .setEndpoint(
-          process.env.APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1"
-        )
-        .setProject(process.env.APPWRITE_PROJECT)
-        .setKey(process.env.APPWRITE_API_KEY);
-
-      const users = new Users(adminClient);
-
-      // If sessionToken looks like a userId, try to get user directly
-      if (sessionToken.length === 20) {
-        // Appwrite user IDs are typically 20 chars
-        const user = await users.get(sessionToken);
-        log(`Authenticated user via userId: ${user.$id}`);
-        return user;
-      }
-    } catch (fallbackErr) {
-      log(`Fallback auth also failed: ${fallbackErr.message}`);
-    }
-
-    throw new Error("Invalid or expired session");
-  }
-}
-
-/**
- * AUTH: POST /auth/signup - Create a new user account
- */
-async function signup(req, res, body, log) {
-  try {
-    const { email, password, name, phone } = body;
-
-    if (!email || !password || !name) {
-      return res.json({
-        success: false,
-        data: null,
-        error: "Missing required fields: email, password, name",
-      });
-    }
-
-    // Create user account
-    const user = await users.create(ID.unique(), email, phone, password, name);
-
-    log(`User created: ${user.$id}`);
-
-    return res.json({
-      success: true,
-      data: {
-        user: {
-          id: user.$id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-        },
-      },
-      error: null,
-    });
-  } catch (err) {
-    log(`Signup error: ${err.message}`);
-    return res.json({
-      success: false,
-      data: null,
-      error: err.message,
-    });
-  }
-}
-
-/**
- * AUTH: POST /auth/login - Create a session for existing user
- */
-async function login(req, res, body, log) {
-  try {
-    const { email, password } = body;
-
-    if (!email || !password) {
-      return res.json({
-        success: false,
-        data: null,
-        error: "Missing required fields: email, password",
-      });
-    }
-
-    // Create a temporary client for session creation
-    const sessionClient = new Client()
-      .setEndpoint(
-        process.env.APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1"
-      )
-      .setProject(process.env.APPWRITE_PROJECT);
-
-    const sessionAccount = new Account(sessionClient);
-
-    // Create session
-    const session = await sessionAccount.createEmailPasswordSession(
+    const user = await users.create(
+      sdk.ID.unique(),
       email,
-      password
+      undefined, // phone (optional)
+      password,
+      name
     );
 
-    log(`Session created for user: ${session.userId}`);
+    // Create user profile in database
+    const userProfile = await databases.createDocument(
+      DATABASE_ID,
+      USERS_COLLECTION_ID,
+      user.$id,
+      {
+        userId: user.$id,
+        mobileNumber,
+        upiId,
+        name,
+        createdAt: new Date().toISOString(),
+      }
+    );
 
-    // For Functions, we'll use userId as the authentication token
-    // This is simpler and works with API key authentication
-    return res.json({
-      success: true,
-      data: {
-        session: {
-          id: session.$id,
-          userId: session.userId,
-          secret: session.userId, // Use userId as the auth token
-        },
+    return createResponse(
+      {
+        userId: user.$id,
+        email: user.email,
+        name: user.name,
+        mobileNumber,
+        upiId,
       },
-      error: null,
-    });
-  } catch (err) {
-    log(`Login error: ${err.message}`);
-    log(`Error code: ${err.code}`);
-    log(`Error type: ${err.type}`);
-
-    // Provide more specific error messages
-    let errorMessage = "Invalid email or password";
-    if (err.code === 401) {
-      errorMessage = "Invalid email or password";
-    } else if (err.code === 400) {
-      errorMessage =
-        "Bad request - please check your email and password format";
-    } else if (err.code === 429) {
-      errorMessage = "Too many login attempts - please try again later";
-    } else if (err.message.includes("user_not_found")) {
-      errorMessage = "User not found - please sign up first";
-    }
-
-    return res.json({
-      success: false,
-      data: null,
-      error: errorMessage,
-    });
+      201,
+      "User registered successfully"
+    );
+  } catch (error) {
+    return handleError(error, "Failed to register user");
   }
 }
 
-/**
- * AUTH: GET /auth/account - Get current user account info
- */
-async function getAccount(req, res, token, log) {
+async function loginUser(req) {
   try {
-    const user = await getUserFromToken(token, log);
+    const { mobileNumber } = JSON.parse(req.body || "{}");
 
-    return res.json({
-      success: true,
-      data: {
+    if (!mobileNumber) {
+      return createResponse(null, 400, "Mobile number is required");
+    }
+
+    // In a real implementation, you would send OTP here
+    // For now, we'll simulate OTP generation
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    return createResponse(
+      {
+        otp, // In production, don't return OTP
+        message: "OTP sent to mobile number",
+        mobileNumber,
+      },
+      200,
+      "OTP sent successfully"
+    );
+  } catch (error) {
+    return handleError(error, "Failed to send OTP");
+  }
+}
+
+async function verifyOTP(req) {
+  try {
+    const { mobileNumber, otp } = JSON.parse(req.body || "{}");
+
+    if (!mobileNumber || !otp) {
+      return createResponse(null, 400, "Mobile number and OTP are required");
+    }
+
+    // In production, verify the actual OTP
+    // For now, we'll create a session for any 6-digit OTP
+    if (otp.length !== 6) {
+      return createResponse(null, 400, "Invalid OTP");
+    }
+
+    // Find user by mobile number
+    const userQuery = await databases.listDocuments(
+      DATABASE_ID,
+      USERS_COLLECTION_ID,
+      [sdk.Query.equal("mobileNumber", mobileNumber)]
+    );
+
+    if (userQuery.documents.length === 0) {
+      return createResponse(null, 404, "User not found");
+    }
+
+    const user = userQuery.documents[0];
+
+    // Create session token (in production, use proper JWT)
+    const sessionToken = Buffer.from(
+      JSON.stringify({ userId: user.userId, timestamp: Date.now() })
+    ).toString("base64");
+
+    return createResponse(
+      {
         user: {
-          id: user.$id,
+          userId: user.userId,
+          mobileNumber: user.mobileNumber,
+          upiId: user.upiId,
           name: user.name,
-          email: user.email,
-          phone: user.phone,
-          registration: user.registration,
         },
+        sessionToken,
       },
-      error: null,
-    });
-  } catch (err) {
-    log(`Get account error: ${err.message}`);
-    return res.json({
-      success: false,
-      data: null,
-      error: err.message,
-    });
+      200,
+      "Login successful"
+    );
+  } catch (error) {
+    return handleError(error, "Failed to verify OTP");
   }
 }
 
-/**
- * 1. POST /campaigns - Create a new fundraising campaign
- */
-async function createCampaign(req, res, body, token, log) {
+async function getCurrentUser(req) {
   try {
-    // Authenticate user
-    const user = await getUserFromToken(token, log);
-
-    // Validate required fields
-    const {
-      title,
-      description,
-      purpose,
-      targetAmount,
-      repaymentDueDate,
-      upiId,
-    } = body;
-
-    if (
-      !title ||
-      !description ||
-      !purpose ||
-      !targetAmount ||
-      !repaymentDueDate ||
-      !upiId
-    ) {
-      return res.json({
-        success: false,
-        data: null,
-        error:
-          "Missing required fields: title, description, purpose, targetAmount, repaymentDueDate, upiId",
-      });
+    const authHeader = req.headers["authorization"];
+    if (!authHeader) {
+      return createResponse(null, 401, "Authorization header required");
     }
 
-    // Validate targetAmount is a positive number
-    if (isNaN(targetAmount) || targetAmount <= 0) {
-      return res.json({
-        success: false,
-        data: null,
-        error: "Target amount must be a positive number",
-      });
+    const token = authHeader.replace("Bearer ", "");
+    const decoded = JSON.parse(Buffer.from(token, "base64").toString());
+
+    const user = await databases.getDocument(
+      DATABASE_ID,
+      USERS_COLLECTION_ID,
+      decoded.userId
+    );
+
+    return createResponse({
+      userId: user.userId,
+      mobileNumber: user.mobileNumber,
+      upiId: user.upiId,
+      name: user.name,
+      createdAt: user.createdAt,
+    });
+  } catch (error) {
+    return handleError(error, "Failed to get user profile");
+  }
+}
+
+// Campaign handlers
+async function createCampaign(req) {
+  try {
+    const authHeader = req.headers["authorization"];
+    if (!authHeader) {
+      return createResponse(null, 401, "Authorization required");
     }
 
-    // Create campaign document
-    const campaignData = {
-      title: title.trim(),
-      description: description.trim(),
-      purpose: purpose.trim(),
-      targetAmount: parseFloat(targetAmount),
-      collectedAmount: 0,
-      repaymentDueDate,
-      upiId: upiId.trim(),
-      hostId: user.$id,
-      hostName: user.name || user.phone || "Unknown",
-      status: "active",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    const token = authHeader.replace("Bearer ", "");
+    const decoded = JSON.parse(Buffer.from(token, "base64").toString());
+
+    const { title, description, purpose, targetAmount, repaymentDueDate } =
+      JSON.parse(req.body || "{}");
+
+    if (!title || !description || !purpose || !targetAmount) {
+      return createResponse(
+        null,
+        400,
+        "Title, description, purpose, and target amount are required"
+      );
+    }
+
+    const campaignId = generateId();
 
     const campaign = await databases.createDocument(
       DATABASE_ID,
-      COLLECTION_CAMPAIGNS,
-      ID.unique(),
-      campaignData
+      CAMPAIGNS_COLLECTION_ID,
+      campaignId,
+      {
+        campaignId,
+        hostId: decoded.userId,
+        title,
+        description,
+        purpose,
+        targetAmount: parseFloat(targetAmount),
+        collectedAmount: 0,
+        status: "active",
+        repaymentDueDate: repaymentDueDate || null,
+        createdAt: new Date().toISOString(),
+      }
     );
 
-    log(`Campaign created: ${campaign.$id}`);
-
-    return res.json({
-      success: true,
-      data: {
-        campaign: {
-          id: campaign.$id,
-          ...campaignData,
-        },
+    return createResponse(
+      {
+        campaignId: campaign.campaignId,
+        title: campaign.title,
+        description: campaign.description,
+        purpose: campaign.purpose,
+        targetAmount: campaign.targetAmount,
+        collectedAmount: campaign.collectedAmount,
+        status: campaign.status,
+        shareLink: `https://friendfund.app/campaign/${campaign.campaignId}`,
+        createdAt: campaign.createdAt,
       },
-      error: null,
-    });
-  } catch (err) {
-    log(`Create campaign error: ${err.message}`);
-    return res.json({
-      success: false,
-      data: null,
-      error: err.message,
-    });
+      201,
+      "Campaign created successfully"
+    );
+  } catch (error) {
+    return handleError(error, "Failed to create campaign");
   }
 }
 
-/**
- * 2. GET /campaigns - Fetch campaigns
- */
-async function getCampaigns(req, res, token, log) {
+async function getCampaign(req, campaignId) {
   try {
-    const queries = [Query.equal("status", "active")];
-
-    // Check if user wants only their campaigns
-    const hostOnly = req.query?.hostOnly === "true";
-
-    if (hostOnly) {
-      // Authenticate user for host-only requests
-      const user = await getUserFromToken(token, log);
-      queries.push(Query.equal("hostId", user.$id));
-    }
-
-    // Fetch campaigns
-    const response = await databases.listDocuments(
-      DATABASE_ID,
-      COLLECTION_CAMPAIGNS,
-      queries
-    );
-
-    const campaigns = response.documents.map((doc) => ({
-      id: doc.$id,
-      title: doc.title,
-      description: doc.description,
-      purpose: doc.purpose,
-      targetAmount: doc.targetAmount,
-      collectedAmount: doc.collectedAmount,
-      repaymentDueDate: doc.repaymentDueDate,
-      upiId: doc.upiId,
-      hostId: doc.hostId,
-      hostName: doc.hostName,
-      status: doc.status,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
-    }));
-
-    log(`Fetched ${campaigns.length} campaigns`);
-
-    return res.json({
-      success: true,
-      data: {
-        campaigns,
-        total: campaigns.length,
-      },
-      error: null,
-    });
-  } catch (err) {
-    log(`Get campaigns error: ${err.message}`);
-    return res.json({
-      success: false,
-      data: null,
-      error: err.message,
-    });
-  }
-}
-
-/**
- * 3. POST /contributions - Log a contributor's payment
- */
-async function createContribution(req, res, body, token, log) {
-  try {
-    // Validate required fields
-    const { campaignId, contributorName, amount, utr, type, isAnonymous } =
-      body;
-
-    if (!campaignId || !amount || !utr || !type) {
-      return res.json({
-        success: false,
-        data: null,
-        error: "Missing required fields: campaignId, amount, utr, type",
-      });
-    }
-
-    // Validate amount
-    if (isNaN(amount) || amount <= 0) {
-      return res.json({
-        success: false,
-        data: null,
-        error: "Amount must be a positive number",
-      });
-    }
-
-    // Validate type
-    if (!["donation", "loan"].includes(type)) {
-      return res.json({
-        success: false,
-        data: null,
-        error: 'Type must be either "donation" or "loan"',
-      });
-    }
-
-    // Check if campaign exists
     const campaign = await databases.getDocument(
       DATABASE_ID,
-      COLLECTION_CAMPAIGNS,
+      CAMPAIGNS_COLLECTION_ID,
+      campaignId
+    );
+
+    // Get host information
+    const host = await databases.getDocument(
+      DATABASE_ID,
+      USERS_COLLECTION_ID,
+      campaign.hostId
+    );
+
+    // Get contributions for this campaign
+    const contributionsQuery = await databases.listDocuments(
+      DATABASE_ID,
+      CONTRIBUTIONS_COLLECTION_ID,
+      [
+        sdk.Query.equal("campaignId", campaignId),
+        sdk.Query.orderDesc("createdAt"),
+      ]
+    );
+
+    const contributions = contributionsQuery.documents.map((contrib) => ({
+      contributionId: contrib.contributionId,
+      contributorName: contrib.isAnonymous
+        ? "Anonymous"
+        : contrib.contributorName,
+      amount: contrib.amount,
+      type: contrib.type,
+      repaymentStatus: contrib.repaymentStatus,
+      createdAt: contrib.createdAt,
+    }));
+
+    return createResponse({
+      campaignId: campaign.campaignId,
+      title: campaign.title,
+      description: campaign.description,
+      purpose: campaign.purpose,
+      targetAmount: campaign.targetAmount,
+      collectedAmount: campaign.collectedAmount,
+      status: campaign.status,
+      repaymentDueDate: campaign.repaymentDueDate,
+      host: {
+        name: host.name,
+        upiId: host.upiId,
+      },
+      contributions,
+      progress: Math.round(
+        (campaign.collectedAmount / campaign.targetAmount) * 100
+      ),
+      createdAt: campaign.createdAt,
+    });
+  } catch (error) {
+    return handleError(error, "Failed to get campaign");
+  }
+}
+
+async function getUserCampaigns(req) {
+  try {
+    const authHeader = req.headers["authorization"];
+    if (!authHeader) {
+      return createResponse(null, 401, "Authorization required");
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const decoded = JSON.parse(Buffer.from(token, "base64").toString());
+
+    const campaignsQuery = await databases.listDocuments(
+      DATABASE_ID,
+      CAMPAIGNS_COLLECTION_ID,
+      [
+        sdk.Query.equal("hostId", decoded.userId),
+        sdk.Query.orderDesc("createdAt"),
+      ]
+    );
+
+    const campaigns = campaignsQuery.documents.map((campaign) => ({
+      campaignId: campaign.campaignId,
+      title: campaign.title,
+      description: campaign.description,
+      purpose: campaign.purpose,
+      targetAmount: campaign.targetAmount,
+      collectedAmount: campaign.collectedAmount,
+      status: campaign.status,
+      progress: Math.round(
+        (campaign.collectedAmount / campaign.targetAmount) * 100
+      ),
+      createdAt: campaign.createdAt,
+    }));
+
+    return createResponse(campaigns);
+  } catch (error) {
+    return handleError(error, "Failed to get campaigns");
+  }
+}
+
+async function updateCampaign(req, campaignId) {
+  try {
+    const authHeader = req.headers["authorization"];
+    if (!authHeader) {
+      return createResponse(null, 401, "Authorization required");
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const decoded = JSON.parse(Buffer.from(token, "base64").toString());
+
+    const { title, description, purpose, targetAmount, status } = JSON.parse(
+      req.body || "{}"
+    );
+
+    // Verify campaign ownership
+    const campaign = await databases.getDocument(
+      DATABASE_ID,
+      CAMPAIGNS_COLLECTION_ID,
+      campaignId
+    );
+
+    if (campaign.hostId !== decoded.userId) {
+      return createResponse(null, 403, "Unauthorized to update this campaign");
+    }
+
+    const updateData = {};
+    if (title) updateData.title = title;
+    if (description) updateData.description = description;
+    if (purpose) updateData.purpose = purpose;
+    if (targetAmount) updateData.targetAmount = parseFloat(targetAmount);
+    if (status) updateData.status = status;
+
+    const updatedCampaign = await databases.updateDocument(
+      DATABASE_ID,
+      CAMPAIGNS_COLLECTION_ID,
+      campaignId,
+      updateData
+    );
+
+    return createResponse(
+      {
+        campaignId: updatedCampaign.campaignId,
+        title: updatedCampaign.title,
+        description: updatedCampaign.description,
+        purpose: updatedCampaign.purpose,
+        targetAmount: updatedCampaign.targetAmount,
+        collectedAmount: updatedCampaign.collectedAmount,
+        status: updatedCampaign.status,
+      },
+      200,
+      "Campaign updated successfully"
+    );
+  } catch (error) {
+    return handleError(error, "Failed to update campaign");
+  }
+}
+
+// Contribution handlers
+async function makeContribution(req) {
+  try {
+    const { campaignId, contributorName, amount, utr, type, isAnonymous } =
+      JSON.parse(req.body || "{}");
+
+    if (!campaignId || !contributorName || !amount || !utr || !type) {
+      return createResponse(
+        null,
+        400,
+        "Campaign ID, contributor name, amount, UTR, and type are required"
+      );
+    }
+
+    if (!["gift", "loan"].includes(type)) {
+      return createResponse(null, 400, 'Type must be either "gift" or "loan"');
+    }
+
+    // Verify campaign exists and is active
+    const campaign = await databases.getDocument(
+      DATABASE_ID,
+      CAMPAIGNS_COLLECTION_ID,
       campaignId
     );
 
     if (campaign.status !== "active") {
-      return res.json({
-        success: false,
-        data: null,
-        error: "Campaign is not active",
-      });
+      return createResponse(null, 400, "Campaign is not active");
     }
 
-    // Determine contributor name
-    const finalContributorName =
-      isAnonymous === true ? "Anonymous" : contributorName || "Anonymous";
-
-    // Get contributor ID if authenticated
-    let contributorId = null;
-    try {
-      if (token) {
-        const user = await getUserFromToken(token, log);
-        contributorId = user.$id;
-      }
-    } catch (err) {
-      // If token is invalid, continue as anonymous
-      log("No valid authentication for contribution, proceeding as anonymous");
-    }
-
-    // Create contribution document
-    const contributionData = {
-      campaignId,
-      contributorId,
-      contributorName: finalContributorName.trim(),
-      amount: parseFloat(amount),
-      utr: utr.trim(),
-      type,
-      isAnonymous: isAnonymous === true,
-      isRepaid: false,
-      createdAt: new Date().toISOString(),
-    };
-
-    // If it's a loan, add repayment due date from campaign
-    if (type === "loan") {
-      contributionData.repaymentDueDate = campaign.repaymentDueDate;
-    }
+    const contributionId = generateId();
 
     const contribution = await databases.createDocument(
       DATABASE_ID,
-      COLLECTION_CONTRIBUTIONS,
-      ID.unique(),
-      contributionData
-    );
-
-    // Update campaign's collected amount
-    const newCollectedAmount = campaign.collectedAmount + parseFloat(amount);
-    const newStatus =
-      newCollectedAmount >= campaign.targetAmount ? "completed" : "active";
-
-    await databases.updateDocument(
-      DATABASE_ID,
-      COLLECTION_CAMPAIGNS,
-      campaignId,
+      CONTRIBUTIONS_COLLECTION_ID,
+      contributionId,
       {
-        collectedAmount: newCollectedAmount,
-        status: newStatus,
-        updatedAt: new Date().toISOString(),
+        contributionId,
+        campaignId,
+        contributorName,
+        amount: parseFloat(amount),
+        utr,
+        type,
+        repaymentStatus: type === "loan" ? "pending" : null,
+        isAnonymous: isAnonymous || false,
+        createdAt: new Date().toISOString(),
       }
     );
 
-    log(`Contribution created: ${contribution.$id} for campaign ${campaignId}`);
+    // Update campaign collected amount
+    const newCollectedAmount = campaign.collectedAmount + parseFloat(amount);
+    await databases.updateDocument(
+      DATABASE_ID,
+      CAMPAIGNS_COLLECTION_ID,
+      campaignId,
+      {
+        collectedAmount: newCollectedAmount,
+      }
+    );
 
-    return res.json({
-      success: true,
-      data: {
-        contribution: {
-          id: contribution.$id,
-          ...contributionData,
-        },
-        campaign: {
-          collectedAmount: newCollectedAmount,
-          status: newStatus,
-        },
+    return createResponse(
+      {
+        contributionId: contribution.contributionId,
+        campaignId: contribution.campaignId,
+        amount: contribution.amount,
+        type: contribution.type,
+        repaymentStatus: contribution.repaymentStatus,
+        createdAt: contribution.createdAt,
       },
-      error: null,
-    });
-  } catch (err) {
-    log(`Create contribution error: ${err.message}`);
-    return res.json({
-      success: false,
-      data: null,
-      error: err.message.includes("not found")
-        ? "Campaign not found"
-        : err.message,
-    });
+      201,
+      "Contribution recorded successfully"
+    );
+  } catch (error) {
+    return handleError(error, "Failed to record contribution");
   }
 }
 
-/**
- * 4. PATCH /contributions/:id/repaid - Mark a loan contribution as repaid
- */
-async function markContributionRepaid(req, res, contributionId, token, log) {
+async function getCampaignContributions(req, campaignId) {
   try {
-    // Authenticate user
-    const user = await getUserFromToken(token, log);
+    const contributionsQuery = await databases.listDocuments(
+      DATABASE_ID,
+      CONTRIBUTIONS_COLLECTION_ID,
+      [
+        sdk.Query.equal("campaignId", campaignId),
+        sdk.Query.orderDesc("createdAt"),
+      ]
+    );
+
+    const contributions = contributionsQuery.documents.map((contrib) => ({
+      contributionId: contrib.contributionId,
+      contributorName: contrib.isAnonymous
+        ? "Anonymous"
+        : contrib.contributorName,
+      amount: contrib.amount,
+      type: contrib.type,
+      repaymentStatus: contrib.repaymentStatus,
+      utr: contrib.utr,
+      createdAt: contrib.createdAt,
+    }));
+
+    return createResponse(contributions);
+  } catch (error) {
+    return handleError(error, "Failed to get contributions");
+  }
+}
+
+async function markLoanRepaid(req, contributionId) {
+  try {
+    const authHeader = req.headers["authorization"];
+    if (!authHeader) {
+      return createResponse(null, 401, "Authorization required");
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const decoded = JSON.parse(Buffer.from(token, "base64").toString());
 
     // Get contribution
     const contribution = await databases.getDocument(
       DATABASE_ID,
-      COLLECTION_CONTRIBUTIONS,
+      CONTRIBUTIONS_COLLECTION_ID,
       contributionId
     );
 
     if (contribution.type !== "loan") {
-      return res.json({
-        success: false,
-        data: null,
-        error: "Only loan contributions can be marked as repaid",
-      });
+      return createResponse(null, 400, "Only loans can be marked as repaid");
     }
 
-    if (contribution.isRepaid) {
-      return res.json({
-        success: false,
-        data: null,
-        error: "Contribution is already marked as repaid",
-      });
-    }
-
-    // Get campaign to verify user is the host
+    // Verify campaign ownership
     const campaign = await databases.getDocument(
       DATABASE_ID,
-      COLLECTION_CAMPAIGNS,
+      CAMPAIGNS_COLLECTION_ID,
       contribution.campaignId
     );
 
-    if (campaign.hostId !== user.$id) {
-      return res.json({
-        success: false,
-        data: null,
-        error: "Only the campaign host can mark contributions as repaid",
-      });
+    if (campaign.hostId !== decoded.userId) {
+      return createResponse(
+        null,
+        403,
+        "Unauthorized to update this contribution"
+      );
     }
 
-    // Update contribution
     const updatedContribution = await databases.updateDocument(
       DATABASE_ID,
-      COLLECTION_CONTRIBUTIONS,
+      CONTRIBUTIONS_COLLECTION_ID,
       contributionId,
       {
-        isRepaid: true,
-        repaidAt: new Date().toISOString(),
+        repaymentStatus: "repaid",
       }
     );
 
-    log(`Contribution marked as repaid: ${contributionId}`);
-
-    return res.json({
-      success: true,
-      data: {
-        contribution: {
-          id: updatedContribution.$id,
-          isRepaid: true,
-          repaidAt: updatedContribution.repaidAt,
-        },
+    return createResponse(
+      {
+        contributionId: updatedContribution.contributionId,
+        repaymentStatus: updatedContribution.repaymentStatus,
       },
-      error: null,
-    });
-  } catch (err) {
-    log(`Mark contribution repaid error: ${err.message}`);
-    return res.json({
-      success: false,
-      data: null,
-      error: err.message.includes("not found")
-        ? "Contribution not found"
-        : err.message,
-    });
+      200,
+      "Loan marked as repaid"
+    );
+  } catch (error) {
+    return handleError(error, "Failed to mark loan as repaid");
   }
 }
+
+// Main function
+module.exports = async ({ req, res, log, error }) => {
+  try {
+    // Handle CORS preflight
+    if (req.method === "OPTIONS") {
+      return createResponse(null, 200, "OK");
+    }
+
+    // Initialize Appwrite
+    initializeAppwrite(req);
+
+    // Parse URL path
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const path = url.pathname;
+    const method = req.method;
+
+    log(`${method} ${path}`);
+
+    // Route handling
+    if (path === "/auth/register" && method === "POST") {
+      return await registerUser(req);
+    }
+
+    if (path === "/auth/login" && method === "POST") {
+      return await loginUser(req);
+    }
+
+    if (path === "/auth/verify-otp" && method === "POST") {
+      return await verifyOTP(req);
+    }
+
+    if (path === "/auth/user" && method === "GET") {
+      return await getCurrentUser(req);
+    }
+
+    if (path === "/campaigns" && method === "POST") {
+      return await createCampaign(req);
+    }
+
+    if (path === "/campaigns" && method === "GET") {
+      return await getUserCampaigns(req);
+    }
+
+    if (path.startsWith("/campaigns/") && method === "GET") {
+      const campaignId = path.split("/")[2];
+      if (campaignId && !path.includes("/contributions")) {
+        return await getCampaign(req, campaignId);
+      }
+      if (campaignId && path.endsWith("/contributions")) {
+        return await getCampaignContributions(req, campaignId);
+      }
+    }
+
+    if (path.startsWith("/campaigns/") && method === "PUT") {
+      const campaignId = path.split("/")[2];
+      return await updateCampaign(req, campaignId);
+    }
+
+    if (path === "/contributions" && method === "POST") {
+      return await makeContribution(req);
+    }
+
+    if (
+      path.startsWith("/contributions/") &&
+      path.endsWith("/repay") &&
+      method === "PUT"
+    ) {
+      const contributionId = path.split("/")[2];
+      return await markLoanRepaid(req, contributionId);
+    }
+
+    // Default route
+    return createResponse(
+      {
+        service: "FriendFund API",
+        version: "2.0.0",
+        endpoints: [
+          "POST /auth/register",
+          "POST /auth/login",
+          "POST /auth/verify-otp",
+          "GET /auth/user",
+          "POST /campaigns",
+          "GET /campaigns",
+          "GET /campaigns/:id",
+          "PUT /campaigns/:id",
+          "GET /campaigns/:id/contributions",
+          "POST /contributions",
+          "PUT /contributions/:id/repay",
+        ],
+      },
+      200,
+      "FriendFund API is running"
+    );
+  } catch (err) {
+    error("Unhandled error:", err);
+    return handleError(err, "Internal server error");
+  }
+};
