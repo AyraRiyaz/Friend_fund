@@ -57,9 +57,25 @@ class AuthController extends GetxController {
     try {
       final profile = await AppwriteService.getUserProfile(userId);
       _userProfile.value = profile;
+      print('User profile loaded successfully');
     } catch (e) {
       print('Failed to load user profile: $e');
-      // Profile might not exist yet, that's okay
+      // If profile doesn't exist, we can create a basic one using Appwrite Auth data
+      if (_appwriteUser.value != null) {
+        try {
+          print('Attempting to create missing user profile...');
+          final profile = await AppwriteService.createUserProfile(
+            userId: userId,
+            name: _appwriteUser.value!.name,
+            phoneNumber: '', // We don't have phone number from auth, user can add it later
+            email: _appwriteUser.value!.email,
+          );
+          _userProfile.value = profile;
+          print('Created missing user profile successfully');
+        } catch (createError) {
+          print('Failed to create missing user profile: $createError');
+        }
+      }
     }
   }
 
@@ -75,6 +91,8 @@ class AuthController extends GetxController {
       _isLoading.value = true;
       _errorMessage.value = '';
 
+      print('Starting registration for: $email with name: $name and phone: $phoneNumber');
+
       // Create account in Appwrite Auth
       final user = await AppwriteService.createAccount(
         email: email,
@@ -82,26 +100,38 @@ class AuthController extends GetxController {
         name: name,
       );
 
+      print('Appwrite Auth user created successfully: ${user.$id}');
+
       // Automatically login after registration
       final session = await AppwriteService.createEmailSession(
         email: email,
         password: password,
       );
 
+      print('Session created successfully: ${session.$id}');
+
       // Store authentication token
       await AuthTokenService.storeToken(session.$id, user.$id);
 
       // Create user profile directly in Appwrite database
-      final profile = await AppwriteService.createUserProfile(
-        userId: user.$id,
-        name: name,
-        phoneNumber: phoneNumber,
-        email: email,
-        upiId: upiId,
-      );
+      try {
+        final profile = await AppwriteService.createUserProfile(
+          userId: user.$id,
+          name: name,
+          phoneNumber: phoneNumber,
+          email: email,
+          upiId: upiId,
+        );
+
+        print('User profile created successfully in database');
+        _userProfile.value = profile;
+      } catch (profileError) {
+        print('Failed to create user profile: $profileError');
+        // Even if profile creation fails, we still have a valid auth user
+        // We'll try to create the profile again when the user logs in next time
+      }
 
       _appwriteUser.value = user;
-      _userProfile.value = profile;
       _authStatus.value = AuthStatus.authenticated;
 
       Get.snackbar(
@@ -112,6 +142,7 @@ class AuthController extends GetxController {
 
       return true;
     } catch (e) {
+      print('Registration error: $e');
       _errorMessage.value = e.toString();
       Get.snackbar(
         'Registration Failed',

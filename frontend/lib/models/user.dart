@@ -21,13 +21,13 @@ class User {
     return User(
       id: json['id'] ?? json['\$id'] ?? '',
       name: json['name'] ?? '',
-      phoneNumber: json['phoneNumber'] ?? '',
+      phoneNumber: json['mobileNumber'] ?? json['phoneNumber'] ?? '', // Support both field names
       email: json['email'] ?? '',
       upiId: json['upiId'],
       profileImage: json['profileImage'],
-      joinedAt: json['joinedAt'] != null
-          ? DateTime.parse(json['joinedAt'])
-          : DateTime.now(),
+      joinedAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : (json['joinedAt'] != null ? DateTime.parse(json['joinedAt']) : DateTime.now()),
     );
   }
 
@@ -35,11 +35,12 @@ class User {
     return {
       'id': id,
       'name': name,
-      'phoneNumber': phoneNumber,
+      'mobileNumber': phoneNumber, // Use mobileNumber to match database schema
       'email': email,
       'upiId': upiId,
       'profileImage': profileImage,
-      'joinedAt': joinedAt.toIso8601String(),
+      'createdAt': joinedAt.toIso8601String(),
+      'updatedAt': DateTime.now().toIso8601String(),
     };
   }
 }

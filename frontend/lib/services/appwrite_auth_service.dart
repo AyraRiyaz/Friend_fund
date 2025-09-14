@@ -145,22 +145,33 @@ class AppwriteService {
     String? profileImage,
   }) async {
     try {
+      print('Creating user profile with data:');
+      print('UserId: $userId');
+      print('Name: $name');
+      print('Phone: $phoneNumber');
+      print('Email: $email');
+      print('UPI: $upiId');
+      print('Database ID: ${AppwriteConfig.databaseId}');
+      print('Collection ID: ${AppwriteConfig.usersCollectionId}');
+
       final document = await _databases.createDocument(
         databaseId: AppwriteConfig.databaseId,
         collectionId: AppwriteConfig.usersCollectionId,
         documentId: userId,
         data: {
           'name': name,
-          'phoneNumber': phoneNumber,
+          'mobileNumber': phoneNumber, // Fixed: using mobileNumber to match database schema
           'email': email,
           'upiId': upiId,
-          'profileImage': profileImage,
-          'joinedAt': DateTime.now().toIso8601String(),
+          'createdAt': DateTime.now().toIso8601String(),
+          'updatedAt': DateTime.now().toIso8601String(),
         },
       );
 
+      print('User profile document created successfully: ${document.data}');
       return app_user.User.fromJson(document.data);
     } catch (e) {
+      print('Error creating user profile: $e');
       throw _handleAppwriteException(e);
     }
   }
@@ -189,9 +200,10 @@ class AppwriteService {
     try {
       final updateData = <String, dynamic>{};
       if (name != null) updateData['name'] = name;
-      if (phoneNumber != null) updateData['phoneNumber'] = phoneNumber;
+      if (phoneNumber != null) updateData['mobileNumber'] = phoneNumber; // Fixed: using mobileNumber
       if (upiId != null) updateData['upiId'] = upiId;
       if (profileImage != null) updateData['profileImage'] = profileImage;
+      updateData['updatedAt'] = DateTime.now().toIso8601String(); // Always update timestamp
 
       final document = await _databases.updateDocument(
         databaseId: AppwriteConfig.databaseId,
@@ -208,7 +220,9 @@ class AppwriteService {
 
   // Error Handling
   static String _handleAppwriteException(dynamic e) {
+    print('Appwrite Exception: $e'); // Add logging
     if (e is AppwriteException) {
+      print('Appwrite Exception Code: ${e.code}, Message: ${e.message}');
       switch (e.code) {
         case 401:
           return 'Invalid credentials. Please check your email and password.';
@@ -218,10 +232,14 @@ class AppwriteService {
           return 'Too many requests. Please try again later.';
         case 400:
           return e.message ?? 'Invalid request. Please check your input.';
+        case 404:
+          return 'Resource not found. Please check your configuration.';
+        case 500:
+          return 'Server error. Please try again later.';
         default:
           return e.message ?? 'An error occurred. Please try again.';
       }
     }
-    return 'An unexpected error occurred. Please try again.';
+    return 'An unexpected error occurred: $e';
   }
 }
