@@ -23,6 +23,13 @@ class CampaignController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    _initializeWithBackendTest();
+  }
+
+  Future<void> _initializeWithBackendTest() async {
+    // Test backend connectivity first
+    await ApiService.testBackendConnectivity();
+    // Then load campaigns
     loadCampaigns();
   }
 

@@ -122,6 +122,19 @@ class AuthController extends GetxController {
         'Starting registration for: $email with name: $name and phone: $cleanPhoneNumber',
       );
 
+      // Check if user is already authenticated and logout first
+      if (_authStatus.value == AuthStatus.authenticated) {
+        try {
+          await AppwriteService.logout();
+          print('Logged out existing user before registration');
+          _authStatus.value = AuthStatus.unauthenticated;
+          _appwriteUser.value = null;
+          _userProfile.value = null;
+        } catch (e) {
+          print('Error logging out existing user: $e');
+        }
+      }
+
       // Create account in Appwrite Auth
       final user = await AppwriteService.createAccount(
         email: email,
@@ -131,15 +144,7 @@ class AuthController extends GetxController {
 
       print('Appwrite Auth user created successfully: ${user.$id}');
 
-      // Check if there's already an active session and delete it first
-      try {
-        await AppwriteService.logout();
-        print('Deleted existing session before creating new one');
-      } catch (e) {
-        print('No existing session to delete: $e');
-      }
-
-      // Automatically login after registration
+      // Create session for the new user
       final session = await AppwriteService.createEmailSession(
         email: email,
         password: password,

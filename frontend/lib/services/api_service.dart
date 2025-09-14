@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:appwrite/appwrite.dart';
 import '../config/appwrite_config.dart';
 import '../models/campaign.dart';
 import '../models/user.dart' as app_user;
 import 'auth_token_service.dart';
+import 'appwrite_auth_service.dart';
 
 class ApiService {
   static const String baseUrl = AppwriteConfig.backendFunctionUrl;
@@ -49,15 +51,24 @@ class ApiService {
       print('Method: $method');
       print('Body: ${body != null ? jsonEncode(body) : 'null'}');
       print('Request Body: ${jsonEncode(requestBody)}');
+      print('Base URL: $baseUrl');
 
       final headers = await _getHeaders(userId: userId);
+      print('Headers: $headers');
+
       final response = await http.post(
         Uri.parse(baseUrl),
         headers: headers,
         body: jsonEncode(requestBody),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Request timeout - Backend function may be sleeping or unreachable');
+        },
       );
 
       print('Response Status: ${response.statusCode}');
+      print('Response Headers: ${response.headers}');
       print('Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
@@ -67,9 +78,19 @@ class ApiService {
         } else {
           throw Exception(responseData['message'] ?? 'API request failed');
         }
+      } else if (response.statusCode == 404) {
+        throw Exception('Backend function not found - Check if the function is deployed');
+      } else if (response.statusCode >= 500) {
+        throw Exception('Backend server error (${response.statusCode}) - Function may be down');
       } else {
         throw Exception('HTTP ${response.statusCode}: ${response.body}');
       }
+    } on http.ClientException catch (e) {
+      print('Network error details: $e');
+      throw Exception('Network connection failed - Check your internet connection and backend function URL');
+    } on FormatException catch (e) {
+      print('JSON parsing error: $e');
+      throw Exception('Invalid response format from backend');
     } catch (e) {
       print('API Error: $e');
       throw Exception('Network error: $e');
@@ -80,9 +101,22 @@ class ApiService {
   static Future<bool> healthCheck() async {
     try {
       final result = await _makeRequest(path: '/health', method: 'GET');
-      return result['success'] == true;
+      print('Backend health check successful: ${result['message']}');
+      return true;
     } catch (e) {
+      print('Backend health check failed: $e');
       return false;
+    }
+  }
+
+  // Test backend connectivity and provide user feedback
+  static Future<void> testBackendConnectivity() async {
+    print('Testing backend connectivity...');
+    final isHealthy = await healthCheck();
+    if (!isHealthy) {
+      print('Warning: Backend function is not responding. Using direct database access.');
+    } else {
+      print('Backend function is working properly.');
     }
   }
 
@@ -146,10 +180,36 @@ class ApiService {
 
   // Campaign Management
   static Future<List<Campaign>> getCampaigns() async {
-    final result = await _makeRequest(path: '/campaigns', method: 'GET');
+    try {
+      final result = await _makeRequest(path: '/campaigns', method: 'GET');
+      final campaignsData = result['data'] as List;
+      return campaignsData.map((json) => Campaign.fromJson(json)).toList();
+    } catch (e) {
+      print('Backend API failed, trying direct Appwrite access: $e');
+      // Fallback to direct Appwrite database access
+      return await _getCampaignsDirectly();
+    }
+  }
 
-    final campaignsData = result['data'] as List;
-    return campaignsData.map((json) => Campaign.fromJson(json)).toList();
+  static Future<List<Campaign>> _getCampaignsDirectly() async {
+    try {
+      final documents = await AppwriteService.databases.listDocuments(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.campaignsCollectionId,
+        queries: [
+          Query.equal('status', 'active'),
+          Query.orderDesc('\$createdAt'),
+        ],
+      );
+
+      return documents.documents.map((doc) {
+        final data = doc.data;
+        data['\$id'] = doc.$id; // Add the document ID
+        return Campaign.fromJson(data);
+      }).toList();
+    } catch (e) {
+      throw Exception('Failed to load campaigns: $e');
+    }
   }
 
   static Future<Campaign> getCampaign(String campaignId) async {
@@ -180,20 +240,77 @@ class ApiService {
     required double targetAmount,
     DateTime? dueDate,
   }) async {
-    final result = await _makeRequest(
-      path: '/campaigns',
-      method: 'POST',
-      userId: userId,
-      body: {
-        'title': title,
-        'description': description,
-        'purpose': purpose,
-        'targetAmount': targetAmount,
-        if (dueDate != null) 'dueDate': dueDate.toIso8601String(),
-      },
-    );
+    try {
+      final result = await _makeRequest(
+        path: '/campaigns',
+        method: 'POST',
+        userId: userId,
+        body: {
+          'title': title,
+          'description': description,
+          'purpose': purpose,
+          'targetAmount': targetAmount,
+          if (dueDate != null) 'dueDate': dueDate.toIso8601String(),
+        },
+      );
 
-    return Campaign.fromJson(result['data']);
+      return Campaign.fromJson(result['data']);
+    } catch (e) {
+      print('Backend API failed, trying direct Appwrite access: $e');
+      // Fallback to direct Appwrite database access
+      return await _createCampaignDirectly(
+        userId: userId,
+        title: title,
+        description: description,
+        purpose: purpose,
+        targetAmount: targetAmount,
+        dueDate: dueDate,
+      );
+    }
+  }
+
+  static Future<Campaign> _createCampaignDirectly({
+    required String userId,
+    required String title,
+    required String description,
+    required String purpose,
+    required double targetAmount,
+    DateTime? dueDate,
+  }) async {
+    try {
+      // Get user name for hostName
+      String hostName = 'Unknown User';
+      try {
+        final userProfile = await AppwriteService.getUserProfile(userId);
+        hostName = userProfile.name;
+      } catch (e) {
+        print('Could not get user name: $e');
+      }
+
+      final document = await AppwriteService.databases.createDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.campaignsCollectionId,
+        documentId: ID.unique(),
+        data: {
+          'hostId': userId,
+          'hostName': hostName,
+          'title': title,
+          'description': description,
+          'purpose': purpose,
+          'targetAmount': targetAmount,
+          'collectedAmount': 0,
+          'status': 'active',
+          if (dueDate != null) 'dueDate': dueDate.toIso8601String(),
+        },
+      );
+
+      final data = document.data;
+      data['\$id'] = document.$id;
+      data['contributions'] = []; // Empty contributions list
+      return Campaign.fromJson(data);
+    } catch (e) {
+      throw Exception('Failed to create campaign: $e');
+    }
   }
 
   static Future<Campaign> updateCampaign({
