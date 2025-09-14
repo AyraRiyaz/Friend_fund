@@ -1060,36 +1060,29 @@ async function createCampaign(payload, userId, res, log, corsHeaders) {
     campaignData
   );
 
-  // Generate campaign link and QR code
+  // Generate campaign link and QR code (for response only)
   const campaignLink = Utils.generateCampaignLink(campaign.$id);
   const qrCodeUrl = await generateQRCode(campaign.$id);
 
-  // Update campaign with link and QR
-  const updatedCampaign = await databases.updateDocument(
-    config.databaseId,
-    config.collections.campaigns,
-    campaign.$id,
-    {
-      campaignLink,
-      qrCodeUrl,
-    }
-  );
+  // Note: campaignLink and qrCodeUrl are generated dynamically and not stored in DB
 
   log(`Campaign created: ${campaign.$id}`);
 
   // Return formatted response
   const formattedCampaign = {
-    id: updatedCampaign.$id,
-    title: updatedCampaign.title,
-    description: updatedCampaign.description,
-    purpose: updatedCampaign.purpose,
-    targetAmount: updatedCampaign.targetAmount,
-    collectedAmount: updatedCampaign.collectedAmount,
-    hostId: updatedCampaign.hostId,
+    id: campaign.$id,
+    title: campaign.title,
+    description: campaign.description,
+    purpose: campaign.purpose,
+    targetAmount: campaign.targetAmount,
+    collectedAmount: campaign.collectedAmount,
+    hostId: campaign.hostId,
     hostName: hostName,
-    createdAt: updatedCampaign.$createdAt,
-    dueDate: updatedCampaign.dueDate || null,
-    status: updatedCampaign.status,
+    createdAt: campaign.$createdAt,
+    dueDate: campaign.dueDate || null,
+    status: campaign.status,
+    campaignLink: campaignLink,
+    qrCodeUrl: qrCodeUrl,
     contributions: [],
   };
 
