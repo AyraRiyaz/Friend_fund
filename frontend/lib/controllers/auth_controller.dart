@@ -108,8 +108,14 @@ class AuthController extends GetxController {
 
       // Basic phone number validation (remove any spaces/special chars)
       final cleanPhoneNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+      print('Original phone: $phoneNumber');
+      print('Cleaned phone: $cleanPhoneNumber');
+      print('Cleaned phone length: ${cleanPhoneNumber.length}');
+
       if (cleanPhoneNumber.length < 10) {
-        throw Exception('Please enter a valid phone number');
+        throw Exception(
+          'Please enter a valid phone number (minimum 10 digits)',
+        );
       }
 
       print(
@@ -124,6 +130,14 @@ class AuthController extends GetxController {
       );
 
       print('Appwrite Auth user created successfully: ${user.$id}');
+
+      // Check if there's already an active session and delete it first
+      try {
+        await AppwriteService.logout();
+        print('Deleted existing session before creating new one');
+      } catch (e) {
+        print('No existing session to delete: $e');
+      }
 
       // Automatically login after registration
       final session = await AppwriteService.createEmailSession(
@@ -141,7 +155,7 @@ class AuthController extends GetxController {
         print('Attempting to create user profile in database...');
         print('User ID: ${user.$id}');
         print('Name: $name');
-        print('Phone: $phoneNumber');
+        print('Phone (cleaned): $cleanPhoneNumber');
         print('Email: $email');
         print('UPI ID: $upiId');
 

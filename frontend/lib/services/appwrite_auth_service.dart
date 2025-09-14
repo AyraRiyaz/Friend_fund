@@ -159,13 +159,27 @@ class AppwriteService {
       print('Database ID: ${AppwriteConfig.databaseId}');
       print('Collection ID: ${AppwriteConfig.usersCollectionId}');
 
-      // Validate required fields
-      if (userId.isEmpty ||
-          name.isEmpty ||
-          phoneNumber.isEmpty ||
-          email.isEmpty) {
-        throw Exception('Missing required fields for user profile creation');
+      // Validate required fields with detailed logging
+      print('Validating fields...');
+      print('UserId isEmpty: ${userId.isEmpty}');
+      print('Name isEmpty: ${name.isEmpty}');
+      print('PhoneNumber isEmpty: ${phoneNumber.isEmpty}');
+      print('Email isEmpty: ${email.isEmpty}');
+
+      if (userId.isEmpty) {
+        throw Exception('Missing userId for user profile creation');
       }
+      if (name.isEmpty) {
+        throw Exception('Missing name for user profile creation');
+      }
+      if (phoneNumber.isEmpty) {
+        throw Exception('Missing phoneNumber for user profile creation');
+      }
+      if (email.isEmpty) {
+        throw Exception('Missing email for user profile creation');
+      }
+
+      print('All required fields validated successfully');
 
       final document = await _databases.createDocument(
         databaseId: AppwriteConfig.databaseId,
