@@ -34,16 +34,12 @@ class AppwriteService {
     String? phoneNumber,
   }) async {
     try {
-      print('Creating Appwrite Auth account for: $email with name: $name');
-
       final user = await _account.create(
         userId: ID.unique(),
         email: email,
         password: password,
         name: name,
       );
-
-      print('Appwrite Auth account created successfully: ${user.$id}');
 
       // Store phone number in the actual phone field of Appwrite Auth
       if (phoneNumber != null && phoneNumber.isNotEmpty) {
@@ -57,20 +53,15 @@ class AppwriteService {
           // Update phone number in the auth account phone field
           await _account.updatePhone(phone: phoneNumber, password: password);
 
-          print('Phone number updated successfully in auth phone field');
-
           // Logout after updating phone (since we want manual login flow)
           await _account.deleteSession(sessionId: 'current');
-          print('Logged out after phone update');
         } catch (phoneError) {
-          print('Error updating phone number in auth field: $phoneError');
           // Continue without failing the registration
         }
       }
 
       return user;
     } catch (e) {
-      print('Error creating Appwrite Auth account: $e');
       throw _handleAppwriteException(e);
     }
   }
@@ -172,11 +163,6 @@ class AppwriteService {
     String? profileImage,
   }) async {
     try {
-      print('Creating user profile preferences...');
-      print('UserId: $userId');
-      print('UPI: $upiId');
-      print('Profile Image: $profileImage');
-
       // Store only UPI ID and profile image in preferences
       // (phone is in auth phone field, name and email in auth account)
       await _account.updatePrefs(
@@ -187,8 +173,6 @@ class AppwriteService {
         },
       );
 
-      print('User profile preferences created successfully');
-
       // Return user object constructed from auth data and preferences
       final user = await getCurrentUserProfile();
       if (user != null) {
@@ -197,7 +181,6 @@ class AppwriteService {
         throw Exception('Failed to retrieve user after profile creation');
       }
     } catch (e) {
-      print('Error creating user profile preferences: $e');
       throw _handleAppwriteException(e);
     }
   }
@@ -219,7 +202,6 @@ class AppwriteService {
             : DateTime.now(),
       );
     } catch (e) {
-      print('Error getting current user: $e');
       return null;
     }
   }
@@ -265,9 +247,7 @@ class AppwriteService {
       if (phoneNumber != null && phoneNumber.isNotEmpty && password != null) {
         try {
           await _account.updatePhone(phone: phoneNumber, password: password);
-          print('Phone number updated successfully in auth phone field');
         } catch (phoneError) {
-          print('Error updating phone number: $phoneError');
           // Note: Phone update might fail if password is incorrect or other validation issues
         }
       }
@@ -299,9 +279,7 @@ class AppwriteService {
 
   // Error Handling
   static String _handleAppwriteException(dynamic e) {
-    print('Appwrite Exception: $e'); // Add logging
     if (e is AppwriteException) {
-      print('Appwrite Exception Code: ${e.code}, Message: ${e.message}');
       switch (e.code) {
         case 401:
           return 'Invalid credentials. Please check your email and password.';

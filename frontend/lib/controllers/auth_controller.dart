@@ -47,7 +47,6 @@ class AuthController extends GetxController {
       }
     } catch (e) {
       _authStatus.value = AuthStatus.unauthenticated;
-      print('Auth check error: $e');
     } finally {
       _isLoading.value = false;
     }
@@ -58,25 +57,17 @@ class AuthController extends GetxController {
     try {
       final profile = await AppwriteService.getCurrentUserProfile();
       _userProfile.value = profile;
-      if (profile != null) {
-        print('User profile loaded successfully from preferences');
-      } else {
-        print('No user profile found in preferences');
-      }
     } catch (e) {
-      print('Failed to load user profile: $e');
       // If profile doesn't exist in preferences, we can create a basic one
       if (_appwriteUser.value != null) {
         try {
-          print('Attempting to create missing user profile in preferences...');
           final profile = await AppwriteService.createUserProfile(
             userId: userId,
             // UPI ID can be added later by the user
           );
           _userProfile.value = profile;
-          print('Created missing user profile successfully');
         } catch (createError) {
-          print('Failed to create missing user profile: $createError');
+          // Handle profile creation error silently
         }
       }
     }
@@ -109,9 +100,6 @@ class AuthController extends GetxController {
 
       // Basic phone number validation (remove any spaces/special chars)
       final cleanPhoneNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
-      print('Original phone: $phoneNumber');
-      print('Cleaned phone: $cleanPhoneNumber');
-      print('Cleaned phone length: ${cleanPhoneNumber.length}');
 
       if (cleanPhoneNumber.length < 10) {
         throw Exception(
@@ -119,20 +107,15 @@ class AuthController extends GetxController {
         );
       }
 
-      print(
-        'Starting registration for: $email with name: $name and phone: $cleanPhoneNumber',
-      );
-
       // Check if user is already authenticated and logout first
       if (_authStatus.value == AuthStatus.authenticated) {
         try {
           await AppwriteService.logout();
-          print('Logged out existing user before registration');
           _authStatus.value = AuthStatus.unauthenticated;
           _appwriteUser.value = null;
           _userProfile.value = null;
         } catch (e) {
-          print('Error logging out existing user: $e');
+          // Handle logout error silently
         }
       }
 
@@ -144,12 +127,9 @@ class AuthController extends GetxController {
         phoneNumber: cleanPhoneNumber,
       );
 
-      print('Appwrite Auth user created successfully: ${user.$id}');
-
       // If UPI ID is provided, store it in preferences now
       if (upiId != null && upiId.isNotEmpty) {
         try {
-          print('Storing UPI ID in preferences: $upiId');
           // Create temporary session to store UPI ID
           await AppwriteService.createEmailSession(
             email: email,
@@ -164,9 +144,7 @@ class AuthController extends GetxController {
 
           // Logout after storing UPI ID (since we want manual login flow)
           await AppwriteService.logout();
-          print('UPI ID stored successfully and logged out');
         } catch (upiError) {
-          print('Error storing UPI ID: $upiError');
           // Continue without failing the registration
         }
       }
@@ -181,7 +159,6 @@ class AuthController extends GetxController {
       );
       return true;
     } catch (e) {
-      print('Registration error: $e');
       _errorMessage.value = e.toString();
       Get.snackbar(
         'Registration Failed',
@@ -380,7 +357,7 @@ class AuthController extends GetxController {
       // Clear stored authentication data
       await AuthTokenService.clearAuth();
     } catch (e) {
-      print('Logout error: $e');
+      // Handle logout error silently
     } finally {
       _appwriteUser.value = null;
       _userProfile.value = null;
@@ -398,7 +375,7 @@ class AuthController extends GetxController {
       // Clear stored authentication data
       await AuthTokenService.clearAuth();
     } catch (e) {
-      print('Logout from all devices error: $e');
+      // Handle logout error silently
     } finally {
       _appwriteUser.value = null;
       _userProfile.value = null;

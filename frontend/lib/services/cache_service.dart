@@ -69,9 +69,8 @@ class CacheService {
         _userProfileCacheTimeKey,
         DateTime.now().millisecondsSinceEpoch,
       );
-      print('Cached user profile for: ${user.name}');
     } catch (e) {
-      print('Error caching user profile: $e');
+      // Handle caching error silently
     }
   }
 
@@ -91,10 +90,8 @@ class CacheService {
       if (userJson == null) return null;
 
       final user = app_user.User.fromJson(userJson);
-      print('Retrieved user profile from cache: ${user.name}');
       return user;
     } catch (e) {
-      print('Error retrieving cached user profile: $e');
       return null;
     }
   }

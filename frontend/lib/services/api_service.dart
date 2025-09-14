@@ -27,7 +27,7 @@ class ApiService {
         headers['Authorization'] = 'Bearer $token';
       }
     } catch (e) {
-      print('Error getting auth headers: $e');
+      // Handle auth header error silently
     }
 
     return headers;
@@ -296,7 +296,7 @@ class ApiService {
         final userProfile = await AppwriteService.getUserProfile(userId);
         hostName = userProfile.name;
       } catch (e) {
-        print('Could not get user name: $e');
+        // Handle user name error silently
       }
 
       final document = await AppwriteService.databases.createDocument(
