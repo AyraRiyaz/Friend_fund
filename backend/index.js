@@ -861,7 +861,7 @@ async function getAllCampaigns(res, log, error, corsHeaders) {
             collectedAmount: campaign.collectedAmount,
             hostId: campaign.hostId,
             hostName: hostUser.name,
-            createdAt: campaign.createdAt,
+            createdAt: campaign.$createdAt,
             dueDate: campaign.dueDate || null,
             status: campaign.status,
             contributions: [], // Will be populated when needed
@@ -889,7 +889,7 @@ async function getAllCampaigns(res, log, error, corsHeaders) {
             collectedAmount: campaign.collectedAmount,
             hostId: campaign.hostId,
             hostName: "Unknown User",
-            createdAt: campaign.createdAt,
+            createdAt: campaign.$createdAt,
             dueDate: campaign.dueDate || null,
             status: campaign.status,
             contributions: [],
@@ -966,7 +966,7 @@ async function getCampaign(campaignId, res, log, corsHeaders) {
     collectedAmount: campaign.collectedAmount,
     hostId: campaign.hostId,
     hostName: hostName,
-    createdAt: campaign.createdAt,
+    createdAt: campaign.$createdAt,
     dueDate: campaign.dueDate || null,
     status: campaign.status,
     contributions: formattedContributions,
@@ -1005,7 +1005,7 @@ async function getUserCampaigns(userId, res, corsHeaders) {
     collectedAmount: campaign.collectedAmount,
     hostId: campaign.hostId,
     hostName: hostName,
-    createdAt: campaign.createdAt,
+    createdAt: campaign.$createdAt,
     dueDate: campaign.dueDate || null,
     status: campaign.status,
     contributions: [], // Will be populated when needed
@@ -1047,8 +1047,6 @@ async function createCampaign(payload, userId, res, log, corsHeaders) {
     targetAmount: Utils.sanitizeAmount(payload.targetAmount),
     collectedAmount: 0,
     status: "active",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
   };
 
   if (payload.dueDate) {
@@ -1074,7 +1072,6 @@ async function createCampaign(payload, userId, res, log, corsHeaders) {
     {
       campaignLink,
       qrCodeUrl,
-      updatedAt: new Date().toISOString(),
     }
   );
 
@@ -1090,7 +1087,7 @@ async function createCampaign(payload, userId, res, log, corsHeaders) {
     collectedAmount: updatedCampaign.collectedAmount,
     hostId: updatedCampaign.hostId,
     hostName: hostName,
-    createdAt: updatedCampaign.createdAt,
+    createdAt: updatedCampaign.$createdAt,
     dueDate: updatedCampaign.dueDate || null,
     status: updatedCampaign.status,
     contributions: [],
@@ -1119,9 +1116,7 @@ async function updateCampaign(campaignId, payload, userId, res, corsHeaders) {
     );
   }
 
-  const updateData = {
-    updatedAt: new Date().toISOString(),
-  };
+  const updateData = {};
 
   // Only update allowed fields
   if (payload.title) updateData.title = payload.title.trim();
@@ -1383,7 +1378,6 @@ async function createContribution(payload, userId, res, log, corsHeaders) {
     repaymentStatus: payload.type === "loan" ? "pending" : "na",
     isAnonymous: payload.isAnonymous || false,
     paymentScreenshotUrl: payload.paymentScreenshotUrl || "",
-    createdAt: new Date().toISOString(),
   };
 
   if (payload.type === "loan" && payload.repaymentDueDate) {
@@ -1407,7 +1401,6 @@ async function createContribution(payload, userId, res, log, corsHeaders) {
     payload.campaignId,
     {
       collectedAmount: newCollectedAmount,
-      updatedAt: new Date().toISOString(),
     }
   );
 
