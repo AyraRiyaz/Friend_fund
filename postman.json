@@ -1,0 +1,1022 @@
+{
+  "info": {
+    "name": "FriendFund API Collection",
+    "description": "Complete API collection for FriendFund - A peer-to-peer fundraising platform",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "key",
+        "value": "x-appwrite-user-id",
+        "type": "string"
+      },
+      {
+        "key": "value",
+        "value": "{{userId}}",
+        "type": "string"
+      },
+      {
+        "key": "in",
+        "value": "header",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://cloud.appwrite.io/v1/functions/friendfund-backend/executions",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "user123",
+      "type": "string"
+    },
+    {
+      "key": "campaignId",
+      "value": "campaign123",
+      "type": "string"
+    },
+    {
+      "key": "contributionId",
+      "value": "contribution123",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Get Health Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "response": [
+            {
+              "name": "Health Check Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/health",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["health"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Backend is healthy\",\n  \"data\": {\n    \"timestamp\": \"2025-09-11T10:30:00.000Z\",\n    \"version\": \"1.0.0\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Campaigns",
+      "item": [
+        {
+          "name": "Get All Campaigns",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/campaigns",
+              "host": ["{{baseUrl}}"],
+              "path": ["campaigns"]
+            }
+          },
+          "response": [
+            {
+              "name": "Get All Campaigns Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/campaigns",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["campaigns"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Campaigns retrieved successfully\",\n  \"data\": [\n    {\n      \"$id\": \"campaign123\",\n      \"$createdAt\": \"2025-09-10T10:00:00.000Z\",\n      \"$updatedAt\": \"2025-09-10T10:00:00.000Z\",\n      \"hostId\": \"user123\",\n      \"title\": \"Help Sarah with Medical Bills\",\n      \"description\": \"Sarah needs help with her medical expenses after a recent surgery. Any contribution would be greatly appreciated.\",\n      \"purpose\": \"Medical Emergency\",\n      \"targetAmount\": 50000,\n      \"collectedAmount\": 15000,\n      \"status\": \"active\",\n      \"campaignLink\": \"https://friendfund.pro26.in/c/campaign123\",\n      \"qrCodeUrl\": \"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://friendfund.pro26.in/c/campaign123\",\n      \"createdAt\": \"2025-09-10T10:00:00.000Z\",\n      \"updatedAt\": \"2025-09-10T10:00:00.000Z\"\n    },\n    {\n      \"$id\": \"campaign456\",\n      \"$createdAt\": \"2025-09-09T15:30:00.000Z\",\n      \"$updatedAt\": \"2025-09-09T15:30:00.000Z\",\n      \"hostId\": \"user456\",\n      \"title\": \"Emergency Fund for John's Family\",\n      \"description\": \"John's family needs urgent financial support after losing their home in a fire.\",\n      \"purpose\": \"Emergency Support\",\n      \"targetAmount\": 100000,\n      \"collectedAmount\": 25000,\n      \"status\": \"active\",\n      \"campaignLink\": \"https://friendfund.pro26.in/c/campaign456\",\n      \"qrCodeUrl\": \"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://friendfund.pro26.in/c/campaign456\",\n      \"createdAt\": \"2025-09-09T15:30:00.000Z\",\n      \"updatedAt\": \"2025-09-09T15:30:00.000Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Campaign by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/campaigns/{{campaignId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["campaigns", "{{campaignId}}"]
+            }
+          },
+          "response": [
+            {
+              "name": "Get Campaign Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/campaigns/campaign123",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["campaigns", "campaign123"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Campaign retrieved successfully\",\n  \"data\": {\n    \"$id\": \"campaign123\",\n    \"$createdAt\": \"2025-09-10T10:00:00.000Z\",\n    \"$updatedAt\": \"2025-09-10T10:00:00.000Z\",\n    \"hostId\": \"user123\",\n    \"title\": \"Help Sarah with Medical Bills\",\n    \"description\": \"Sarah needs help with her medical expenses after a recent surgery. Any contribution would be greatly appreciated.\",\n    \"purpose\": \"Medical Emergency\",\n    \"targetAmount\": 50000,\n    \"collectedAmount\": 15000,\n    \"status\": \"active\",\n    \"campaignLink\": \"https://friendfund.pro26.in/c/campaign123\",\n    \"qrCodeUrl\": \"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://friendfund.pro26.in/c/campaign123\",\n    \"repaymentDueDate\": \"2025-12-31T23:59:59.000Z\",\n    \"createdAt\": \"2025-09-10T10:00:00.000Z\",\n    \"updatedAt\": \"2025-09-10T10:00:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "Campaign Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/campaigns/invalid-id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["campaigns", "invalid-id"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Campaign not found\",\n  \"error\": \"Document with the requested ID could not be found.\",\n  \"code\": 404\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get User Campaigns",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-appwrite-user-id",
+                "value": "{{userId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/campaigns/user",
+              "host": ["{{baseUrl}}"],
+              "path": ["campaigns", "user"]
+            }
+          },
+          "response": [
+            {
+              "name": "Get User Campaigns Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-appwrite-user-id",
+                    "value": "user123"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/campaigns/user",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["campaigns", "user"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"User campaigns retrieved successfully\",\n  \"data\": [\n    {\n      \"$id\": \"campaign123\",\n      \"$createdAt\": \"2025-09-10T10:00:00.000Z\",\n      \"$updatedAt\": \"2025-09-10T10:00:00.000Z\",\n      \"hostId\": \"user123\",\n      \"title\": \"Help Sarah with Medical Bills\",\n      \"description\": \"Sarah needs help with her medical expenses after a recent surgery.\",\n      \"purpose\": \"Medical Emergency\",\n      \"targetAmount\": 50000,\n      \"collectedAmount\": 15000,\n      \"status\": \"active\",\n      \"campaignLink\": \"https://friendfund.pro26.in/c/campaign123\",\n      \"qrCodeUrl\": \"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://friendfund.pro26.in/c/campaign123\",\n      \"createdAt\": \"2025-09-10T10:00:00.000Z\",\n      \"updatedAt\": \"2025-09-10T10:00:00.000Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Campaign",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-appwrite-user-id",
+                "value": "{{userId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Help My Friend with College Fees\",\n  \"description\": \"My friend needs financial support to pay for their college tuition. They're a bright student who deserves a chance to complete their education.\",\n  \"purpose\": \"Education\",\n  \"targetAmount\": 75000,\n  \"repaymentDueDate\": \"2025-12-31T23:59:59.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/campaigns",
+              "host": ["{{baseUrl}}"],
+              "path": ["campaigns"]
+            }
+          },
+          "response": [
+            {
+              "name": "Create Campaign Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-appwrite-user-id",
+                    "value": "user123"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Help My Friend with College Fees\",\n  \"description\": \"My friend needs financial support to pay for their college tuition.\",\n  \"purpose\": \"Education\",\n  \"targetAmount\": 75000,\n  \"repaymentDueDate\": \"2025-12-31T23:59:59.000Z\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/campaigns",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["campaigns"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Campaign created successfully\",\n  \"data\": {\n    \"$id\": \"campaign789\",\n    \"$createdAt\": \"2025-09-11T10:30:00.000Z\",\n    \"$updatedAt\": \"2025-09-11T10:30:00.000Z\",\n    \"hostId\": \"user123\",\n    \"title\": \"Help My Friend with College Fees\",\n    \"description\": \"My friend needs financial support to pay for their college tuition. They're a bright student who deserves a chance to complete their education.\",\n    \"purpose\": \"Education\",\n    \"targetAmount\": 75000,\n    \"collectedAmount\": 0,\n    \"status\": \"active\",\n    \"campaignLink\": \"https://friendfund.pro26.in/c/campaign789\",\n    \"qrCodeUrl\": \"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://friendfund.pro26.in/c/campaign789\",\n    \"repaymentDueDate\": \"2025-12-31T23:59:59.000Z\",\n    \"createdAt\": \"2025-09-11T10:30:00.000Z\",\n    \"updatedAt\": \"2025-09-11T10:30:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "Create Campaign Validation Error",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-appwrite-user-id",
+                    "value": "user123"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"\",\n  \"description\": \"Missing required fields\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/campaigns",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["campaigns"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Validation failed\",\n  \"error\": \"Missing required fields: title, purpose, targetAmount\",\n  \"code\": 400\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Campaign",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-appwrite-user-id",
+                "value": "{{userId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Campaign Title\",\n  \"description\": \"Updated description with more details about the campaign.\",\n  \"targetAmount\": 80000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/campaigns/{{campaignId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["campaigns", "{{campaignId}}"]
+            }
+          },
+          "response": [
+            {
+              "name": "Update Campaign Success",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-appwrite-user-id",
+                    "value": "user123"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Updated Campaign Title\",\n  \"description\": \"Updated description with more details.\",\n  \"targetAmount\": 80000\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/campaigns/campaign123",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["campaigns", "campaign123"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Campaign updated successfully\",\n  \"data\": {\n    \"$id\": \"campaign123\",\n    \"$createdAt\": \"2025-09-10T10:00:00.000Z\",\n    \"$updatedAt\": \"2025-09-11T10:35:00.000Z\",\n    \"hostId\": \"user123\",\n    \"title\": \"Updated Campaign Title\",\n    \"description\": \"Updated description with more details about the campaign.\",\n    \"purpose\": \"Medical Emergency\",\n    \"targetAmount\": 80000,\n    \"collectedAmount\": 15000,\n    \"status\": \"active\",\n    \"campaignLink\": \"https://friendfund.pro26.in/c/campaign123\",\n    \"qrCodeUrl\": \"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://friendfund.pro26.in/c/campaign123\",\n    \"createdAt\": \"2025-09-10T10:00:00.000Z\",\n    \"updatedAt\": \"2025-09-11T10:35:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Generate Campaign Link",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/campaigns/link/{{campaignId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["campaigns", "link", "{{campaignId}}"]
+            }
+          },
+          "response": [
+            {
+              "name": "Generate Link Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/campaigns/link/campaign123",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["campaigns", "link", "campaign123"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Campaign link generated successfully\",\n  \"data\": {\n    \"campaignId\": \"campaign123\",\n    \"campaignLink\": \"https://friendfund.pro26.in/c/campaign123\",\n    \"qrCodeUrl\": \"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://friendfund.pro26.in/c/campaign123\",\n    \"shortLink\": \"https://friendfund.pro26.in/s/xyz123\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Campaign",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-appwrite-user-id",
+                "value": "{{userId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/campaigns/{{campaignId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["campaigns", "{{campaignId}}"]
+            }
+          },
+          "response": [
+            {
+              "name": "Delete Campaign Success",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "x-appwrite-user-id",
+                    "value": "user123"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/campaigns/campaign123",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["campaigns", "campaign123"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Campaign deleted successfully\",\n  \"data\": {\n    \"campaignId\": \"campaign123\",\n    \"deletedAt\": \"2025-09-11T10:40:00.000Z\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Contributions",
+      "item": [
+        {
+          "name": "Get All Contributions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-appwrite-user-id",
+                "value": "{{userId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/contributions",
+              "host": ["{{baseUrl}}"],
+              "path": ["contributions"]
+            }
+          },
+          "response": [
+            {
+              "name": "Get All Contributions Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-appwrite-user-id",
+                    "value": "user123"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/contributions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["contributions"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Contributions retrieved successfully\",\n  \"data\": [\n    {\n      \"$id\": \"contribution123\",\n      \"$createdAt\": \"2025-09-11T09:00:00.000Z\",\n      \"$updatedAt\": \"2025-09-11T09:00:00.000Z\",\n      \"campaignId\": \"campaign123\",\n      \"contributorId\": \"user456\",\n      \"amount\": 5000,\n      \"utr\": \"UTR1234567890\",\n      \"screenshotUrl\": \"https://cloud.appwrite.io/v1/storage/buckets/screenshots/files/screenshot123/view\",\n      \"status\": \"verified\",\n      \"verifiedAt\": \"2025-09-11T09:30:00.000Z\",\n      \"createdAt\": \"2025-09-11T09:00:00.000Z\",\n      \"updatedAt\": \"2025-09-11T09:30:00.000Z\"\n    },\n    {\n      \"$id\": \"contribution456\",\n      \"$createdAt\": \"2025-09-11T08:00:00.000Z\",\n      \"$updatedAt\": \"2025-09-11T08:00:00.000Z\",\n      \"campaignId\": \"campaign456\",\n      \"contributorId\": \"user123\",\n      \"amount\": 2500,\n      \"utr\": \"UTR0987654321\",\n      \"screenshotUrl\": \"https://cloud.appwrite.io/v1/storage/buckets/screenshots/files/screenshot456/view\",\n      \"status\": \"pending\",\n      \"createdAt\": \"2025-09-11T08:00:00.000Z\",\n      \"updatedAt\": \"2025-09-11T08:00:00.000Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Campaign Contributions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/contributions/campaign/{{campaignId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["contributions", "campaign", "{{campaignId}}"]
+            }
+          },
+          "response": [
+            {
+              "name": "Get Campaign Contributions Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/contributions/campaign/campaign123",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["contributions", "campaign", "campaign123"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Campaign contributions retrieved successfully\",\n  \"data\": [\n    {\n      \"$id\": \"contribution123\",\n      \"$createdAt\": \"2025-09-11T09:00:00.000Z\",\n      \"$updatedAt\": \"2025-09-11T09:30:00.000Z\",\n      \"campaignId\": \"campaign123\",\n      \"contributorId\": \"user456\",\n      \"amount\": 5000,\n      \"utr\": \"UTR1234567890\",\n      \"screenshotUrl\": \"https://cloud.appwrite.io/v1/storage/buckets/screenshots/files/screenshot123/view\",\n      \"status\": \"verified\",\n      \"verifiedAt\": \"2025-09-11T09:30:00.000Z\",\n      \"createdAt\": \"2025-09-11T09:00:00.000Z\",\n      \"updatedAt\": \"2025-09-11T09:30:00.000Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Contribution",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-appwrite-user-id",
+                "value": "{{userId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"campaignId\": \"campaign123\",\n  \"amount\": 10000,\n  \"utr\": \"UTR1234567890\",\n  \"screenshotFile\": \"base64_encoded_image_data_here\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/contributions",
+              "host": ["{{baseUrl}}"],
+              "path": ["contributions"]
+            }
+          },
+          "response": [
+            {
+              "name": "Create Contribution Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-appwrite-user-id",
+                    "value": "user456"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"campaignId\": \"campaign123\",\n  \"amount\": 10000,\n  \"utr\": \"UTR1234567890\",\n  \"screenshotFile\": \"base64_encoded_image_data_here\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/contributions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["contributions"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Contribution created successfully\",\n  \"data\": {\n    \"$id\": \"contribution789\",\n    \"$createdAt\": \"2025-09-11T10:45:00.000Z\",\n    \"$updatedAt\": \"2025-09-11T10:45:00.000Z\",\n    \"campaignId\": \"campaign123\",\n    \"contributorId\": \"user456\",\n    \"amount\": 10000,\n    \"utr\": \"UTR1234567890\",\n    \"screenshotUrl\": \"https://cloud.appwrite.io/v1/storage/buckets/screenshots/files/screenshot789/view\",\n    \"status\": \"pending\",\n    \"createdAt\": \"2025-09-11T10:45:00.000Z\",\n    \"updatedAt\": \"2025-09-11T10:45:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Verify Contribution",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-appwrite-user-id",
+                "value": "{{userId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"verified\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/contributions/verify/{{contributionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["contributions", "verify", "{{contributionId}}"]
+            }
+          },
+          "response": [
+            {
+              "name": "Verify Contribution Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-appwrite-user-id",
+                    "value": "user123"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"verified\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/contributions/verify/contribution789",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["contributions", "verify", "contribution789"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Contribution verified successfully\",\n  \"data\": {\n    \"$id\": \"contribution789\",\n    \"$createdAt\": \"2025-09-11T10:45:00.000Z\",\n    \"$updatedAt\": \"2025-09-11T10:50:00.000Z\",\n    \"campaignId\": \"campaign123\",\n    \"contributorId\": \"user456\",\n    \"amount\": 10000,\n    \"utr\": \"UTR1234567890\",\n    \"screenshotUrl\": \"https://cloud.appwrite.io/v1/storage/buckets/screenshots/files/screenshot789/view\",\n    \"status\": \"verified\",\n    \"verifiedAt\": \"2025-09-11T10:50:00.000Z\",\n    \"createdAt\": \"2025-09-11T10:45:00.000Z\",\n    \"updatedAt\": \"2025-09-11T10:50:00.000Z\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "OCR",
+      "item": [
+        {
+          "name": "Extract Transaction Info",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-appwrite-user-id",
+                "value": "{{userId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"imageData\": \"base64_encoded_screenshot_data_here\",\n  \"imageType\": \"payment_screenshot\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ocr/extract",
+              "host": ["{{baseUrl}}"],
+              "path": ["ocr", "extract"]
+            }
+          },
+          "response": [
+            {
+              "name": "OCR Extract Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-appwrite-user-id",
+                    "value": "user123"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"imageData\": \"base64_encoded_screenshot_data_here\",\n  \"imageType\": \"payment_screenshot\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/ocr/extract",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["ocr", "extract"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Transaction information extracted successfully\",\n  \"data\": {\n    \"amount\": 5000,\n    \"utr\": \"UTR1234567890\",\n    \"confidence\": 0.95,\n    \"rawText\": \"Transaction successful\\nAmount: ₹5,000.00\\nUTR: UTR1234567890\\nTo: John Doe\\nDate: 11-09-2025 10:30 AM\",\n    \"extractedFields\": {\n      \"transactionId\": \"TXN987654321\",\n      \"recipientName\": \"John Doe\",\n      \"transactionDate\": \"2025-09-11T10:30:00.000Z\",\n      \"paymentMethod\": \"UPI\"\n    }\n  }\n}"
+            },
+            {
+              "name": "OCR Extract Low Confidence",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-appwrite-user-id",
+                    "value": "user123"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"imageData\": \"blurry_base64_image_data\",\n  \"imageType\": \"payment_screenshot\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/ocr/extract",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["ocr", "extract"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Transaction information extracted with low confidence\",\n  \"data\": {\n    \"amount\": null,\n    \"utr\": null,\n    \"confidence\": 0.35,\n    \"rawText\": \"...blurry text...\",\n    \"warning\": \"Low confidence extraction. Please verify manually.\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "QR Code",
+      "item": [
+        {
+          "name": "Get Campaign QR Code",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/qr/{{campaignId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["qr", "{{campaignId}}"]
+            }
+          },
+          "response": [
+            {
+              "name": "Get QR Code Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/qr/campaign123",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["qr", "campaign123"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"QR code generated successfully\",\n  \"data\": {\n    \"campaignId\": \"campaign123\",\n    \"qrCodeUrl\": \"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://friendfund.pro26.in/c/campaign123\",\n    \"campaignLink\": \"https://friendfund.pro26.in/c/campaign123\",\n    \"qrCodeBase64\": \"iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAYAAAB5fY51...\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Get User Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-appwrite-user-id",
+                "value": "{{userId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications"]
+            }
+          },
+          "response": [
+            {
+              "name": "Get Notifications Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-appwrite-user-id",
+                    "value": "user123"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/notifications",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["notifications"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Notifications retrieved successfully\",\n  \"data\": [\n    {\n      \"$id\": \"notification123\",\n      \"$createdAt\": \"2025-09-11T10:00:00.000Z\",\n      \"$updatedAt\": \"2025-09-11T10:00:00.000Z\",\n      \"userId\": \"user123\",\n      \"type\": \"contribution_received\",\n      \"title\": \"New Contribution Received!\",\n      \"message\": \"You received a contribution of ₹5,000 for your campaign 'Help Sarah with Medical Bills'\",\n      \"data\": {\n        \"campaignId\": \"campaign123\",\n        \"contributionId\": \"contribution123\",\n        \"amount\": 5000\n      },\n      \"isRead\": false,\n      \"createdAt\": \"2025-09-11T10:00:00.000Z\",\n      \"updatedAt\": \"2025-09-11T10:00:00.000Z\"\n    },\n    {\n      \"$id\": \"notification456\",\n      \"$createdAt\": \"2025-09-10T15:30:00.000Z\",\n      \"$updatedAt\": \"2025-09-11T09:00:00.000Z\",\n      \"userId\": \"user123\",\n      \"type\": \"campaign_milestone\",\n      \"title\": \"Campaign Milestone Reached!\",\n      \"message\": \"Your campaign has reached 50% of its target amount!\",\n      \"data\": {\n        \"campaignId\": \"campaign123\",\n        \"milestone\": 50,\n        \"currentAmount\": 25000\n      },\n      \"isRead\": true,\n      \"createdAt\": \"2025-09-10T15:30:00.000Z\",\n      \"updatedAt\": \"2025-09-11T09:00:00.000Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Mark Notification as Read",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-appwrite-user-id",
+                "value": "{{userId}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isRead\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notifications/read/notification123",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "read", "notification123"]
+            }
+          },
+          "response": [
+            {
+              "name": "Mark as Read Success",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-appwrite-user-id",
+                    "value": "user123"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isRead\": true\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/notifications/read/notification123",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["notifications", "read", "notification123"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Notification marked as read\",\n  \"data\": {\n    \"notificationId\": \"notification123\",\n    \"isRead\": true,\n    \"updatedAt\": \"2025-09-11T10:55:00.000Z\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "// Set dynamic variables if needed",
+          "pm.globals.set('timestamp', new Date().toISOString());"
+        ],
+        "type": "text/javascript"
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "exec": [
+          "// Common test cases",
+          "pm.test('Status code is successful', function () {",
+          "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202]);",
+          "});",
+          "",
+          "pm.test('Response has success property', function () {",
+          "    const jsonData = pm.response.json();",
+          "    pm.expect(jsonData).to.have.property('success');",
+          "});",
+          "",
+          "pm.test('Response time is less than 5000ms', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "// Set response data to variables for chaining requests",
+          "if (pm.response.code === 200 || pm.response.code === 201) {",
+          "    const jsonData = pm.response.json();",
+          "    if (jsonData.data && jsonData.data.$id) {",
+          "        if (pm.request.url.toString().includes('/campaigns')) {",
+          "            pm.globals.set('lastCampaignId', jsonData.data.$id);",
+          "        } else if (pm.request.url.toString().includes('/contributions')) {",
+          "            pm.globals.set('lastContributionId', jsonData.data.$id);",
+          "        }",
+          "    }",
+          "}"
+        ],
+        "type": "text/javascript"
+      }
+    }
+  ]
+}

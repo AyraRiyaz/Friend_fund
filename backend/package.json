@@ -1,0 +1,41 @@
+{
+  "name": "friendfund-backend",
+  "version": "1.0.0",
+  "description": "FriendFund unified backend function for Appwrite - handles all business logic while frontend connects directly to Appwrite for authentication",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy": "appwrite functions deploy",
+    "logs": "appwrite functions logs",
+    "dev": "appwrite functions createExecution --functionId friendfund-main --async false"
+  },
+  "keywords": [
+    "crowdfunding",
+    "appwrite",
+    "upi",
+    "ocr",
+    "node.js",
+    "backend-api",
+    "friend-fund"
+  ],
+  "author": "Ayra Riyaz <ayra@pro26.in>",
+  "license": "MIT",
+  "dependencies": {
+    "node-appwrite": "^13.0.0",
+    "qrcode": "^1.5.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ayrariyaz/FriendFund.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ayrariyaz/FriendFund/issues"
+  },
+  "homepage": "https://pro26.in",
+  "devDependencies": {},
+  "peerDependencies": {}
+}

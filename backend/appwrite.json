@@ -1,0 +1,35 @@
+{
+  "functionId": "friendfund-main",
+  "name": "FriendFund Main API",
+  "runtime": "node-18.0",
+  "execute": ["any"],
+  "events": [],
+  "schedule": "",
+  "timeout": 30,
+  "enabled": true,
+  "logging": true,
+  "entrypoint": "index.js",
+  "commands": "npm install --production",
+  "ignore": [
+    "node_modules",
+    ".git",
+    ".env",
+    "*.log",
+    "README.md",
+    ".gitignore"
+  ],
+  "variables": {
+    "APPWRITE_DATABASE_ID": "friendfund-db",
+    "USERS_COLLECTION_ID": "users",
+    "CAMPAIGNS_COLLECTION_ID": "campaigns", 
+    "CONTRIBUTIONS_COLLECTION_ID": "contributions",
+    "NOTIFICATIONS_COLLECTION_ID": "notifications",
+    "SCREENSHOTS_BUCKET_ID": "screenshots",
+    "FRONTEND_BASE_URL": "https://friendfund.pro26.in",
+    "NODE_ENV": "production"
+  },
+  "providerRepositoryId": "",
+  "providerBranch": "",
+  "providerSilentMode": false,
+  "providerRootDirectory": "backend"
+}
