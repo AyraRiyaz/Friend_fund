@@ -165,7 +165,33 @@ module.exports = async ({ req, res, log, error }) => {
 
   // Handle preflight requests
   if (method === "OPTIONS") {
+    log(`Handling OPTIONS preflight request`);
     return res.json({}, 200, corsHeaders);
+  }
+
+  // Handle direct function calls (for testing)
+  if (method === "GET" && (path === "/" || path === "")) {
+    log(`Direct function call detected, returning function info`);
+    return res.json(
+      {
+        message: "FriendFund Backend Function is running",
+        version: "1.0.0",
+        endpoints: [
+          "health",
+          "auth",
+          "campaigns",
+          "contributions",
+          "ocr",
+          "notifications",
+          "users",
+          "qr",
+        ],
+        usage:
+          "Send POST requests with {path: '/endpoint', method: 'METHOD', bodyJson: {...}} in the body",
+      },
+      200,
+      corsHeaders
+    );
   }
 
   log(`========== APPWRITE FUNCTION EXECUTION START ==========`);
@@ -248,16 +274,34 @@ module.exports = async ({ req, res, log, error }) => {
 
     log(`========== ROUTING ==========`);
     // Parse route from the payload path or fallback to URL path
-    const requestPath = payload.path || path;
+    const requestPath = payload.path || path || "/";
     const requestMethod = payload.method || method;
+
+    log(`Original URL path: '${path}'`);
+    log(`Payload path: '${payload.path || "NOT PROVIDED"}'`);
+    log(`Payload method: '${payload.method || "NOT PROVIDED"}'`);
+    log(`Final requestPath: '${requestPath}'`);
+    log(`Final requestMethod: '${requestMethod}'`);
+
+    // Handle root path case
+    if (requestPath === "/" || requestPath === "") {
+      log(`Root path detected, returning 404 for missing endpoint`);
+      return res.json(
+        Utils.errorResponse(
+          "No endpoint specified. Please provide a valid API path.",
+          null,
+          404
+        ),
+        404,
+        corsHeaders
+      );
+    }
 
     const route = requestPath.split("/").filter(Boolean);
     const endpoint = route[0] || "";
     const action = route[1] || "";
     const id = route[2] || "";
 
-    log(`Request Path (from payload/URL): ${requestPath}`);
-    log(`Request Method (from payload/request): ${requestMethod}`);
     log(`Parsed Route Array: [${route.join(", ")}]`);
     log(`Endpoint: '${endpoint}'`);
     log(`Action: '${action}'`);
@@ -269,6 +313,7 @@ module.exports = async ({ req, res, log, error }) => {
     // Route to appropriate handler
     switch (endpoint) {
       case "health":
+        log(`Routing to: health endpoint`);
         return res.json(
           Utils.successResponse("Backend is healthy", {
             timestamp: new Date().toISOString(),
@@ -279,6 +324,7 @@ module.exports = async ({ req, res, log, error }) => {
         );
 
       case "auth":
+        log(`Routing to: auth handler`);
         return await handleAuth(
           requestMethod,
           action,
@@ -289,6 +335,7 @@ module.exports = async ({ req, res, log, error }) => {
         );
 
       case "campaigns":
+        log(`Routing to: campaigns handler`);
         return await handleCampaigns(
           requestMethod,
           action,
@@ -301,6 +348,7 @@ module.exports = async ({ req, res, log, error }) => {
         );
 
       case "contributions":
+        log(`Routing to: contributions handler`);
         return await handleContributions(
           requestMethod,
           action,
@@ -313,6 +361,7 @@ module.exports = async ({ req, res, log, error }) => {
         );
 
       case "ocr":
+        log(`Routing to: ocr handler`);
         return await handleOCR(
           requestMethod,
           action,
@@ -324,6 +373,7 @@ module.exports = async ({ req, res, log, error }) => {
         );
 
       case "notifications":
+        log(`Routing to: notifications handler`);
         return await handleNotifications(
           requestMethod,
           action,
@@ -336,6 +386,7 @@ module.exports = async ({ req, res, log, error }) => {
         );
 
       case "users":
+        log(`Routing to: users handler`);
         return await handleUsers(
           requestMethod,
           action,
@@ -348,10 +399,14 @@ module.exports = async ({ req, res, log, error }) => {
         );
 
       case "qr":
+        log(`Routing to: qr handler`);
         return await handleQR(requestMethod, id, res, log, corsHeaders);
 
       default:
         log(`ERROR: No handler found for endpoint: '${endpoint}'`);
+        log(
+          `Available endpoints: health, auth, campaigns, contributions, ocr, notifications, users, qr`
+        );
         return res.json(
           Utils.errorResponse("Endpoint not found", null, 404),
           404,
