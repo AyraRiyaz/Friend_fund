@@ -169,7 +169,7 @@ class AuthController extends GetxController {
         print('User profile stored successfully in auth preferences');
       } catch (profileError) {
         print('Failed to store user profile: $profileError');
-        
+
         // Show error to user if profile creation fails
         Get.snackbar(
           'Warning',
