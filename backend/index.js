@@ -159,14 +159,11 @@ module.exports = async ({ req, res, log, error }) => {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers":
-      "Content-Type, Authorization, x-appwrite-user-id, x-appwrite-path, x-appwrite-method",
+      "Content-Type, Authorization, x-appwrite-user-id",
   };
 
-  // Get the actual method to use (from headers or fallback to original)
-  const requestMethod = headers["x-appwrite-method"] || method;
-
   // Handle preflight requests
-  if (method === "OPTIONS" || requestMethod === "OPTIONS") {
+  if (method === "OPTIONS") {
     return res.json({}, 200, corsHeaders);
   }
 
@@ -174,9 +171,8 @@ module.exports = async ({ req, res, log, error }) => {
     // Parse request data more safely
     let payload = {};
     let userId = headers["x-appwrite-user-id"];
-    let requestPath = headers["x-appwrite-path"] || path;
 
-    log(`Raw request data: method=${requestMethod}, path=${requestPath}`);
+    log(`Raw request data: method=${method}, path=${path}`);
     log(`Headers: ${JSON.stringify(headers)}`);
     log(`BodyRaw type: ${typeof bodyRaw}, value: ${bodyRaw}`);
     log(
@@ -186,11 +182,7 @@ module.exports = async ({ req, res, log, error }) => {
     // Handle different ways the body might be sent
     if (bodyJson && typeof bodyJson === "object") {
       payload = bodyJson;
-    } else if (
-      bodyRaw &&
-      typeof bodyRaw === "string" &&
-      bodyRaw.trim() !== ""
-    ) {
+    } else if (bodyRaw && typeof bodyRaw === "string") {
       try {
         const parsed = JSON.parse(bodyRaw);
         payload = parsed;
@@ -207,7 +199,10 @@ module.exports = async ({ req, res, log, error }) => {
 
     log(`Final parsed payload: ${JSON.stringify(payload)}`);
 
-    // Parse route using the custom path from headers or fallback to original
+    // Parse route from the payload path or fallback to URL path
+    const requestPath = payload.path || path;
+    const requestMethod = payload.method || method;
+
     const route = requestPath.split("/").filter(Boolean);
     const endpoint = route[0] || "";
     const action = route[1] || "";
