@@ -44,12 +44,21 @@ class ApiService {
         if (body != null) 'bodyJson': body,
       };
 
+      print('API Request Debug:');
+      print('Path: $path');
+      print('Method: $method');
+      print('Body: ${body != null ? jsonEncode(body) : 'null'}');
+      print('Request Body: ${jsonEncode(requestBody)}');
+
       final headers = await _getHeaders(userId: userId);
       final response = await http.post(
         Uri.parse(baseUrl),
         headers: headers,
         body: jsonEncode(requestBody),
       );
+
+      print('Response Status: ${response.statusCode}');
+      print('Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
@@ -62,6 +71,7 @@ class ApiService {
         throw Exception('HTTP ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
+      print('API Error: $e');
       throw Exception('Network error: $e');
     }
   }

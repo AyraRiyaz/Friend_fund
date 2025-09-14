@@ -167,9 +167,36 @@ module.exports = async ({ req, res, log, error }) => {
   }
 
   try {
-    // Parse request data
-    const payload = bodyJson || {};
-    const userId = headers["x-appwrite-user-id"];
+    // Parse request data more safely
+    let payload = {};
+    let userId = headers["x-appwrite-user-id"];
+
+    log(`Raw request data: method=${method}, path=${path}`);
+    log(`Headers: ${JSON.stringify(headers)}`);
+    log(`BodyRaw type: ${typeof bodyRaw}, value: ${bodyRaw}`);
+    log(
+      `BodyJson type: ${typeof bodyJson}, value: ${JSON.stringify(bodyJson)}`
+    );
+
+    // Handle different ways the body might be sent
+    if (bodyJson && typeof bodyJson === "object") {
+      payload = bodyJson;
+    } else if (bodyRaw && typeof bodyRaw === "string") {
+      try {
+        const parsed = JSON.parse(bodyRaw);
+        payload = parsed;
+      } catch (parseError) {
+        log(`Error parsing bodyRaw: ${parseError}`);
+        payload = {};
+      }
+    }
+
+    // If payload has nested bodyJson, extract it
+    if (payload.bodyJson && typeof payload.bodyJson === "object") {
+      payload = payload.bodyJson;
+    }
+
+    log(`Final parsed payload: ${JSON.stringify(payload)}`);
 
     // Parse route
     const route = path.split("/").filter(Boolean);
