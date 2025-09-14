@@ -1,36 +1,26 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:appwrite/appwrite.dart';
 import '../config/appwrite_config.dart';
 import '../models/campaign.dart';
 import '../models/user.dart' as app_user;
-import 'auth_token_service.dart';
 import 'appwrite_auth_service.dart';
 
 class ApiService {
-  static const String baseUrl = AppwriteConfig.backendFunctionUrl;
+  // Use Appwrite Functions execution endpoint instead of direct function URL
+  static const String baseUrl =
+      '${AppwriteConfig.endpoint}/functions/${AppwriteConfig.functionId}/executions';
 
-  static Future<Map<String, String>> _getHeaders({String? userId}) async {
-    final headers = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    };
+  // Initialize Appwrite Functions client
+  static Functions? _functions;
 
-    // Add authentication headers if user is logged in
-    try {
-      final token = await AuthTokenService.getToken();
-      final currentUserId = userId ?? AuthTokenService.getUserId();
-
-      if (token != null && currentUserId != null) {
-        headers['x-appwrite-user-id'] = currentUserId;
-        headers['x-appwrite-user-jwt'] = token;
-        headers['Authorization'] = 'Bearer $token';
-      }
-    } catch (e) {
-      // Handle auth header error silently
+  static Functions get functions {
+    if (_functions == null) {
+      final client = Client()
+          .setEndpoint(AppwriteConfig.endpoint)
+          .setProject(AppwriteConfig.projectId);
+      _functions = Functions(client);
     }
-
-    return headers;
+    return _functions!;
   }
 
   static Future<Map<String, dynamic>> _makeRequest({
@@ -41,7 +31,7 @@ class ApiService {
   }) async {
     print('========== FRONTEND API REQUEST START ==========');
     print('Timestamp: ${DateTime.now().toIso8601String()}');
-    print('Base URL: $baseUrl');
+    print('Function ID: ${AppwriteConfig.functionId}');
     print('Request Path: $path');
     print('Request Method: $method');
     print('User ID: ${userId ?? 'Not provided'}');
@@ -58,52 +48,35 @@ class ApiService {
       print('Original Body: ${body != null ? jsonEncode(body) : 'null'}');
       print('Request Body Structure: ${jsonEncode(requestBody)}');
 
-      final headers = await _getHeaders(userId: userId);
-      print('========== REQUEST HEADERS ==========');
-      headers.forEach((key, value) {
-        // Don't log sensitive tokens completely
-        if (key.toLowerCase().contains('token') ||
-            key.toLowerCase().contains('jwt')) {
-          print('$key: ${value.substring(0, 10)}...[REDACTED]');
-        } else {
-          print('$key: $value');
-        }
-      });
+      // Set up headers for the function execution
+      final headers = <String, String>{};
+      if (userId != null) {
+        headers['x-appwrite-user-id'] = userId;
+      }
 
-      print('========== SENDING HTTP REQUEST ==========');
-      print('Making POST request to: $baseUrl');
+      print('========== EXECUTING APPWRITE FUNCTION ==========');
+      print('Function ID: ${AppwriteConfig.functionId}');
+      print('Headers: ${jsonEncode(headers)}');
 
-      final response = await http
-          .post(
-            Uri.parse(baseUrl),
-            headers: headers,
-            body: jsonEncode(requestBody),
-          )
-          .timeout(
-            const Duration(seconds: 30),
-            onTimeout: () {
-              print('========== REQUEST TIMEOUT ==========');
-              print('Request timed out after 30 seconds');
-              throw Exception(
-                'Request timeout - Backend function may be sleeping or unreachable',
-              );
-            },
-          );
+      final execution = await functions.createExecution(
+        functionId: AppwriteConfig.functionId,
+        body: jsonEncode(requestBody),
+        headers: headers.isNotEmpty ? headers : null,
+      );
 
-      print('========== HTTP RESPONSE RECEIVED ==========');
-      print('Response Status Code: ${response.statusCode}');
-      print('Response Headers:');
-      response.headers.forEach((key, value) {
-        print('  $key: $value');
-      });
-      print('Response Body Length: ${response.body.length} characters');
+      print('========== FUNCTION EXECUTION COMPLETED ==========');
+      print('Execution ID: ${execution.$id}');
+      print('Status: ${execution.status}');
+      print(
+        'Response Body Length: ${execution.responseBody.length} characters',
+      );
       print('Response Body Content:');
-      print(response.body);
+      print(execution.responseBody);
 
-      if (response.statusCode == 200) {
+      if (execution.status == 'completed') {
         print('========== PARSING SUCCESSFUL RESPONSE ==========');
         try {
-          final responseData = jsonDecode(response.body);
+          final responseData = jsonDecode(execution.responseBody);
           print('Parsed Response Data:');
           print(jsonEncode(responseData));
 
@@ -119,42 +92,25 @@ class ApiService {
             throw Exception(responseData['message'] ?? 'API request failed');
           }
         } catch (parseError) {
-          print('❌ JSON Parse Error on 200 Response');
+          print('❌ JSON Parse Error on completed execution');
           print('Parse Error: $parseError');
-          print('Raw Response: ${response.body}');
+          print('Raw Response: ${execution.responseBody}');
           throw Exception('Invalid JSON response from backend: $parseError');
         }
-      } else if (response.statusCode == 404) {
-        print('❌ Backend Function Not Found (404)');
-        print(
-          'This usually means the function is not deployed or URL is wrong',
-        );
-        throw Exception(
-          'Backend function not found - Check if the function is deployed',
-        );
-      } else if (response.statusCode >= 500) {
-        print('❌ Backend Server Error (${response.statusCode})');
-        print('Response Body: ${response.body}');
-        throw Exception(
-          'Backend server error (${response.statusCode}) - Function may be down',
-        );
+      } else if (execution.status == 'failed') {
+        print('❌ Function execution failed');
+        print('Error: ${execution.responseBody}');
+        throw Exception('Function execution failed: ${execution.responseBody}');
       } else {
-        print('❌ HTTP Error ${response.statusCode}');
-        print('Response Body: ${response.body}');
-        throw Exception('HTTP ${response.statusCode}: ${response.body}');
+        print('❌ Unexpected execution status: ${execution.status}');
+        throw Exception('Unexpected execution status: ${execution.status}');
       }
-    } on http.ClientException catch (e) {
-      print('========== NETWORK ERROR ==========');
-      print('ClientException Details: $e');
-      print('This usually indicates network connectivity issues');
-      throw Exception(
-        'Network connection failed - Check your internet connection and backend function URL',
-      );
-    } on FormatException catch (e) {
-      print('========== JSON FORMAT ERROR ==========');
-      print('FormatException Details: $e');
-      print('This indicates malformed JSON in request or response');
-      throw Exception('Invalid response format from backend');
+    } on AppwriteException catch (e) {
+      print('========== APPWRITE ERROR ==========');
+      print('AppwriteException Code: ${e.code}');
+      print('AppwriteException Message: ${e.message}');
+      print('AppwriteException Details: ${e.response}');
+      throw Exception('Appwrite error (${e.code}): ${e.message}');
     } catch (e) {
       print('========== UNEXPECTED ERROR ==========');
       print('Error Type: ${e.runtimeType}');
@@ -320,47 +276,6 @@ class ApiService {
     );
 
     return Campaign.fromJson(result['data']);
-  }
-
-  static Future<Campaign> _getCampaignDirectly(String campaignId) async {
-    try {
-      final document = await AppwriteService.databases.getDocument(
-        databaseId: AppwriteConfig.databaseId,
-        collectionId: AppwriteConfig.campaignsCollectionId,
-        documentId: campaignId,
-      );
-
-      // Get host user information
-      String hostName = 'Unknown User';
-      try {
-        if (document.data['hostId'] != null) {
-          // We can only get current user's name reliably
-          final currentUser = await AppwriteService.getCurrentUserProfile();
-          if (currentUser != null &&
-              currentUser.id == document.data['hostId']) {
-            hostName = currentUser.name;
-          } else {
-            // For other users, use the stored hostName if available
-            hostName = document.data['hostName'] ?? 'Unknown User';
-          }
-        }
-      } catch (e) {
-        // Keep default name
-      }
-
-      // Get campaign contributions
-      final contributions = await _getCampaignContributionsDirectly(campaignId);
-
-      final data = document.data;
-      data['\$id'] = document.$id;
-      data['id'] = document.$id;
-      data['hostName'] = hostName;
-      data['contributions'] = contributions.map((c) => c.toJson()).toList();
-
-      return Campaign.fromJson(data);
-    } catch (e) {
-      throw Exception('Failed to load campaign: $e');
-    }
   }
 
   static Future<List<Campaign>> getUserCampaigns(String userId) async {
