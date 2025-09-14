@@ -825,7 +825,7 @@ async function getAllCampaigns(res, log, error, corsHeaders) {
       config.collections.campaigns,
       [
         Query.equal("status", "active"),
-        Query.orderDesc("createdAt"),
+        Query.orderDesc("$createdAt"),
         Query.limit(50),
       ]
     );
@@ -940,7 +940,7 @@ async function getCampaign(campaignId, res, log, corsHeaders) {
   const contributions = await databases.listDocuments(
     config.databaseId,
     config.collections.contributions,
-    [Query.equal("campaignId", campaignId), Query.orderDesc("createdAt")]
+    [Query.equal("campaignId", campaignId), Query.orderDesc("$createdAt")]
   );
 
   // Format contributions to match frontend model
@@ -983,7 +983,7 @@ async function getUserCampaigns(userId, res, corsHeaders) {
   const campaigns = await databases.listDocuments(
     config.databaseId,
     config.collections.campaigns,
-    [Query.equal("hostId", userId), Query.orderDesc("createdAt")]
+    [Query.equal("hostId", userId), Query.orderDesc("$createdAt")]
   );
 
   // Get user information for hostName
@@ -1251,7 +1251,7 @@ async function getCampaignContributions(campaignId, res, corsHeaders) {
   const contributions = await databases.listDocuments(
     config.databaseId,
     config.collections.contributions,
-    [Query.equal("campaignId", campaignId), Query.orderDesc("createdAt")]
+    [Query.equal("campaignId", campaignId), Query.orderDesc("$createdAt")]
   );
 
   // Format contributions to match frontend model
@@ -1282,7 +1282,7 @@ async function getUserContributions(userId, res, corsHeaders) {
   const contributions = await databases.listDocuments(
     config.databaseId,
     config.collections.contributions,
-    [Query.equal("contributorId", userId), Query.orderDesc("createdAt")]
+    [Query.equal("contributorId", userId), Query.orderDesc("$createdAt")]
   );
 
   // Format contributions to match frontend model
@@ -1612,7 +1612,7 @@ async function getOverdueLoans(userId, res, corsHeaders) {
     [
       Query.equal("type", "loan"),
       Query.equal("repaymentStatus", "pending"),
-      Query.lessThan("createdAt", thirtyDaysAgo),
+      Query.lessThan("$createdAt", thirtyDaysAgo),
     ]
   );
 
