@@ -71,9 +71,7 @@ class AuthController extends GetxController {
           print('Attempting to create missing user profile in preferences...');
           final profile = await AppwriteService.createUserProfile(
             userId: userId,
-            name: _appwriteUser.value!.name,
-            phoneNumber: '', // User can add it later
-            email: _appwriteUser.value!.email,
+            // UPI ID can be added later by the user
           );
           _userProfile.value = profile;
           print('Created missing user profile successfully');
@@ -143,41 +141,34 @@ class AuthController extends GetxController {
         email: email,
         password: password,
         name: name,
+        phoneNumber: cleanPhoneNumber,
       );
 
       print('Appwrite Auth user created successfully: ${user.$id}');
 
-      // Store user profile data in auth preferences instead of creating session
-      try {
-        print('Attempting to store user profile in auth preferences...');
-        print('User ID: ${user.$id}');
-        print('Name: $name');
-        print('Phone (cleaned): $cleanPhoneNumber');
-        print('Email: $email');
-        print('UPI ID: $upiId');
+      // If UPI ID is provided, store it in preferences now
+      if (upiId != null && upiId.isNotEmpty) {
+        try {
+          print('Storing UPI ID in preferences: $upiId');
+          // Create temporary session to store UPI ID
+          await AppwriteService.createEmailSession(
+            email: email,
+            password: password,
+          );
 
-        // Use the admin SDK to update user preferences without creating a session
-        // This will be done through the backend API
-        await AppwriteService.createUserProfile(
-          userId: user.$id,
-          name: name,
-          phoneNumber: cleanPhoneNumber,
-          email: email,
-          upiId: upiId,
-        );
+          // Store UPI ID in preferences
+          await AppwriteService.createUserProfile(
+            userId: user.$id,
+            upiId: upiId,
+          );
 
-        print('User profile stored successfully in auth preferences');
-      } catch (profileError) {
-        print('Failed to store user profile: $profileError');
-
-        // Show error to user if profile creation fails
-        Get.snackbar(
-          'Warning',
-          'Account created but profile setup failed. Please try logging in.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.orange,
-          colorText: Colors.white,
-        );
+          // Logout after storing UPI ID (since we want manual login flow)
+          await AppwriteService.logout();
+          print('UPI ID stored successfully and logged out');
+        } catch (upiError) {
+          print('Error storing UPI ID: $upiError');
+          // Continue without failing the registration
+        }
       }
 
       // Don't set authentication status - user needs to login manually
@@ -188,7 +179,6 @@ class AuthController extends GetxController {
         backgroundColor: Colors.green,
         colorText: Colors.white,
       );
-
       return true;
     } catch (e) {
       print('Registration error: $e');

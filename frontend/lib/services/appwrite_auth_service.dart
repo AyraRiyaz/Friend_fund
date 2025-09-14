@@ -31,6 +31,7 @@ class AppwriteService {
     required String email,
     required String password,
     required String name,
+    String? phoneNumber,
   }) async {
     try {
       print('Creating Appwrite Auth account for: $email with name: $name');
@@ -43,6 +44,30 @@ class AppwriteService {
       );
 
       print('Appwrite Auth account created successfully: ${user.$id}');
+
+      // Store phone number in the actual phone field of Appwrite Auth
+      if (phoneNumber != null && phoneNumber.isNotEmpty) {
+        try {
+          // Create a temporary session to get permissions for phone update
+          await _account.createEmailPasswordSession(
+            email: email,
+            password: password,
+          );
+
+          // Update phone number in the auth account phone field
+          await _account.updatePhone(phone: phoneNumber, password: password);
+
+          print('Phone number updated successfully in auth phone field');
+
+          // Logout after updating phone (since we want manual login flow)
+          await _account.deleteSession(sessionId: 'current');
+          print('Logged out after phone update');
+        } catch (phoneError) {
+          print('Error updating phone number in auth field: $phoneError');
+          // Continue without failing the registration
+        }
+      }
+
       return user;
     } catch (e) {
       print('Error creating Appwrite Auth account: $e');
@@ -140,42 +165,29 @@ class AppwriteService {
     }
   }
 
-  // User Profile Management using Auth Labels and Preferences
+  // User Profile Management using Auth Preferences (for UPI ID only)
   static Future<app_user.User> createUserProfile({
     required String userId,
-    required String name,
-    required String phoneNumber,
-    required String email,
     String? upiId,
     String? profileImage,
   }) async {
     try {
-      print('Creating user profile using Auth preferences...');
+      print('Creating user profile preferences...');
       print('UserId: $userId');
-      print('Name: $name');
-      print('Phone: $phoneNumber');
-      print('Email: $email');
       print('UPI: $upiId');
+      print('Profile Image: $profileImage');
 
-      // Validate required fields
-      if (userId.isEmpty ||
-          name.isEmpty ||
-          phoneNumber.isEmpty ||
-          email.isEmpty) {
-        throw Exception('Missing required fields for user profile creation');
-      }
-
-      // Store user data in preferences
+      // Store only UPI ID and profile image in preferences
+      // (phone is in auth phone field, name and email in auth account)
       await _account.updatePrefs(
         prefs: {
-          'phoneNumber': phoneNumber,
           'upiId': upiId ?? '',
           'profileImage': profileImage ?? '',
           'joinedAt': DateTime.now().toIso8601String(),
         },
       );
 
-      print('User profile created successfully using preferences');
+      print('User profile preferences created successfully');
 
       // Return user object constructed from auth data and preferences
       final user = await getCurrentUserProfile();
@@ -185,7 +197,7 @@ class AppwriteService {
         throw Exception('Failed to retrieve user after profile creation');
       }
     } catch (e) {
-      print('Error creating user profile: $e');
+      print('Error creating user profile preferences: $e');
       throw _handleAppwriteException(e);
     }
   }
@@ -199,11 +211,11 @@ class AppwriteService {
         id: account.$id,
         name: account.name,
         email: account.email,
-        phoneNumber: prefs['phoneNumber'] ?? '',
+        phoneNumber: account.phone, // Get phone from auth phone field
         upiId: prefs['upiId'],
         profileImage: prefs['profileImage'],
-        joinedAt: prefs['joinedAt'] != null
-            ? DateTime.parse(prefs['joinedAt'])
+        joinedAt: prefs['joinedAt'] != null || prefs['registeredAt'] != null
+            ? DateTime.parse(prefs['joinedAt'] ?? prefs['registeredAt'])
             : DateTime.now(),
       );
     } catch (e) {
@@ -241,6 +253,7 @@ class AppwriteService {
     String? phoneNumber,
     String? upiId,
     String? profileImage,
+    String? password, // Password might be needed for phone updates
   }) async {
     try {
       // Update name in account if provided
@@ -248,14 +261,24 @@ class AppwriteService {
         await _account.updateName(name: name);
       }
 
+      // Update phone number in auth phone field if provided
+      if (phoneNumber != null && phoneNumber.isNotEmpty && password != null) {
+        try {
+          await _account.updatePhone(phone: phoneNumber, password: password);
+          print('Phone number updated successfully in auth phone field');
+        } catch (phoneError) {
+          print('Error updating phone number: $phoneError');
+          // Note: Phone update might fail if password is incorrect or other validation issues
+        }
+      }
+
       // Get current preferences
       final currentAccount = await _account.get();
       final currentPrefs = Map<String, dynamic>.from(currentAccount.prefs.data);
 
-      // Update preferences
+      // Update preferences (excluding phone since it's now in auth phone field)
       final updatedPrefs = <String, dynamic>{
         ...currentPrefs,
-        if (phoneNumber != null) 'phoneNumber': phoneNumber,
         if (upiId != null) 'upiId': upiId,
         if (profileImage != null) 'profileImage': profileImage,
         'updatedAt': DateTime.now().toIso8601String(),
