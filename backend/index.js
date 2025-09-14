@@ -304,10 +304,14 @@ module.exports = async ({ req, res, log, error }) => {
       payload = {};
     }
 
-    // If payload has nested bodyJson, extract it
+    // Store the actual request data if it exists
+    let requestData = {};
     if (payload.bodyJson && typeof payload.bodyJson === "object") {
-      log(`Extracting nested bodyJson from payload`);
-      payload = payload.bodyJson;
+      log(`Found nested bodyJson in payload`);
+      requestData = payload.bodyJson;
+    } else {
+      // If no bodyJson, the payload itself might be the request data (for GET requests)
+      requestData = payload;
     }
 
     log(`Final Payload: ${JSON.stringify(payload, null, 2)}`);
@@ -378,7 +382,7 @@ module.exports = async ({ req, res, log, error }) => {
         return await handleAuth(
           requestMethod,
           action,
-          payload,
+          requestData,
           res,
           log,
           corsHeaders
@@ -390,7 +394,7 @@ module.exports = async ({ req, res, log, error }) => {
           requestMethod,
           action,
           id,
-          payload,
+          requestData,
           userId,
           res,
           log,
@@ -403,7 +407,7 @@ module.exports = async ({ req, res, log, error }) => {
           requestMethod,
           action,
           id,
-          payload,
+          requestData,
           userId,
           res,
           log,
@@ -415,7 +419,7 @@ module.exports = async ({ req, res, log, error }) => {
         return await handleOCR(
           requestMethod,
           action,
-          payload,
+          requestData,
           userId,
           res,
           log,
@@ -428,7 +432,7 @@ module.exports = async ({ req, res, log, error }) => {
           requestMethod,
           action,
           id,
-          payload,
+          requestData,
           userId,
           res,
           log,
@@ -441,7 +445,7 @@ module.exports = async ({ req, res, log, error }) => {
           requestMethod,
           action,
           id,
-          payload,
+          requestData,
           userId,
           res,
           log,

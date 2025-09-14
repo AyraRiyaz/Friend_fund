@@ -28,7 +28,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "https://cloud.appwrite.io/v1/functions/friendfund-backend/executions",
+      "value": "https://68b699f80025cf96484e.fra.appwrite.run",
       "type": "string"
     },
     {
@@ -54,17 +54,25 @@
         {
           "name": "Get Health Status",
           "request": {
-            "method": "GET",
+            "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"path\": \"/health\",\n  \"method\": \"GET\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
-              "raw": "{{baseUrl}}/health",
-              "host": ["{{baseUrl}}"],
-              "path": ["health"]
+              "raw": "{{baseUrl}}",
+              "host": ["{{baseUrl}}"]
             }
           },
           "response": [
@@ -103,17 +111,29 @@
         {
           "name": "Get All Campaigns",
           "request": {
-            "method": "GET",
+            "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "x-appwrite-user-id",
+                "value": "{{userId}}"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"path\": \"/campaigns\",\n  \"method\": \"GET\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
-              "raw": "{{baseUrl}}/campaigns",
-              "host": ["{{baseUrl}}"],
-              "path": ["campaigns"]
+              "raw": "{{baseUrl}}",
+              "host": ["{{baseUrl}}"]
             }
           },
           "response": [
@@ -143,17 +163,29 @@
         {
           "name": "Get Campaign by ID",
           "request": {
-            "method": "GET",
+            "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "x-appwrite-user-id",
+                "value": "{{userId}}"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"path\": \"/campaigns/{{campaignId}}\",\n  \"method\": \"GET\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
-              "raw": "{{baseUrl}}/campaigns/{{campaignId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["campaigns", "{{campaignId}}"]
+              "raw": "{{baseUrl}}",
+              "host": ["{{baseUrl}}"]
             }
           },
           "response": [
@@ -204,7 +236,7 @@
         {
           "name": "Get User Campaigns",
           "request": {
-            "method": "GET",
+            "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
@@ -215,10 +247,18 @@
                 "value": "{{userId}}"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"path\": \"/campaigns/user\",\n  \"method\": \"GET\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
-              "raw": "{{baseUrl}}/campaigns/user",
-              "host": ["{{baseUrl}}"],
-              "path": ["campaigns", "user"]
+              "raw": "{{baseUrl}}",
+              "host": ["{{baseUrl}}"]
             }
           },
           "response": [
@@ -266,12 +306,16 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Help My Friend with College Fees\",\n  \"description\": \"My friend needs financial support to pay for their college tuition. They're a bright student who deserves a chance to complete their education.\",\n  \"purpose\": \"Education\",\n  \"targetAmount\": 75000,\n  \"repaymentDueDate\": \"2025-12-31T23:59:59.000Z\"\n}"
+              "raw": "{\n  \"path\": \"/campaigns\",\n  \"method\": \"POST\",\n  \"bodyJson\": {\n    \"title\": \"Help My Friend with College Fees\",\n    \"description\": \"My friend needs financial support to pay for their college tuition. They're a bright student who deserves a chance to complete their education.\",\n    \"purpose\": \"Education\",\n    \"targetAmount\": 75000,\n    \"repaymentDueDate\": \"2025-12-31T23:59:59.000Z\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
-              "raw": "{{baseUrl}}/campaigns",
-              "host": ["{{baseUrl}}"],
-              "path": ["campaigns"]
+              "raw": "{{baseUrl}}",
+              "host": ["{{baseUrl}}"]
             }
           },
           "response": [
