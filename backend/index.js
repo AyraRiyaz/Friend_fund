@@ -768,7 +768,7 @@ async function handleCampaigns(
           return await getUserCampaigns(userId, res, log, corsHeaders);
         } else {
           log(`Routing to: Get all campaigns`);
-          return await getAllCampaigns(res, log, corsHeaders);
+          return await getAllCampaigns(res, log, error, corsHeaders);
         }
 
       case "POST":
@@ -813,7 +813,7 @@ async function handleCampaigns(
   }
 }
 
-async function getAllCampaigns(res, log, corsHeaders) {
+async function getAllCampaigns(res, log, error, corsHeaders) {
   log(`========== GET ALL CAMPAIGNS ==========`);
   log(`Database ID: ${config.databaseId}`);
   log(`Collection ID: ${config.collections.campaigns}`);
