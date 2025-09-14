@@ -40,11 +40,9 @@ class ApiService {
     Map<String, dynamic>? body,
   }) async {
     try {
-      final requestBody = {
-        'path': path,
-        'method': method,
-        if (body != null) 'bodyJson': body,
-      };
+      // For Appwrite functions, we need to send the data directly in the body
+      // not wrapped in another object
+      final requestBody = body ?? {};
 
       print('API Request Debug:');
       print('Path: $path');
@@ -54,13 +52,18 @@ class ApiService {
       print('Base URL: $baseUrl');
 
       final headers = await _getHeaders(userId: userId);
+
+      // Add path and method info to headers instead of body for Appwrite functions
+      headers['x-appwrite-path'] = path;
+      headers['x-appwrite-method'] = method;
+
       print('Headers: $headers');
 
       final response = await http
           .post(
             Uri.parse(baseUrl),
             headers: headers,
-            body: jsonEncode(requestBody),
+            body: requestBody.isNotEmpty ? jsonEncode(requestBody) : '{}',
           )
           .timeout(
             const Duration(seconds: 30),
@@ -141,30 +144,47 @@ class ApiService {
     String? upiId,
     String? profileImage,
   }) async {
-    final result = await _makeRequest(
-      path: '/users/profile',
-      method: 'POST',
-      userId: userId,
-      body: {
-        'name': name,
-        'phoneNumber': phoneNumber,
-        'email': email,
-        if (upiId != null) 'upiId': upiId,
-        if (profileImage != null) 'profileImage': profileImage,
-      },
-    );
+    try {
+      final result = await _makeRequest(
+        path: '/users/profile',
+        method: 'POST',
+        userId: userId,
+        body: {
+          'name': name,
+          'phoneNumber': phoneNumber,
+          'email': email,
+          if (upiId != null) 'upiId': upiId,
+          if (profileImage != null) 'profileImage': profileImage,
+        },
+      );
 
-    return app_user.User.fromJson(result['data']);
+      return app_user.User.fromJson(result['data']);
+    } catch (e) {
+      print('Backend API failed, using direct Appwrite auth: $e');
+      // Fallback to direct Appwrite service
+      return await AppwriteService.createUserProfile(
+        userId: userId,
+        upiId: upiId,
+        profileImage: profileImage,
+      );
+    }
   }
 
   static Future<app_user.User> getUserProfile(String userId) async {
-    final result = await _makeRequest(
-      path: '/users/$userId',
-      method: 'GET',
-      userId: userId,
-    );
+    try {
+      final result = await _makeRequest(
+        path: '/users/$userId',
+        method: 'GET',
+        userId: userId,
+      );
 
-    return app_user.User.fromJson(result['data']);
+      return app_user.User.fromJson(result['data']);
+    } catch (e) {
+      print('Backend API failed, using direct Appwrite auth: $e');
+      // Fallback to direct Appwrite service
+      final user = await AppwriteService.getUserProfile(userId);
+      return user;
+    }
   }
 
   static Future<app_user.User> updateUserProfile({
@@ -174,20 +194,32 @@ class ApiService {
     String? upiId,
     String? profileImage,
   }) async {
-    final body = <String, dynamic>{};
-    if (name != null) body['name'] = name;
-    if (phoneNumber != null) body['phoneNumber'] = phoneNumber;
-    if (upiId != null) body['upiId'] = upiId;
-    if (profileImage != null) body['profileImage'] = profileImage;
+    try {
+      final body = <String, dynamic>{};
+      if (name != null) body['name'] = name;
+      if (phoneNumber != null) body['phoneNumber'] = phoneNumber;
+      if (upiId != null) body['upiId'] = upiId;
+      if (profileImage != null) body['profileImage'] = profileImage;
 
-    final result = await _makeRequest(
-      path: '/users/$userId',
-      method: 'PUT',
-      userId: userId,
-      body: body,
-    );
+      final result = await _makeRequest(
+        path: '/users/$userId',
+        method: 'PUT',
+        userId: userId,
+        body: body,
+      );
 
-    return app_user.User.fromJson(result['data']);
+      return app_user.User.fromJson(result['data']);
+    } catch (e) {
+      print('Backend API failed, using direct Appwrite auth: $e');
+      // Fallback to direct Appwrite service
+      return await AppwriteService.updateUserProfile(
+        userId: userId,
+        name: name,
+        phoneNumber: phoneNumber,
+        upiId: upiId,
+        profileImage: profileImage,
+      );
+    }
   }
 
   // Campaign Management
@@ -205,43 +237,168 @@ class ApiService {
 
   static Future<List<Campaign>> _getCampaignsDirectly() async {
     try {
-      final documents = await AppwriteService.databases.listDocuments(
+      // First, let's get ALL campaigns to see what's in the database
+      final allDocuments = await AppwriteService.databases.listDocuments(
         databaseId: AppwriteConfig.databaseId,
         collectionId: AppwriteConfig.campaignsCollectionId,
         queries: [
-          Query.equal('status', 'active'),
           Query.orderDesc('\$createdAt'),
+          Query.limit(100), // Get up to 100 campaigns
         ],
       );
 
-      return documents.documents.map((doc) {
+      print(
+        'Found ${allDocuments.documents.length} total campaigns in database',
+      );
+
+      // Log all campaigns to see their status
+      for (var doc in allDocuments.documents) {
+        print(
+          'Campaign: ${doc.data['title']} - Status: ${doc.data['status']} - ID: ${doc.$id}',
+        );
+      }
+
+      // Filter for active campaigns only, or if no status field, include them
+      final activeCampaigns = allDocuments.documents.where((doc) {
+        final status = doc.data['status'];
+        return status == null || status == 'active' || status == '';
+      }).toList();
+
+      print('Found ${activeCampaigns.length} active campaigns');
+
+      return activeCampaigns.map((doc) {
         final data = doc.data;
         data['\$id'] = doc.$id; // Add the document ID
+
+        // Handle missing fields for campaigns created directly in Appwrite
+        data['id'] = doc.$id;
+        data['title'] = data['title'] ?? 'Untitled Campaign';
+        data['description'] = data['description'] ?? '';
+        data['purpose'] = data['purpose'] ?? 'Other';
+        data['targetAmount'] = (data['targetAmount'] ?? 0).toDouble();
+        data['collectedAmount'] = (data['collectedAmount'] ?? 0).toDouble();
+        data['hostId'] = data['hostId'] ?? '';
+        data['hostName'] = data['hostName'] ?? 'Unknown User';
+        data['status'] = data['status'] ?? 'active';
+        data['createdAt'] = data['createdAt'] ?? doc.$createdAt;
+        data['contributions'] = []; // Empty contributions list
+
+        print('Processing campaign: ${data['title']} (ID: ${doc.$id})');
+
         return Campaign.fromJson(data);
       }).toList();
     } catch (e) {
+      print('Error loading campaigns directly: $e');
       throw Exception('Failed to load campaigns: $e');
     }
   }
 
   static Future<Campaign> getCampaign(String campaignId) async {
-    final result = await _makeRequest(
-      path: '/campaigns/$campaignId',
-      method: 'GET',
-    );
+    try {
+      final result = await _makeRequest(
+        path: '/campaigns/$campaignId',
+        method: 'GET',
+      );
 
-    return Campaign.fromJson(result['data']);
+      return Campaign.fromJson(result['data']);
+    } catch (e) {
+      print('Backend API failed, trying direct Appwrite access: $e');
+      // Fallback to direct Appwrite database access
+      return await _getCampaignDirectly(campaignId);
+    }
+  }
+
+  static Future<Campaign> _getCampaignDirectly(String campaignId) async {
+    try {
+      final document = await AppwriteService.databases.getDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.campaignsCollectionId,
+        documentId: campaignId,
+      );
+
+      // Get host user information
+      String hostName = 'Unknown User';
+      try {
+        if (document.data['hostId'] != null) {
+          // We can only get current user's name reliably
+          final currentUser = await AppwriteService.getCurrentUserProfile();
+          if (currentUser != null &&
+              currentUser.id == document.data['hostId']) {
+            hostName = currentUser.name;
+          } else {
+            // For other users, use the stored hostName if available
+            hostName = document.data['hostName'] ?? 'Unknown User';
+          }
+        }
+      } catch (e) {
+        // Keep default name
+      }
+
+      // Get campaign contributions
+      final contributions = await _getCampaignContributionsDirectly(campaignId);
+
+      final data = document.data;
+      data['\$id'] = document.$id;
+      data['id'] = document.$id;
+      data['hostName'] = hostName;
+      data['contributions'] = contributions.map((c) => c.toJson()).toList();
+
+      return Campaign.fromJson(data);
+    } catch (e) {
+      throw Exception('Failed to load campaign: $e');
+    }
   }
 
   static Future<List<Campaign>> getUserCampaigns(String userId) async {
-    final result = await _makeRequest(
-      path: '/campaigns/user',
-      method: 'GET',
-      userId: userId,
-    );
+    try {
+      final result = await _makeRequest(
+        path: '/campaigns/user',
+        method: 'GET',
+        userId: userId,
+      );
 
-    final campaignsData = result['data'] as List;
-    return campaignsData.map((json) => Campaign.fromJson(json)).toList();
+      final campaignsData = result['data'] as List;
+      return campaignsData.map((json) => Campaign.fromJson(json)).toList();
+    } catch (e) {
+      print('Backend API failed, trying direct Appwrite access: $e');
+      // Fallback to direct Appwrite database access
+      return await _getUserCampaignsDirectly(userId);
+    }
+  }
+
+  static Future<List<Campaign>> _getUserCampaignsDirectly(String userId) async {
+    try {
+      final documents = await AppwriteService.databases.listDocuments(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.campaignsCollectionId,
+        queries: [
+          Query.equal('hostId', userId),
+          Query.orderDesc('\$createdAt'),
+        ],
+      );
+
+      // Get user name for hostName
+      String hostName = 'Unknown User';
+      try {
+        final userProfile = await AppwriteService.getCurrentUserProfile();
+        if (userProfile != null) {
+          hostName = userProfile.name;
+        }
+      } catch (e) {
+        // Keep default name
+      }
+
+      return documents.documents.map((doc) {
+        final data = doc.data;
+        data['\$id'] = doc.$id; // Add the document ID
+        data['id'] = doc.$id;
+        data['hostName'] = hostName;
+        data['contributions'] = []; // Will be populated when needed
+        return Campaign.fromJson(data);
+      }).toList();
+    } catch (e) {
+      throw Exception('Failed to load user campaigns: $e');
+    }
   }
 
   static Future<Campaign> createCampaign({
@@ -333,59 +490,230 @@ class ApiService {
     String? status,
     double? targetAmount,
   }) async {
-    final body = <String, dynamic>{};
-    if (title != null) body['title'] = title;
-    if (description != null) body['description'] = description;
-    if (status != null) body['status'] = status;
-    if (targetAmount != null) body['targetAmount'] = targetAmount;
+    try {
+      final body = <String, dynamic>{};
+      if (title != null) body['title'] = title;
+      if (description != null) body['description'] = description;
+      if (status != null) body['status'] = status;
+      if (targetAmount != null) body['targetAmount'] = targetAmount;
 
-    final result = await _makeRequest(
-      path: '/campaigns/$campaignId',
-      method: 'PUT',
-      userId: userId,
-      body: body,
-    );
+      final result = await _makeRequest(
+        path: '/campaigns/$campaignId',
+        method: 'PUT',
+        userId: userId,
+        body: body,
+      );
 
-    return Campaign.fromJson(result['data']);
+      return Campaign.fromJson(result['data']);
+    } catch (e) {
+      print('Backend API failed, trying direct Appwrite access: $e');
+      // Fallback to direct Appwrite database access
+      return await _updateCampaignDirectly(
+        campaignId: campaignId,
+        userId: userId,
+        title: title,
+        description: description,
+        status: status,
+        targetAmount: targetAmount,
+      );
+    }
+  }
+
+  static Future<Campaign> _updateCampaignDirectly({
+    required String campaignId,
+    required String userId,
+    String? title,
+    String? description,
+    String? status,
+    double? targetAmount,
+  }) async {
+    try {
+      // First check if user owns the campaign
+      final existingCampaign = await AppwriteService.databases.getDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.campaignsCollectionId,
+        documentId: campaignId,
+      );
+
+      if (existingCampaign.data['hostId'] != userId) {
+        throw Exception('Unauthorized to update this campaign');
+      }
+
+      final updateData = <String, dynamic>{
+        'updatedAt': DateTime.now().toIso8601String(),
+      };
+
+      // Only update allowed fields
+      if (title != null) updateData['title'] = title.trim();
+      if (description != null) updateData['description'] = description.trim();
+      if (status != null) updateData['status'] = status;
+      if (targetAmount != null) updateData['targetAmount'] = targetAmount;
+
+      final updatedDocument = await AppwriteService.databases.updateDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.campaignsCollectionId,
+        documentId: campaignId,
+        data: updateData,
+      );
+
+      final data = updatedDocument.data;
+      data['\$id'] = updatedDocument.$id;
+      data['id'] = updatedDocument.$id;
+      data['contributions'] = []; // Will be populated when needed
+
+      return Campaign.fromJson(data);
+    } catch (e) {
+      throw Exception('Failed to update campaign: $e');
+    }
   }
 
   static Future<void> deleteCampaign({
     required String campaignId,
     required String userId,
   }) async {
-    await _makeRequest(
-      path: '/campaigns/$campaignId',
-      method: 'DELETE',
-      userId: userId,
-    );
+    try {
+      await _makeRequest(
+        path: '/campaigns/$campaignId',
+        method: 'DELETE',
+        userId: userId,
+      );
+    } catch (e) {
+      print('Backend API failed, trying direct Appwrite access: $e');
+      // Fallback to direct Appwrite database access
+      await _deleteCampaignDirectly(campaignId, userId);
+    }
+  }
+
+  static Future<void> _deleteCampaignDirectly(
+    String campaignId,
+    String userId,
+  ) async {
+    try {
+      // First check if user owns the campaign
+      final existingCampaign = await AppwriteService.databases.getDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.campaignsCollectionId,
+        documentId: campaignId,
+      );
+
+      if (existingCampaign.data['hostId'] != userId) {
+        throw Exception('Unauthorized to delete this campaign');
+      }
+
+      // Check if campaign has contributions - should not delete if it has contributions
+      final contributions = await AppwriteService.databases.listDocuments(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.contributionsCollectionId,
+        queries: [Query.equal('campaignId', campaignId)],
+      );
+
+      if (contributions.documents.isNotEmpty) {
+        throw Exception('Cannot delete campaign with existing contributions');
+      }
+
+      // Delete the campaign
+      await AppwriteService.databases.deleteDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.campaignsCollectionId,
+        documentId: campaignId,
+      );
+    } catch (e) {
+      throw Exception('Failed to delete campaign: $e');
+    }
   }
 
   // Contribution Management
   static Future<List<Contribution>> getCampaignContributions(
     String campaignId,
   ) async {
-    final result = await _makeRequest(
-      path: '/contributions/campaign/$campaignId',
-      method: 'GET',
-    );
+    try {
+      final result = await _makeRequest(
+        path: '/contributions/campaign/$campaignId',
+        method: 'GET',
+      );
 
-    final contributionsData = result['data'] as List;
-    return contributionsData
-        .map((json) => Contribution.fromJson(json))
-        .toList();
+      final contributionsData = result['data'] as List;
+      return contributionsData
+          .map((json) => Contribution.fromJson(json))
+          .toList();
+    } catch (e) {
+      print('Backend API failed, trying direct Appwrite access: $e');
+      // Fallback to direct Appwrite database access
+      return await _getCampaignContributionsDirectly(campaignId);
+    }
+  }
+
+  static Future<List<Contribution>> _getCampaignContributionsDirectly(
+    String campaignId,
+  ) async {
+    try {
+      final documents = await AppwriteService.databases.listDocuments(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.contributionsCollectionId,
+        queries: [
+          Query.equal('campaignId', campaignId),
+          Query.orderDesc('\$createdAt'),
+        ],
+      );
+
+      return documents.documents.map((doc) {
+        final data = doc.data;
+        data['\$id'] = doc.$id;
+        // Map backend fields to frontend model
+        data['id'] = doc.$id;
+        data['date'] = data['createdAt'] ?? data['\$createdAt'];
+        data['utrNumber'] = data['utr'];
+        return Contribution.fromJson(data);
+      }).toList();
+    } catch (e) {
+      throw Exception('Failed to load campaign contributions: $e');
+    }
   }
 
   static Future<List<Contribution>> getUserContributions(String userId) async {
-    final result = await _makeRequest(
-      path: '/contributions/user/$userId',
-      method: 'GET',
-      userId: userId,
-    );
+    try {
+      final result = await _makeRequest(
+        path: '/contributions/user/$userId',
+        method: 'GET',
+        userId: userId,
+      );
 
-    final contributionsData = result['data'] as List;
-    return contributionsData
-        .map((json) => Contribution.fromJson(json))
-        .toList();
+      final contributionsData = result['data'] as List;
+      return contributionsData
+          .map((json) => Contribution.fromJson(json))
+          .toList();
+    } catch (e) {
+      print('Backend API failed, trying direct Appwrite access: $e');
+      // Fallback to direct Appwrite database access
+      return await _getUserContributionsDirectly(userId);
+    }
+  }
+
+  static Future<List<Contribution>> _getUserContributionsDirectly(
+    String userId,
+  ) async {
+    try {
+      final documents = await AppwriteService.databases.listDocuments(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.contributionsCollectionId,
+        queries: [
+          Query.equal('contributorId', userId),
+          Query.orderDesc('\$createdAt'),
+        ],
+      );
+
+      return documents.documents.map((doc) {
+        final data = doc.data;
+        data['\$id'] = doc.$id;
+        // Map backend fields to frontend model
+        data['id'] = doc.$id;
+        data['date'] = data['createdAt'] ?? data['\$createdAt'];
+        data['utrNumber'] = data['utr'];
+        return Contribution.fromJson(data);
+      }).toList();
+    } catch (e) {
+      throw Exception('Failed to load user contributions: $e');
+    }
   }
 
   static Future<Contribution> createContribution({
@@ -398,44 +726,220 @@ class ApiService {
     String? paymentScreenshotUrl,
     DateTime? repaymentDueDate,
   }) async {
-    final result = await _makeRequest(
-      path: '/contributions',
-      method: 'POST',
-      userId: userId,
-      body: {
-        'campaignId': campaignId,
-        'amount': amount,
-        'utrNumber': utrNumber,
-        'type': type,
-        'isAnonymous': isAnonymous,
-        if (paymentScreenshotUrl != null)
-          'paymentScreenshotUrl': paymentScreenshotUrl,
-        if (repaymentDueDate != null)
-          'repaymentDueDate': repaymentDueDate.toIso8601String(),
-      },
-    );
+    try {
+      final result = await _makeRequest(
+        path: '/contributions',
+        method: 'POST',
+        userId: userId,
+        body: {
+          'campaignId': campaignId,
+          'amount': amount,
+          'utrNumber': utrNumber,
+          'type': type,
+          'isAnonymous': isAnonymous,
+          if (paymentScreenshotUrl != null)
+            'paymentScreenshotUrl': paymentScreenshotUrl,
+          if (repaymentDueDate != null)
+            'repaymentDueDate': repaymentDueDate.toIso8601String(),
+        },
+      );
 
-    return Contribution.fromJson(result['data']);
+      return Contribution.fromJson(result['data']);
+    } catch (e) {
+      print('Backend API failed, trying direct Appwrite access: $e');
+      // Fallback to direct Appwrite database access
+      return await _createContributionDirectly(
+        userId: userId,
+        campaignId: campaignId,
+        amount: amount,
+        utrNumber: utrNumber,
+        type: type,
+        isAnonymous: isAnonymous,
+        paymentScreenshotUrl: paymentScreenshotUrl,
+        repaymentDueDate: repaymentDueDate,
+      );
+    }
+  }
+
+  static Future<Contribution> _createContributionDirectly({
+    required String userId,
+    required String campaignId,
+    required double amount,
+    required String utrNumber,
+    required String type,
+    bool isAnonymous = false,
+    String? paymentScreenshotUrl,
+    DateTime? repaymentDueDate,
+  }) async {
+    try {
+      // Validate campaign exists and is active
+      final campaign = await AppwriteService.databases.getDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.campaignsCollectionId,
+        documentId: campaignId,
+      );
+
+      if (campaign.data['status'] != 'active') {
+        throw Exception('Campaign is not active');
+      }
+
+      // Check for duplicate UTR in this campaign
+      final existingContributions = await AppwriteService.databases
+          .listDocuments(
+            databaseId: AppwriteConfig.databaseId,
+            collectionId: AppwriteConfig.contributionsCollectionId,
+            queries: [
+              Query.equal('campaignId', campaignId),
+              Query.equal('utr', utrNumber),
+            ],
+          );
+
+      if (existingContributions.documents.isNotEmpty) {
+        throw Exception('UTR already exists for this campaign');
+      }
+
+      // Get contributor name
+      String contributorName = 'Anonymous';
+      if (!isAnonymous && userId.isNotEmpty && userId != 'anonymous') {
+        try {
+          final userProfile = await AppwriteService.getCurrentUserProfile();
+          if (userProfile != null) {
+            contributorName = userProfile.name;
+          }
+        } catch (e) {
+          // Keep anonymous if we can't get user name
+        }
+      }
+
+      // Create contribution
+      final contributionData = {
+        'campaignId': campaignId,
+        'contributorId': userId.isEmpty ? 'anonymous' : userId,
+        'contributorName': contributorName,
+        'amount': amount,
+        'utr': utrNumber,
+        'type': type,
+        'repaymentStatus': type == 'loan' ? 'pending' : 'na',
+        'isAnonymous': isAnonymous,
+        'paymentScreenshotUrl': paymentScreenshotUrl ?? '',
+        'createdAt': DateTime.now().toIso8601String(),
+        if (type == 'loan' && repaymentDueDate != null)
+          'repaymentDueDate': repaymentDueDate.toIso8601String(),
+      };
+
+      final document = await AppwriteService.databases.createDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.contributionsCollectionId,
+        documentId: ID.unique(),
+        data: contributionData,
+      );
+
+      // Update campaign collected amount
+      final newCollectedAmount =
+          (campaign.data['collectedAmount'] ?? 0) + amount;
+      await AppwriteService.databases.updateDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.campaignsCollectionId,
+        documentId: campaignId,
+        data: {
+          'collectedAmount': newCollectedAmount,
+          'updatedAt': DateTime.now().toIso8601String(),
+        },
+      );
+
+      // Format response to match frontend model
+      final data = document.data;
+      data['\$id'] = document.$id;
+      data['id'] = document.$id;
+      data['date'] = data['createdAt'];
+      data['utrNumber'] = data['utr'];
+
+      return Contribution.fromJson(data);
+    } catch (e) {
+      throw Exception('Failed to create contribution: $e');
+    }
   }
 
   static Future<Contribution> markLoanRepaid({
     required String contributionId,
     required String userId,
   }) async {
-    final result = await _makeRequest(
-      path: '/contributions/repaid/$contributionId',
-      method: 'PATCH',
-      userId: userId,
-    );
+    try {
+      final result = await _makeRequest(
+        path: '/contributions/repaid/$contributionId',
+        method: 'PATCH',
+        userId: userId,
+      );
 
-    return Contribution.fromJson(result['data']);
+      return Contribution.fromJson(result['data']);
+    } catch (e) {
+      print('Backend API failed, trying direct Appwrite access: $e');
+      // Fallback to direct Appwrite database access
+      return await _markLoanRepaidDirectly(contributionId, userId);
+    }
+  }
+
+  static Future<Contribution> _markLoanRepaidDirectly(
+    String contributionId,
+    String userId,
+  ) async {
+    try {
+      // Get the contribution
+      final contribution = await AppwriteService.databases.getDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.contributionsCollectionId,
+        documentId: contributionId,
+      );
+
+      // Get the campaign to check if user is the host
+      final campaign = await AppwriteService.databases.getDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.campaignsCollectionId,
+        documentId: contribution.data['campaignId'],
+      );
+
+      if (campaign.data['hostId'] != userId) {
+        throw Exception('Unauthorized to mark this loan as repaid');
+      }
+
+      if (contribution.data['type'] != 'loan') {
+        throw Exception('Only loans can be marked as repaid');
+      }
+
+      // Update contribution
+      final updatedDocument = await AppwriteService.databases.updateDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: AppwriteConfig.contributionsCollectionId,
+        documentId: contributionId,
+        data: {
+          'repaymentStatus': 'repaid',
+          'repaidAt': DateTime.now().toIso8601String(),
+        },
+      );
+
+      // Format response to match frontend model
+      final data = updatedDocument.data;
+      data['\$id'] = updatedDocument.$id;
+      data['id'] = updatedDocument.$id;
+      data['date'] = data['createdAt'];
+      data['utrNumber'] = data['utr'];
+
+      return Contribution.fromJson(data);
+    } catch (e) {
+      throw Exception('Failed to mark loan as repaid: $e');
+    }
   }
 
   // QR Code Generation
   static Future<String> generateQRCode(String campaignId) async {
-    final result = await _makeRequest(path: '/qr/$campaignId', method: 'GET');
-
-    return result['data']['qrCodeUrl'];
+    try {
+      final result = await _makeRequest(path: '/qr/$campaignId', method: 'GET');
+      return result['data']['qrCodeUrl'];
+    } catch (e) {
+      print('Backend API failed, using simple campaign link: $e');
+      // Fallback to simple campaign link (no QR image, just the link)
+      return 'https://friendfund.pro26.in/campaign/$campaignId';
+    }
   }
 
   // OCR Processing

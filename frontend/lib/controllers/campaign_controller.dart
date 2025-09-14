@@ -40,16 +40,10 @@ class CampaignController extends GetxController {
       _isLoading.value = true;
       _errorMessage.value = '';
 
-      // Try to get from cache first
-      final cachedCampaigns = CacheService.getCachedCampaigns();
-      if (cachedCampaigns != null) {
-        _campaigns.assignAll(cachedCampaigns);
-        print('Loaded ${cachedCampaigns.length} campaigns from cache');
-        _isLoading.value = false;
-        return;
-      }
+      // Skip cache temporarily to see fresh data
+      print('Loading campaigns from API...');
 
-      // If no cache, fetch from API
+      // Fetch from API
       final campaigns = await ApiService.getCampaigns();
       _campaigns.assignAll(campaigns);
 

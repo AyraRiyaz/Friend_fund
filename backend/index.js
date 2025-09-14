@@ -159,11 +159,14 @@ module.exports = async ({ req, res, log, error }) => {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers":
-      "Content-Type, Authorization, x-appwrite-user-id",
+      "Content-Type, Authorization, x-appwrite-user-id, x-appwrite-path, x-appwrite-method",
   };
 
+  // Get the actual method to use (from headers or fallback to original)
+  const requestMethod = headers["x-appwrite-method"] || method;
+
   // Handle preflight requests
-  if (method === "OPTIONS") {
+  if (method === "OPTIONS" || requestMethod === "OPTIONS") {
     return res.json({}, 200, corsHeaders);
   }
 
@@ -171,8 +174,9 @@ module.exports = async ({ req, res, log, error }) => {
     // Parse request data more safely
     let payload = {};
     let userId = headers["x-appwrite-user-id"];
+    let requestPath = headers["x-appwrite-path"] || path;
 
-    log(`Raw request data: method=${method}, path=${path}`);
+    log(`Raw request data: method=${requestMethod}, path=${requestPath}`);
     log(`Headers: ${JSON.stringify(headers)}`);
     log(`BodyRaw type: ${typeof bodyRaw}, value: ${bodyRaw}`);
     log(
@@ -182,7 +186,11 @@ module.exports = async ({ req, res, log, error }) => {
     // Handle different ways the body might be sent
     if (bodyJson && typeof bodyJson === "object") {
       payload = bodyJson;
-    } else if (bodyRaw && typeof bodyRaw === "string") {
+    } else if (
+      bodyRaw &&
+      typeof bodyRaw === "string" &&
+      bodyRaw.trim() !== ""
+    ) {
       try {
         const parsed = JSON.parse(bodyRaw);
         payload = parsed;
@@ -199,13 +207,13 @@ module.exports = async ({ req, res, log, error }) => {
 
     log(`Final parsed payload: ${JSON.stringify(payload)}`);
 
-    // Parse route
-    const route = path.split("/").filter(Boolean);
+    // Parse route using the custom path from headers or fallback to original
+    const route = requestPath.split("/").filter(Boolean);
     const endpoint = route[0] || "";
     const action = route[1] || "";
     const id = route[2] || "";
 
-    log(`Request: ${method} ${path}`);
+    log(`Request: ${requestMethod} ${requestPath}`);
     log(`User ID: ${userId}`);
     log(`Endpoint: ${endpoint}, Action: ${action}, ID: ${id}`);
 
@@ -221,9 +229,19 @@ module.exports = async ({ req, res, log, error }) => {
           corsHeaders
         );
 
+      case "auth":
+        return await handleAuth(
+          requestMethod,
+          action,
+          payload,
+          res,
+          log,
+          corsHeaders
+        );
+
       case "campaigns":
         return await handleCampaigns(
-          method,
+          requestMethod,
           action,
           id,
           payload,
@@ -235,7 +253,7 @@ module.exports = async ({ req, res, log, error }) => {
 
       case "contributions":
         return await handleContributions(
-          method,
+          requestMethod,
           action,
           id,
           payload,
@@ -247,7 +265,7 @@ module.exports = async ({ req, res, log, error }) => {
 
       case "ocr":
         return await handleOCR(
-          method,
+          requestMethod,
           action,
           payload,
           userId,
@@ -258,7 +276,7 @@ module.exports = async ({ req, res, log, error }) => {
 
       case "notifications":
         return await handleNotifications(
-          method,
+          requestMethod,
           action,
           id,
           payload,
@@ -270,7 +288,7 @@ module.exports = async ({ req, res, log, error }) => {
 
       case "users":
         return await handleUsers(
-          method,
+          requestMethod,
           action,
           id,
           payload,
@@ -281,7 +299,7 @@ module.exports = async ({ req, res, log, error }) => {
         );
 
       case "qr":
-        return await handleQR(method, id, res, log, corsHeaders);
+        return await handleQR(requestMethod, id, res, log, corsHeaders);
 
       default:
         return res.json(
@@ -343,24 +361,26 @@ async function registerUser(payload, res, log, corsHeaders) {
     );
 
     // Update user preferences instead of creating database document
-    await users.updatePrefs(user.$id, {
+    const userPrefs = {
       phoneNumber: payload.phoneNumber?.trim() || "",
       upiId: payload.upiId || "",
       profileImage: payload.profileImage || "",
       joinedAt: new Date().toISOString(),
-    });
+    };
+
+    await users.updatePrefs(user.$id, userPrefs);
 
     log(`User registered: ${user.$id}`);
 
     return res.json(
       Utils.successResponse("User registered successfully", {
         id: user.$id,
-        name: userProfile.name,
-        phoneNumber: userProfile.phoneNumber,
-        email: userProfile.email,
-        upiId: userProfile.upiId,
-        profileImage: userProfile.profileImage,
-        joinedAt: userProfile.joinedAt,
+        name: user.name,
+        phoneNumber: userPrefs.phoneNumber,
+        email: user.email,
+        upiId: userPrefs.upiId,
+        profileImage: userPrefs.profileImage,
+        joinedAt: userPrefs.joinedAt,
       }),
       201,
       corsHeaders
@@ -883,6 +903,55 @@ async function updateCampaign(campaignId, payload, userId, res, corsHeaders) {
 
   return res.json(
     Utils.successResponse("Campaign updated successfully", updatedCampaign),
+    200,
+    corsHeaders
+  );
+}
+
+async function deleteCampaign(campaignId, userId, res, corsHeaders) {
+  // First check if user owns the campaign
+  const existingCampaign = await databases.getDocument(
+    config.databaseId,
+    config.collections.campaigns,
+    campaignId
+  );
+
+  if (existingCampaign.hostId !== userId) {
+    return res.json(
+      Utils.errorResponse("Unauthorized to delete this campaign", null, 403),
+      403,
+      corsHeaders
+    );
+  }
+
+  // Check if campaign has contributions - should not delete if it has contributions
+  const contributions = await databases.listDocuments(
+    config.databaseId,
+    config.collections.contributions,
+    [Query.equal("campaignId", campaignId)]
+  );
+
+  if (contributions.documents.length > 0) {
+    return res.json(
+      Utils.errorResponse(
+        "Cannot delete campaign with existing contributions",
+        null,
+        400
+      ),
+      400,
+      corsHeaders
+    );
+  }
+
+  // Delete the campaign
+  await databases.deleteDocument(
+    config.databaseId,
+    config.collections.campaigns,
+    campaignId
+  );
+
+  return res.json(
+    Utils.successResponse("Campaign deleted successfully"),
     200,
     corsHeaders
   );
