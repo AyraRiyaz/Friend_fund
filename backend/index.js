@@ -155,18 +155,58 @@ const OCRService = {
 module.exports = async ({ req, res, log, error }) => {
   const { method, path, headers, bodyRaw, bodyJson } = req;
 
-  // CORS headers
+  // Comprehensive CORS headers for web applications
   const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers":
-      "Content-Type, Authorization, x-appwrite-user-id",
+    "Access-Control-Allow-Methods":
+      "GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD",
+    "Access-Control-Allow-Headers": [
+      "Content-Type",
+      "Authorization",
+      "x-appwrite-user-id",
+      "x-appwrite-user-jwt",
+      "x-appwrite-project",
+      "Accept",
+      "Accept-Language",
+      "Accept-Encoding",
+      "Cache-Control",
+      "Pragma",
+      "Origin",
+      "Referer",
+      "User-Agent",
+    ].join(", "),
+    "Access-Control-Allow-Credentials": "false", // Set to false when using "*" for origin
+    "Access-Control-Max-Age": "86400", // 24 hours
+    "Access-Control-Expose-Headers": "Content-Length, Content-Range",
   };
 
-  // Handle preflight requests
+  // Handle preflight requests (CORS)
   if (method === "OPTIONS") {
-    log(`Handling OPTIONS preflight request`);
-    return res.json({}, 200, corsHeaders);
+    log(`========== CORS PREFLIGHT REQUEST ==========`);
+    log(`Origin: ${headers.origin || "Not provided"}`);
+    log(
+      `Access-Control-Request-Method: ${
+        headers["access-control-request-method"] || "Not provided"
+      }`
+    );
+    log(
+      `Access-Control-Request-Headers: ${
+        headers["access-control-request-headers"] || "Not provided"
+      }`
+    );
+    log(`Responding with CORS headers and 200 status`);
+
+    return res.json(
+      {
+        message: "CORS preflight successful",
+        timestamp: new Date().toISOString(),
+        method: method,
+        path: path,
+        corsEnabled: true,
+      },
+      200,
+      corsHeaders
+    );
   }
 
   // Handle direct function calls (for testing)
@@ -273,26 +313,36 @@ module.exports = async ({ req, res, log, error }) => {
     log(`Final Payload: ${JSON.stringify(payload, null, 2)}`);
 
     log(`========== ROUTING ==========`);
-    // Parse route from the payload path or fallback to URL path
-    const requestPath = payload.path || path || "/";
+    // In Appwrite functions, path is always "/", so we MUST get the real path from payload
+    const requestPath = payload.path;
     const requestMethod = payload.method || method;
 
-    log(`Original URL path: '${path}'`);
+    log(`Original URL path (always "/" in Appwrite functions): '${path}'`);
     log(`Payload path: '${payload.path || "NOT PROVIDED"}'`);
     log(`Payload method: '${payload.method || "NOT PROVIDED"}'`);
-    log(`Final requestPath: '${requestPath}'`);
+    log(`Final requestPath: '${requestPath || "MISSING"}'`);
     log(`Final requestMethod: '${requestMethod}'`);
 
-    // Handle root path case
-    if (requestPath === "/" || requestPath === "") {
-      log(`Root path detected, returning 404 for missing endpoint`);
+    // Handle missing path in payload - this is critical for Appwrite functions
+    if (!requestPath || requestPath === "/" || requestPath === "") {
+      log(`ERROR: No valid path provided in payload`);
+      log(
+        `Appwrite functions require the path to be sent in the request body as 'path' field`
+      );
       return res.json(
         Utils.errorResponse(
-          "No endpoint specified. Please provide a valid API path.",
-          null,
-          404
+          'Missing API path. Please provide a \'path\' field in the request body (e.g., {"path": "/campaigns", "method": "GET"})',
+          {
+            receivedPayload: payload,
+            expectedFormat: {
+              path: "/endpoint",
+              method: "GET|POST|PUT|DELETE|PATCH",
+              bodyJson: "optional data object",
+            },
+          },
+          400
         ),
-        404,
+        400,
         corsHeaders
       );
     }
