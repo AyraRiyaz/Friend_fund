@@ -48,14 +48,15 @@ const config = {
     process.env.APPWRITE_FUNCTION_ENDPOINT || "https://cloud.appwrite.io/v1",
   projectId: process.env.APPWRITE_FUNCTION_PROJECT_ID,
   apiKey: process.env.APPWRITE_API_KEY,
-  databaseId: process.env.APPWRITE_DATABASE_ID || "friendfund-db",
+  databaseId: process.env.APPWRITE_DATABASE_ID || "68b5433d0004cadff5ff",
   collections: {
-    campaigns: process.env.CAMPAIGNS_COLLECTION_ID || "campaigns",
-    contributions: process.env.CONTRIBUTIONS_COLLECTION_ID || "contributions",
+    campaigns: process.env.CAMPAIGNS_COLLECTION_ID || "68b54652001a8a757571",
+    contributions:
+      process.env.CONTRIBUTIONS_COLLECTION_ID || "68b54a0700208ba7fdaa",
     notifications: process.env.NOTIFICATIONS_COLLECTION_ID || "notifications",
   },
   buckets: {
-    screenshots: process.env.SCREENSHOTS_BUCKET_ID || "screenshots",
+    screenshots: process.env.SCREENSHOTS_BUCKET_ID || "68c66749001ad2d77cfa",
   },
   baseUrl: process.env.FRONTEND_BASE_URL || "https://friendfund.pro26.in",
 };

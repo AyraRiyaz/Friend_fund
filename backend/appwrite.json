@@ -19,12 +19,12 @@
     ".gitignore"
   ],
   "variables": {
-    "APPWRITE_DATABASE_ID": "friendfund-db",
-    "USERS_COLLECTION_ID": "users",
-    "CAMPAIGNS_COLLECTION_ID": "campaigns", 
-    "CONTRIBUTIONS_COLLECTION_ID": "contributions",
+    "APPWRITE_DATABASE_ID": "68b5433d0004cadff5ff",
+    "USERS_COLLECTION_ID": "68b5437f000585a01be6",
+    "CAMPAIGNS_COLLECTION_ID": "68b54652001a8a757571", 
+    "CONTRIBUTIONS_COLLECTION_ID": "68b54a0700208ba7fdaa",
     "NOTIFICATIONS_COLLECTION_ID": "notifications",
-    "SCREENSHOTS_BUCKET_ID": "screenshots",
+    "SCREENSHOTS_BUCKET_ID": "68c66749001ad2d77cfa",
     "FRONTEND_BASE_URL": "https://friendfund.pro26.in",
     "NODE_ENV": "production"
   },
