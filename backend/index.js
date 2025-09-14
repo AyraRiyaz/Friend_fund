@@ -175,21 +175,42 @@ module.exports = async ({ req, res, log, error }) => {
     log(`Raw request data: method=${method}, path=${path}`);
     log(`Headers: ${JSON.stringify(headers)}`);
     log(`BodyRaw type: ${typeof bodyRaw}, value: ${bodyRaw}`);
-    log(
-      `BodyJson type: ${typeof bodyJson}, value: ${JSON.stringify(bodyJson)}`
-    );
+
+    // Safely check if bodyJson exists and is valid
+    let bodyJsonSafe = null;
+    try {
+      if (bodyJson !== null && bodyJson !== undefined) {
+        bodyJsonSafe = bodyJson;
+        log(
+          `BodyJson type: ${typeof bodyJson}, value: ${JSON.stringify(
+            bodyJson
+          )}`
+        );
+      } else {
+        log(`BodyJson is null or undefined`);
+      }
+    } catch (jsonError) {
+      log(`Error accessing bodyJson: ${jsonError.message}`);
+    }
 
     // Handle different ways the body might be sent
-    if (bodyJson && typeof bodyJson === "object") {
-      payload = bodyJson;
-    } else if (bodyRaw && typeof bodyRaw === "string") {
+    if (bodyJsonSafe && typeof bodyJsonSafe === "object") {
+      payload = bodyJsonSafe;
+    } else if (
+      bodyRaw &&
+      typeof bodyRaw === "string" &&
+      bodyRaw.trim() !== ""
+    ) {
       try {
         const parsed = JSON.parse(bodyRaw);
         payload = parsed;
       } catch (parseError) {
-        log(`Error parsing bodyRaw: ${parseError}`);
+        log(`Error parsing bodyRaw: ${parseError.message}`);
         payload = {};
       }
+    } else {
+      log(`No valid body data found, using empty payload`);
+      payload = {};
     }
 
     // If payload has nested bodyJson, extract it
