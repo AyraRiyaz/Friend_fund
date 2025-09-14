@@ -57,7 +57,8 @@ class _RegisterPageState extends State<RegisterPage> {
     );
 
     if (success) {
-      Get.offAllNamed('/home');
+      // Redirect to login page after successful registration
+      Get.offAllNamed('/login');
     }
   }
 

@@ -147,27 +147,18 @@ class AuthController extends GetxController {
 
       print('Appwrite Auth user created successfully: ${user.$id}');
 
-      // Create session for the new user
-      final session = await AppwriteService.createEmailSession(
-        email: email,
-        password: password,
-      );
-
-      print('Session created successfully: ${session.$id}');
-
-      // Store authentication token
-      await AuthTokenService.storeToken(session.$id, user.$id);
-
-      // Create user profile directly in Appwrite database
+      // Store user profile data in auth preferences instead of creating session
       try {
-        print('Attempting to create user profile in database...');
+        print('Attempting to store user profile in auth preferences...');
         print('User ID: ${user.$id}');
         print('Name: $name');
         print('Phone (cleaned): $cleanPhoneNumber');
         print('Email: $email');
         print('UPI ID: $upiId');
 
-        final profile = await AppwriteService.createUserProfile(
+        // Use the admin SDK to update user preferences without creating a session
+        // This will be done through the backend API
+        await AppwriteService.createUserProfile(
           userId: user.$id,
           name: name,
           phoneNumber: cleanPhoneNumber,
@@ -175,34 +166,27 @@ class AuthController extends GetxController {
           upiId: upiId,
         );
 
-        print(
-          'User profile created successfully in database: ${profile.toJson()}',
-        );
-        _userProfile.value = profile;
+        print('User profile stored successfully in auth preferences');
       } catch (profileError) {
-        print('Failed to create user profile: $profileError');
-        print('Profile error details: ${profileError.runtimeType}');
-
+        print('Failed to store user profile: $profileError');
+        
         // Show error to user if profile creation fails
         Get.snackbar(
           'Warning',
-          'Account created but profile setup failed. Please contact support.',
+          'Account created but profile setup failed. Please try logging in.',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.orange,
           colorText: Colors.white,
         );
-
-        // Even if profile creation fails, we still have a valid auth user
-        // We'll try to create the profile again when the user logs in next time
       }
 
-      _appwriteUser.value = user;
-      _authStatus.value = AuthStatus.authenticated;
-
+      // Don't set authentication status - user needs to login manually
       Get.snackbar(
         'Success',
-        'Account created successfully!',
+        'Account created successfully! Please login with your credentials.',
         snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
       );
 
       return true;
