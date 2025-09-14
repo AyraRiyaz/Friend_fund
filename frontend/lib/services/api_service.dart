@@ -56,16 +56,20 @@ class ApiService {
       final headers = await _getHeaders(userId: userId);
       print('Headers: $headers');
 
-      final response = await http.post(
-        Uri.parse(baseUrl),
-        headers: headers,
-        body: jsonEncode(requestBody),
-      ).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          throw Exception('Request timeout - Backend function may be sleeping or unreachable');
-        },
-      );
+      final response = await http
+          .post(
+            Uri.parse(baseUrl),
+            headers: headers,
+            body: jsonEncode(requestBody),
+          )
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              throw Exception(
+                'Request timeout - Backend function may be sleeping or unreachable',
+              );
+            },
+          );
 
       print('Response Status: ${response.statusCode}');
       print('Response Headers: ${response.headers}');
@@ -79,15 +83,21 @@ class ApiService {
           throw Exception(responseData['message'] ?? 'API request failed');
         }
       } else if (response.statusCode == 404) {
-        throw Exception('Backend function not found - Check if the function is deployed');
+        throw Exception(
+          'Backend function not found - Check if the function is deployed',
+        );
       } else if (response.statusCode >= 500) {
-        throw Exception('Backend server error (${response.statusCode}) - Function may be down');
+        throw Exception(
+          'Backend server error (${response.statusCode}) - Function may be down',
+        );
       } else {
         throw Exception('HTTP ${response.statusCode}: ${response.body}');
       }
     } on http.ClientException catch (e) {
       print('Network error details: $e');
-      throw Exception('Network connection failed - Check your internet connection and backend function URL');
+      throw Exception(
+        'Network connection failed - Check your internet connection and backend function URL',
+      );
     } on FormatException catch (e) {
       print('JSON parsing error: $e');
       throw Exception('Invalid response format from backend');
@@ -114,7 +124,9 @@ class ApiService {
     print('Testing backend connectivity...');
     final isHealthy = await healthCheck();
     if (!isHealthy) {
-      print('Warning: Backend function is not responding. Using direct database access.');
+      print(
+        'Warning: Backend function is not responding. Using direct database access.',
+      );
     } else {
       print('Backend function is working properly.');
     }
