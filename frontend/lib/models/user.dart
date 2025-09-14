@@ -21,13 +21,18 @@ class User {
     return User(
       id: json['id'] ?? json['\$id'] ?? '',
       name: json['name'] ?? '',
-      phoneNumber: json['mobileNumber'] ?? json['phoneNumber'] ?? '', // Support both field names
+      phoneNumber:
+          json['mobileNumber'] ??
+          json['phoneNumber'] ??
+          '', // Support both field names
       email: json['email'] ?? '',
       upiId: json['upiId'],
       profileImage: json['profileImage'],
       joinedAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
-          : (json['joinedAt'] != null ? DateTime.parse(json['joinedAt']) : DateTime.now()),
+          : (json['joinedAt'] != null
+                ? DateTime.parse(json['joinedAt'])
+                : DateTime.now()),
     );
   }
 

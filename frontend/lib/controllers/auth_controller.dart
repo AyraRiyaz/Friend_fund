@@ -67,7 +67,8 @@ class AuthController extends GetxController {
           final profile = await AppwriteService.createUserProfile(
             userId: userId,
             name: _appwriteUser.value!.name,
-            phoneNumber: '', // We don't have phone number from auth, user can add it later
+            phoneNumber:
+                '', // We don't have phone number from auth, user can add it later
             email: _appwriteUser.value!.email,
           );
           _userProfile.value = profile;
@@ -91,7 +92,9 @@ class AuthController extends GetxController {
       _isLoading.value = true;
       _errorMessage.value = '';
 
-      print('Starting registration for: $email with name: $name and phone: $phoneNumber');
+      print(
+        'Starting registration for: $email with name: $name and phone: $phoneNumber',
+      );
 
       // Create account in Appwrite Auth
       final user = await AppwriteService.createAccount(

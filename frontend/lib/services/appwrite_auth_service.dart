@@ -160,7 +160,8 @@ class AppwriteService {
         documentId: userId,
         data: {
           'name': name,
-          'mobileNumber': phoneNumber, // Fixed: using mobileNumber to match database schema
+          'mobileNumber':
+              phoneNumber, // Fixed: using mobileNumber to match database schema
           'email': email,
           'upiId': upiId,
           'createdAt': DateTime.now().toIso8601String(),
@@ -200,10 +201,12 @@ class AppwriteService {
     try {
       final updateData = <String, dynamic>{};
       if (name != null) updateData['name'] = name;
-      if (phoneNumber != null) updateData['mobileNumber'] = phoneNumber; // Fixed: using mobileNumber
+      if (phoneNumber != null)
+        updateData['mobileNumber'] = phoneNumber; // Fixed: using mobileNumber
       if (upiId != null) updateData['upiId'] = upiId;
       if (profileImage != null) updateData['profileImage'] = profileImage;
-      updateData['updatedAt'] = DateTime.now().toIso8601String(); // Always update timestamp
+      updateData['updatedAt'] = DateTime.now()
+          .toIso8601String(); // Always update timestamp
 
       final document = await _databases.updateDocument(
         databaseId: AppwriteConfig.databaseId,
