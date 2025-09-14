@@ -12,6 +12,10 @@ import 'pages/register_page.dart';
 import 'pages/my_campaigns_page.dart';
 import 'pages/add_campaign_page.dart';
 import 'pages/campaign_details_page.dart';
+import 'pages/my_contributions_page.dart';
+import 'pages/profile_page.dart';
+import 'pages/help_page.dart';
+import 'pages/about_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -68,6 +72,26 @@ class MyApp extends StatelessWidget {
         GetPage(
           name: '/campaign-details',
           page: () => const CampaignDetailsPage(),
+          middlewares: [AuthMiddleware()],
+        ),
+        GetPage(
+          name: '/my-contributions',
+          page: () => const MyContributionsPage(),
+          middlewares: [AuthMiddleware()],
+        ),
+        GetPage(
+          name: '/profile',
+          page: () => const ProfilePage(),
+          middlewares: [AuthMiddleware()],
+        ),
+        GetPage(
+          name: '/help',
+          page: () => const HelpPage(),
+          middlewares: [AuthMiddleware()],
+        ),
+        GetPage(
+          name: '/about',
+          page: () => const AboutPage(),
           middlewares: [AuthMiddleware()],
         ),
       ],

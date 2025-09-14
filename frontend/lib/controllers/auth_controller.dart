@@ -1,7 +1,6 @@
 import 'package:get/get.dart';
 import 'package:appwrite/models.dart' as appwrite;
 import '../services/appwrite_auth_service.dart';
-import '../services/api_service.dart';
 import '../services/auth_token_service.dart';
 import '../models/user.dart' as app_user;
 
@@ -53,10 +52,10 @@ class AuthController extends GetxController {
     }
   }
 
-  // Load user profile from backend
+  // Load user profile from database
   Future<void> _loadUserProfile(String userId) async {
     try {
-      final profile = await ApiService.getUserProfile(userId);
+      final profile = await AppwriteService.getUserProfile(userId);
       _userProfile.value = profile;
     } catch (e) {
       print('Failed to load user profile: $e');
@@ -92,8 +91,8 @@ class AuthController extends GetxController {
       // Store authentication token
       await AuthTokenService.storeToken(session.$id, user.$id);
 
-      // Create user profile in backend
-      final profile = await ApiService.createUserProfile(
+      // Create user profile directly in Appwrite database
+      final profile = await AppwriteService.createUserProfile(
         userId: user.$id,
         name: name,
         phoneNumber: phoneNumber,
@@ -242,7 +241,7 @@ class AuthController extends GetxController {
       _isLoading.value = true;
       _errorMessage.value = '';
 
-      final updatedProfile = await ApiService.updateUserProfile(
+      final updatedProfile = await AppwriteService.updateUserProfile(
         userId: _appwriteUser.value!.$id,
         name: name,
         phoneNumber: phoneNumber,

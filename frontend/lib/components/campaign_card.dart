@@ -7,6 +7,9 @@ class CampaignCard extends StatelessWidget {
   final double collected;
   final double target;
   final VoidCallback? onTap;
+  final bool isOwner;
+  final String? status;
+
   const CampaignCard({
     Key? key,
     required this.title,
@@ -14,11 +17,14 @@ class CampaignCard extends StatelessWidget {
     required this.collected,
     required this.target,
     this.onTap,
+    this.isOwner = false,
+    this.status,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final progress = (target > 0) ? (collected / target).clamp(0.0, 1.0) : 0.0;
+
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       elevation: 4,
@@ -41,6 +47,27 @@ class CampaignCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (isOwner && status != null) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(status!).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        status!.toUpperCase(),
+                        style: TextStyle(
+                          color: _getStatusColor(status!),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
@@ -76,10 +103,30 @@ class CampaignCard extends StatelessWidget {
                   ),
                 ],
               ),
+              if (isOwner) ...[
+                const SizedBox(height: 8),
+                Text(
+                  '${(progress * 100).toStringAsFixed(1)}% completed',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                ),
+              ],
             ],
           ),
         ),
       ),
     );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return Colors.green;
+      case 'closed':
+        return Colors.blue;
+      case 'paused':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
   }
 }
