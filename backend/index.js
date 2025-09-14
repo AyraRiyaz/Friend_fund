@@ -168,35 +168,57 @@ module.exports = async ({ req, res, log, error }) => {
     return res.json({}, 200, corsHeaders);
   }
 
+  log(`========== APPWRITE FUNCTION EXECUTION START ==========`);
+  log(`Timestamp: ${new Date().toISOString()}`);
+  log(`Function Environment Variables Check:`);
+  log(
+    `- APPWRITE_FUNCTION_PROJECT_ID: ${
+      process.env.APPWRITE_FUNCTION_PROJECT_ID || "NOT SET"
+    }`
+  );
+  log(
+    `- APPWRITE_DATABASE_ID: ${process.env.APPWRITE_DATABASE_ID || "NOT SET"}`
+  );
+  log(
+    `- CAMPAIGNS_COLLECTION_ID: ${
+      process.env.CAMPAIGNS_COLLECTION_ID || "NOT SET"
+    }`
+  );
+
   try {
     // Parse request data more safely
     let payload = {};
     let userId = headers["x-appwrite-user-id"];
 
-    log(`Raw request data: method=${method}, path=${path}`);
-    log(`Headers: ${JSON.stringify(headers)}`);
-    log(`BodyRaw type: ${typeof bodyRaw}, value: ${bodyRaw}`);
+    log(`========== REQUEST PARSING ==========`);
+    log(`Request Method: ${method}`);
+    log(`Request Path: ${path}`);
+    log(`User ID from Headers: ${userId || "NOT PROVIDED"}`);
+    log(`Headers: ${JSON.stringify(headers, null, 2)}`);
+    log(`BodyRaw Type: ${typeof bodyRaw}`);
+    log(`BodyRaw Length: ${bodyRaw ? bodyRaw.length : 0}`);
+    log(`BodyRaw Content: ${bodyRaw || "EMPTY"}`);
 
     // Safely check if bodyJson exists and is valid
     let bodyJsonSafe = null;
     try {
       if (bodyJson !== null && bodyJson !== undefined) {
         bodyJsonSafe = bodyJson;
-        log(
-          `BodyJson type: ${typeof bodyJson}, value: ${JSON.stringify(
-            bodyJson
-          )}`
-        );
+        log(`BodyJson Type: ${typeof bodyJson}`);
+        log(`BodyJson Content: ${JSON.stringify(bodyJson, null, 2)}`);
       } else {
         log(`BodyJson is null or undefined`);
       }
     } catch (jsonError) {
-      log(`Error accessing bodyJson: ${jsonError.message}`);
+      log(`ERROR accessing bodyJson: ${jsonError.message}`);
+      error(`BodyJson access error: ${jsonError.stack}`);
     }
 
+    log(`========== PAYLOAD PROCESSING ==========`);
     // Handle different ways the body might be sent
     if (bodyJsonSafe && typeof bodyJsonSafe === "object") {
       payload = bodyJsonSafe;
+      log(`Using bodyJson as payload`);
     } else if (
       bodyRaw &&
       typeof bodyRaw === "string" &&
@@ -205,8 +227,10 @@ module.exports = async ({ req, res, log, error }) => {
       try {
         const parsed = JSON.parse(bodyRaw);
         payload = parsed;
+        log(`Successfully parsed bodyRaw as JSON`);
       } catch (parseError) {
-        log(`Error parsing bodyRaw: ${parseError.message}`);
+        log(`ERROR parsing bodyRaw: ${parseError.message}`);
+        error(`BodyRaw parse error: ${parseError.stack}`);
         payload = {};
       }
     } else {
@@ -216,11 +240,13 @@ module.exports = async ({ req, res, log, error }) => {
 
     // If payload has nested bodyJson, extract it
     if (payload.bodyJson && typeof payload.bodyJson === "object") {
+      log(`Extracting nested bodyJson from payload`);
       payload = payload.bodyJson;
     }
 
-    log(`Final parsed payload: ${JSON.stringify(payload)}`);
+    log(`Final Payload: ${JSON.stringify(payload, null, 2)}`);
 
+    log(`========== ROUTING ==========`);
     // Parse route from the payload path or fallback to URL path
     const requestPath = payload.path || path;
     const requestMethod = payload.method || method;
@@ -230,9 +256,15 @@ module.exports = async ({ req, res, log, error }) => {
     const action = route[1] || "";
     const id = route[2] || "";
 
-    log(`Request: ${requestMethod} ${requestPath}`);
-    log(`User ID: ${userId}`);
-    log(`Endpoint: ${endpoint}, Action: ${action}, ID: ${id}`);
+    log(`Request Path (from payload/URL): ${requestPath}`);
+    log(`Request Method (from payload/request): ${requestMethod}`);
+    log(`Parsed Route Array: [${route.join(", ")}]`);
+    log(`Endpoint: '${endpoint}'`);
+    log(`Action: '${action}'`);
+    log(`ID: '${id}'`);
+    log(`User ID: ${userId || "NOT PROVIDED"}`);
+
+    log(`========== HANDLER ROUTING ==========`);
 
     // Route to appropriate handler
     switch (endpoint) {
@@ -319,6 +351,7 @@ module.exports = async ({ req, res, log, error }) => {
         return await handleQR(requestMethod, id, res, log, corsHeaders);
 
       default:
+        log(`ERROR: No handler found for endpoint: '${endpoint}'`);
         return res.json(
           Utils.errorResponse("Endpoint not found", null, 404),
           404,
@@ -326,7 +359,11 @@ module.exports = async ({ req, res, log, error }) => {
         );
     }
   } catch (err) {
-    error(`Unhandled error: ${err.message}`);
+    log(`========== UNHANDLED ERROR ==========`);
+    log(`Error Message: ${err.message}`);
+    log(`Error Stack: ${err.stack}`);
+    error(`Unhandled error in main function: ${err.message}`);
+    error(`Full error stack: ${err.stack}`);
     return res.json(
       Utils.errorResponse("Internal server error", err.message, 500),
       500,
@@ -587,51 +624,62 @@ async function handleCampaigns(
   log,
   corsHeaders
 ) {
+  log(`========== CAMPAIGNS HANDLER ==========`);
+  log(`Method: ${method}`);
+  log(`Action: ${action}`);
+  log(`ID: ${id}`);
+  log(`User ID: ${userId}`);
+  log(`Payload: ${JSON.stringify(payload, null, 2)}`);
+
   try {
+    log(`========== CAMPAIGNS ROUTING ==========`);
     switch (method) {
       case "GET":
         if (id) {
-          // Get single campaign
-          return await getCampaign(id, res, corsHeaders);
+          log(`Routing to: Get single campaign with ID: ${id}`);
+          return await getCampaign(id, res, log, corsHeaders);
         } else if (action === "user" && userId) {
-          // Get user's campaigns
-          return await getUserCampaigns(userId, res, corsHeaders);
+          log(`Routing to: Get user campaigns for user: ${userId}`);
+          return await getUserCampaigns(userId, res, log, corsHeaders);
         } else {
-          // Get all campaigns
-          return await getAllCampaigns(res, corsHeaders);
+          log(`Routing to: Get all campaigns`);
+          return await getAllCampaigns(res, log, corsHeaders);
         }
 
       case "POST":
         if (action === "link" && id) {
-          // Generate campaign link
+          log(`Routing to: Generate campaign link for ID: ${id}`);
           return await generateCampaignLink(id, res, corsHeaders);
         } else {
-          // Create campaign
+          log(`Routing to: Create new campaign`);
           return await createCampaign(payload, userId, res, log, corsHeaders);
         }
 
       case "PUT":
       case "PATCH":
         if (id) {
-          // Update campaign
+          log(`Routing to: Update campaign with ID: ${id}`);
           return await updateCampaign(id, payload, userId, res, corsHeaders);
         }
         break;
 
       case "DELETE":
         if (id) {
-          // Delete campaign
+          log(`Routing to: Delete campaign with ID: ${id}`);
           return await deleteCampaign(id, userId, res, corsHeaders);
         }
         break;
     }
 
+    log(`ERROR: Invalid campaign operation - no matching route found`);
     return res.json(
       Utils.errorResponse("Invalid campaign operation"),
       400,
       corsHeaders
     );
   } catch (err) {
+    log(`ERROR in campaigns handler: ${err.message}`);
+    error(`Campaigns handler error: ${err.stack}`);
     return res.json(
       Utils.errorResponse("Campaign operation failed", err.message),
       500,
@@ -640,68 +688,114 @@ async function handleCampaigns(
   }
 }
 
-async function getAllCampaigns(res, corsHeaders) {
-  const campaigns = await databases.listDocuments(
-    config.databaseId,
-    config.collections.campaigns,
-    [
-      Query.equal("status", "active"),
-      Query.orderDesc("createdAt"),
-      Query.limit(50),
-    ]
-  );
+async function getAllCampaigns(res, log, corsHeaders) {
+  log(`========== GET ALL CAMPAIGNS ==========`);
+  log(`Database ID: ${config.databaseId}`);
+  log(`Collection ID: ${config.collections.campaigns}`);
 
-  // Enrich campaigns with host names
-  const enrichedCampaigns = await Promise.all(
-    campaigns.documents.map(async (campaign) => {
-      try {
-        const hostUser = await users.get(campaign.hostId);
+  try {
+    log(`Querying campaigns from database...`);
+    const campaigns = await databases.listDocuments(
+      config.databaseId,
+      config.collections.campaigns,
+      [
+        Query.equal("status", "active"),
+        Query.orderDesc("createdAt"),
+        Query.limit(50),
+      ]
+    );
 
-        return {
-          id: campaign.$id,
-          title: campaign.title,
-          description: campaign.description,
-          purpose: campaign.purpose,
-          targetAmount: campaign.targetAmount,
-          collectedAmount: campaign.collectedAmount,
-          hostId: campaign.hostId,
-          hostName: hostUser.name,
-          createdAt: campaign.createdAt,
-          dueDate: campaign.dueDate || null,
-          status: campaign.status,
-          contributions: [], // Will be populated when needed
-        };
-      } catch (err) {
-        // If host user not found, use default name
-        return {
-          id: campaign.$id,
-          title: campaign.title,
-          description: campaign.description,
-          purpose: campaign.purpose,
-          targetAmount: campaign.targetAmount,
-          collectedAmount: campaign.collectedAmount,
-          hostId: campaign.hostId,
-          hostName: "Unknown User",
-          createdAt: campaign.createdAt,
-          dueDate: campaign.dueDate || null,
-          status: campaign.status,
-          contributions: [],
-        };
-      }
-    })
-  );
+    log(`Found ${campaigns.documents.length} campaigns`);
+    log(
+      `Campaign documents: ${JSON.stringify(
+        campaigns.documents.map((c) => ({ id: c.$id, title: c.title })),
+        null,
+        2
+      )}`
+    );
 
-  return res.json(
-    Utils.successResponse(
+    // Enrich campaigns with host names
+    log(`Enriching campaigns with host names...`);
+    const enrichedCampaigns = await Promise.all(
+      campaigns.documents.map(async (campaign, index) => {
+        log(
+          `Processing campaign ${index + 1}/${campaigns.documents.length}: ${
+            campaign.$id
+          }`
+        );
+        try {
+          const hostUser = await users.get(campaign.hostId);
+          log(`Found host user for campaign ${campaign.$id}: ${hostUser.name}`);
+
+          const enriched = {
+            id: campaign.$id,
+            title: campaign.title,
+            description: campaign.description,
+            purpose: campaign.purpose,
+            targetAmount: campaign.targetAmount,
+            collectedAmount: campaign.collectedAmount,
+            hostId: campaign.hostId,
+            hostName: hostUser.name,
+            createdAt: campaign.createdAt,
+            dueDate: campaign.dueDate || null,
+            status: campaign.status,
+            contributions: [], // Will be populated when needed
+          };
+
+          log(
+            `Enriched campaign ${campaign.$id}: ${JSON.stringify(
+              enriched,
+              null,
+              2
+            )}`
+          );
+          return enriched;
+        } catch (err) {
+          log(
+            `ERROR getting host user for campaign ${campaign.$id}: ${err.message}`
+          );
+          // If host user not found, use default name
+          const enriched = {
+            id: campaign.$id,
+            title: campaign.title,
+            description: campaign.description,
+            purpose: campaign.purpose,
+            targetAmount: campaign.targetAmount,
+            collectedAmount: campaign.collectedAmount,
+            hostId: campaign.hostId,
+            hostName: "Unknown User",
+            createdAt: campaign.createdAt,
+            dueDate: campaign.dueDate || null,
+            status: campaign.status,
+            contributions: [],
+          };
+
+          log(`Using default host name for campaign ${campaign.$id}`);
+          return enriched;
+        }
+      })
+    );
+
+    log(`Successfully enriched all campaigns`);
+    log(
+      `Final enriched campaigns: ${JSON.stringify(enrichedCampaigns, null, 2)}`
+    );
+
+    const response = Utils.successResponse(
       "Campaigns retrieved successfully",
       enrichedCampaigns
-    ),
-    200,
-    corsHeaders
-  );
+    );
+
+    log(`Sending response: ${JSON.stringify(response, null, 2)}`);
+    return res.json(response, 200, corsHeaders);
+  } catch (err) {
+    log(`ERROR in getAllCampaigns: ${err.message}`);
+    error(`getAllCampaigns error: ${err.stack}`);
+    throw err;
+  }
 }
 
-async function getCampaign(campaignId, res, corsHeaders) {
+async function getCampaign(campaignId, res, log, corsHeaders) {
   const campaign = await databases.getDocument(
     config.databaseId,
     config.collections.campaigns,

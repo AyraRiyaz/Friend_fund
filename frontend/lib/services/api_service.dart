@@ -39,6 +39,13 @@ class ApiService {
     String? userId,
     Map<String, dynamic>? body,
   }) async {
+    print('========== FRONTEND API REQUEST START ==========');
+    print('Timestamp: ${DateTime.now().toIso8601String()}');
+    print('Base URL: $baseUrl');
+    print('Request Path: $path');
+    print('Request Method: $method');
+    print('User ID: ${userId ?? 'Not provided'}');
+
     try {
       // Create the request payload that the backend expects
       final requestBody = {
@@ -47,15 +54,24 @@ class ApiService {
         if (body != null) 'bodyJson': body,
       };
 
-      print('API Request Debug:');
-      print('Path: $path');
-      print('Method: $method');
-      print('Body: ${body != null ? jsonEncode(body) : 'null'}');
-      print('Request Body: ${jsonEncode(requestBody)}');
-      print('Base URL: $baseUrl');
+      print('========== REQUEST PREPARATION ==========');
+      print('Original Body: ${body != null ? jsonEncode(body) : 'null'}');
+      print('Request Body Structure: ${jsonEncode(requestBody)}');
 
       final headers = await _getHeaders(userId: userId);
-      print('Headers: $headers');
+      print('========== REQUEST HEADERS ==========');
+      headers.forEach((key, value) {
+        // Don't log sensitive tokens completely
+        if (key.toLowerCase().contains('token') ||
+            key.toLowerCase().contains('jwt')) {
+          print('$key: ${value.substring(0, 10)}...[REDACTED]');
+        } else {
+          print('$key: $value');
+        }
+      });
+
+      print('========== SENDING HTTP REQUEST ==========');
+      print('Making POST request to: $baseUrl');
 
       final response = await http
           .post(
@@ -66,45 +82,86 @@ class ApiService {
           .timeout(
             const Duration(seconds: 30),
             onTimeout: () {
+              print('========== REQUEST TIMEOUT ==========');
+              print('Request timed out after 30 seconds');
               throw Exception(
                 'Request timeout - Backend function may be sleeping or unreachable',
               );
             },
           );
 
-      print('Response Status: ${response.statusCode}');
-      print('Response Headers: ${response.headers}');
-      print('Response Body: ${response.body}');
+      print('========== HTTP RESPONSE RECEIVED ==========');
+      print('Response Status Code: ${response.statusCode}');
+      print('Response Headers:');
+      response.headers.forEach((key, value) {
+        print('  $key: $value');
+      });
+      print('Response Body Length: ${response.body.length} characters');
+      print('Response Body Content:');
+      print(response.body);
 
       if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        if (responseData['success'] == true) {
-          return responseData;
-        } else {
-          throw Exception(responseData['message'] ?? 'API request failed');
+        print('========== PARSING SUCCESSFUL RESPONSE ==========');
+        try {
+          final responseData = jsonDecode(response.body);
+          print('Parsed Response Data:');
+          print(jsonEncode(responseData));
+
+          if (responseData['success'] == true) {
+            print('✅ API Request Successful');
+            print('Response Message: ${responseData['message']}');
+            print('Response Data Type: ${responseData['data']?.runtimeType}');
+            return responseData;
+          } else {
+            print('❌ API Request Failed (success=false)');
+            print('Error Message: ${responseData['message']}');
+            print('Error Details: ${responseData['errors']}');
+            throw Exception(responseData['message'] ?? 'API request failed');
+          }
+        } catch (parseError) {
+          print('❌ JSON Parse Error on 200 Response');
+          print('Parse Error: $parseError');
+          print('Raw Response: ${response.body}');
+          throw Exception('Invalid JSON response from backend: $parseError');
         }
       } else if (response.statusCode == 404) {
+        print('❌ Backend Function Not Found (404)');
+        print(
+          'This usually means the function is not deployed or URL is wrong',
+        );
         throw Exception(
           'Backend function not found - Check if the function is deployed',
         );
       } else if (response.statusCode >= 500) {
+        print('❌ Backend Server Error (${response.statusCode})');
+        print('Response Body: ${response.body}');
         throw Exception(
           'Backend server error (${response.statusCode}) - Function may be down',
         );
       } else {
+        print('❌ HTTP Error ${response.statusCode}');
+        print('Response Body: ${response.body}');
         throw Exception('HTTP ${response.statusCode}: ${response.body}');
       }
     } on http.ClientException catch (e) {
-      print('Network error details: $e');
+      print('========== NETWORK ERROR ==========');
+      print('ClientException Details: $e');
+      print('This usually indicates network connectivity issues');
       throw Exception(
         'Network connection failed - Check your internet connection and backend function URL',
       );
     } on FormatException catch (e) {
-      print('JSON parsing error: $e');
+      print('========== JSON FORMAT ERROR ==========');
+      print('FormatException Details: $e');
+      print('This indicates malformed JSON in request or response');
       throw Exception('Invalid response format from backend');
     } catch (e) {
-      print('API Error: $e');
+      print('========== UNEXPECTED ERROR ==========');
+      print('Error Type: ${e.runtimeType}');
+      print('Error Details: $e');
       throw Exception('Network error: $e');
+    } finally {
+      print('========== FRONTEND API REQUEST END ==========');
     }
   }
 
@@ -222,9 +279,38 @@ class ApiService {
 
   // Campaign Management
   static Future<List<Campaign>> getCampaigns() async {
-    final result = await _makeRequest(path: '/campaigns', method: 'GET');
-    final campaignsData = result['data'] as List;
-    return campaignsData.map((json) => Campaign.fromJson(json)).toList();
+    print('========== GET CAMPAIGNS API CALL ==========');
+    print('Calling backend endpoint: /campaigns');
+
+    try {
+      final result = await _makeRequest(path: '/campaigns', method: 'GET');
+
+      print('========== CAMPAIGNS RESPONSE PROCESSING ==========');
+      print('Response result: ${jsonEncode(result)}');
+
+      if (result['data'] == null) {
+        print('❌ No data field in response');
+        throw Exception('No campaigns data received from backend');
+      }
+
+      final campaignsData = result['data'] as List;
+      print('✅ Campaigns data received: ${campaignsData.length} campaigns');
+
+      final campaigns = campaignsData.map((json) {
+        print('Processing campaign: ${json['id']} - ${json['title']}');
+        return Campaign.fromJson(json);
+      }).toList();
+
+      print('✅ Successfully parsed ${campaigns.length} campaigns');
+      return campaigns;
+    } catch (e) {
+      print('❌ GET CAMPAIGNS FAILED');
+      print('Error details: $e');
+
+      // Note: No fallback available for getCampaigns, unlike other methods
+      print('No fallback mechanism available for getCampaigns');
+      rethrow;
+    }
   }
 
   static Future<Campaign> getCampaign(String campaignId) async {
