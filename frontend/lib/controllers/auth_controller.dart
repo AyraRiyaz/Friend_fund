@@ -53,23 +53,26 @@ class AuthController extends GetxController {
     }
   }
 
-  // Load user profile from database
+  // Load user profile from preferences
   Future<void> _loadUserProfile(String userId) async {
     try {
-      final profile = await AppwriteService.getUserProfile(userId);
+      final profile = await AppwriteService.getCurrentUserProfile();
       _userProfile.value = profile;
-      print('User profile loaded successfully');
+      if (profile != null) {
+        print('User profile loaded successfully from preferences');
+      } else {
+        print('No user profile found in preferences');
+      }
     } catch (e) {
       print('Failed to load user profile: $e');
-      // If profile doesn't exist, we can create a basic one using Appwrite Auth data
+      // If profile doesn't exist in preferences, we can create a basic one
       if (_appwriteUser.value != null) {
         try {
-          print('Attempting to create missing user profile...');
+          print('Attempting to create missing user profile in preferences...');
           final profile = await AppwriteService.createUserProfile(
             userId: userId,
             name: _appwriteUser.value!.name,
-            phoneNumber:
-                '', // We don't have phone number from auth, user can add it later
+            phoneNumber: '', // User can add it later
             email: _appwriteUser.value!.email,
           );
           _userProfile.value = profile;

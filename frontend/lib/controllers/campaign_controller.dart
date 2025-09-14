@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import '../services/api_service.dart';
+import '../services/cache_service.dart';
 import '../models/campaign.dart';
 import 'auth_controller.dart';
 
@@ -33,14 +34,28 @@ class CampaignController extends GetxController {
     loadCampaigns();
   }
 
-  // Load all campaigns
+  // Load all campaigns with caching
   Future<void> loadCampaigns() async {
     try {
       _isLoading.value = true;
       _errorMessage.value = '';
 
+      // Try to get from cache first
+      final cachedCampaigns = CacheService.getCachedCampaigns();
+      if (cachedCampaigns != null) {
+        _campaigns.assignAll(cachedCampaigns);
+        print('Loaded ${cachedCampaigns.length} campaigns from cache');
+        _isLoading.value = false;
+        return;
+      }
+
+      // If no cache, fetch from API
       final campaigns = await ApiService.getCampaigns();
       _campaigns.assignAll(campaigns);
+
+      // Cache the results
+      await CacheService.cacheCampaigns(campaigns);
+      print('Loaded ${campaigns.length} campaigns from API and cached');
     } catch (e) {
       _errorMessage.value = e.toString();
       Get.snackbar(
@@ -132,6 +147,9 @@ class CampaignController extends GetxController {
       // Add to campaigns list
       _campaigns.insert(0, campaign);
       _myCampaigns.insert(0, campaign);
+
+      // Invalidate cache since we have new data
+      await CacheService.clearCampaignsCache();
 
       Get.snackbar(
         'Success',

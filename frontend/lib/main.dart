@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/services.dart';
 import 'controllers/auth_controller.dart';
 import 'controllers/campaign_controller.dart';
 import 'services/appwrite_auth_service.dart';
@@ -50,8 +52,16 @@ class MyApp extends StatelessWidget {
       getPages: [
         // Auth Routes
         GetPage(name: '/auth', page: () => const AuthWrapper()),
-        GetPage(name: '/login', page: () => const LoginPage()),
-        GetPage(name: '/register', page: () => const RegisterPage()),
+        GetPage(
+          name: '/login',
+          page: () => const LoginPage(),
+          middlewares: [GuestMiddleware()], // Block access when authenticated
+        ),
+        GetPage(
+          name: '/register',
+          page: () => const RegisterPage(),
+          middlewares: [GuestMiddleware()], // Block access when authenticated
+        ),
 
         // App Routes (require authentication)
         GetPage(
@@ -158,5 +168,19 @@ class AuthMiddleware extends GetMiddleware {
     }
 
     return null; // Allow access to the route
+  }
+}
+
+class GuestMiddleware extends GetMiddleware {
+  @override
+  RouteSettings? redirect(String? route) {
+    final authController = Get.find<AuthController>();
+
+    // If user is authenticated, redirect to home
+    if (authController.isAuthenticated) {
+      return const RouteSettings(name: '/home');
+    }
+
+    return null; // Allow access to the route (for unauthenticated users)
   }
 }

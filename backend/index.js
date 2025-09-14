@@ -2,11 +2,13 @@
  * FriendFund Unified Backend Function
  * Single Appwrite function handling all API endpoints
  *
+ * ARCHITECTURE: Uses Appwrite Auth preferences instead of users collection for user data storage
+ *
  * API Endpoints:
- * - POST /auth/register - Register new user
- * - POST /auth/login - User login
- * - GET /users/{id} - Get user by ID
- * - PUT /users/{id} - Update user profile
+ * - POST /auth/register - Register new user (stores data in auth preferences)
+ * - POST /auth/login - User login (retrieves data from auth preferences)
+ * - GET /users/{id} - Get user by ID (from Appwrite Users API)
+ * - PUT /users/{id} - Update user profile (updates auth preferences)
  * - GET /campaigns - Get all active campaigns
  * - GET /campaigns/{id} - Get specific campaign with contributions
  * - GET /campaigns/user - Get current user's campaigns
@@ -48,7 +50,6 @@ const config = {
   apiKey: process.env.APPWRITE_API_KEY,
   databaseId: process.env.APPWRITE_DATABASE_ID || "friendfund-db",
   collections: {
-    users: process.env.USERS_COLLECTION_ID || "users",
     campaigns: process.env.CAMPAIGNS_COLLECTION_ID || "campaigns",
     contributions: process.env.CONTRIBUTIONS_COLLECTION_ID || "contributions",
     notifications: process.env.NOTIFICATIONS_COLLECTION_ID || "notifications",
@@ -341,20 +342,13 @@ async function registerUser(payload, res, log, corsHeaders) {
       payload.name
     );
 
-    // Create user profile in database
-    const userProfile = await databases.createDocument(
-      config.databaseId,
-      config.collections.users,
-      user.$id,
-      {
-        name: payload.name.trim(),
-        phoneNumber: payload.phoneNumber.trim(),
-        email: payload.email.trim(),
-        upiId: payload.upiId || null,
-        profileImage: payload.profileImage || null,
-        joinedAt: new Date().toISOString(),
-      }
-    );
+    // Update user preferences instead of creating database document
+    await users.updatePrefs(user.$id, {
+      phoneNumber: payload.phoneNumber?.trim() || "",
+      upiId: payload.upiId || "",
+      profileImage: payload.profileImage || "",
+      joinedAt: new Date().toISOString(),
+    });
 
     log(`User registered: ${user.$id}`);
 
@@ -387,14 +381,10 @@ async function loginUser(payload, res, log, corsHeaders) {
     // In a real implementation, you would validate credentials
     // For now, we'll simulate successful login and return user data
 
-    // Get user by email from database
-    const userList = await databases.listDocuments(
-      config.databaseId,
-      config.collections.users,
-      [Query.equal("email", payload.email)]
-    );
+    // Get user by email from Users API
+    const userList = await users.list([Query.equal("email", payload.email)]);
 
-    if (userList.documents.length === 0) {
+    if (userList.users.length === 0) {
       return res.json(
         Utils.errorResponse("Invalid credentials"),
         401,
@@ -402,19 +392,20 @@ async function loginUser(payload, res, log, corsHeaders) {
       );
     }
 
-    const userProfile = userList.documents[0];
+    const user = userList.users[0];
+    const prefs = user.prefs || {};
 
-    log(`User logged in: ${userProfile.$id}`);
+    log(`User logged in: ${user.$id}`);
 
     return res.json(
       Utils.successResponse("Login successful", {
-        id: userProfile.$id,
-        name: userProfile.name,
-        phoneNumber: userProfile.phoneNumber,
-        email: userProfile.email,
-        upiId: userProfile.upiId,
-        profileImage: userProfile.profileImage,
-        joinedAt: userProfile.joinedAt,
+        id: user.$id,
+        name: user.name,
+        phoneNumber: prefs.phoneNumber || "",
+        email: user.email,
+        upiId: prefs.upiId || "",
+        profileImage: prefs.profileImage || "",
+        joinedAt: user.$createdAt,
       }),
       200,
       corsHeaders
@@ -472,21 +463,21 @@ async function handleUsers(
 }
 
 async function getUser(userId, res, corsHeaders) {
-  const userProfile = await databases.getDocument(
-    config.databaseId,
-    config.collections.users,
-    userId
-  );
+  // Get user data from Appwrite Auth Users API
+  const user = await users.get(userId);
+
+  // Get additional preferences
+  const prefs = user.prefs || {};
 
   return res.json(
     Utils.successResponse("User retrieved successfully", {
-      id: userProfile.$id,
-      name: userProfile.name,
-      phoneNumber: userProfile.phoneNumber,
-      email: userProfile.email,
-      upiId: userProfile.upiId,
-      profileImage: userProfile.profileImage,
-      joinedAt: userProfile.joinedAt,
+      id: user.$id,
+      name: user.name,
+      phoneNumber: prefs.phoneNumber || "",
+      email: user.email,
+      upiId: prefs.upiId || "",
+      profileImage: prefs.profileImage || "",
+      joinedAt: user.$createdAt,
     }),
     200,
     corsHeaders
@@ -503,29 +494,43 @@ async function updateUser(userId, payload, currentUserId, res, corsHeaders) {
     );
   }
 
-  const updateData = {};
+  // Get current user to merge with new data
+  const currentUser = await users.get(userId);
+  const currentPrefs = currentUser.prefs || {};
 
-  if (payload.name) updateData.name = payload.name.trim();
-  if (payload.phoneNumber) updateData.phoneNumber = payload.phoneNumber.trim();
-  if (payload.upiId) updateData.upiId = payload.upiId.trim();
-  if (payload.profileImage) updateData.profileImage = payload.profileImage;
+  // Prepare update data for preferences
+  const updatePrefs = { ...currentPrefs };
 
-  const updatedUser = await databases.updateDocument(
-    config.databaseId,
-    config.collections.users,
-    userId,
-    updateData
-  );
+  if (payload.phoneNumber) updatePrefs.phoneNumber = payload.phoneNumber.trim();
+  if (payload.upiId) updatePrefs.upiId = payload.upiId.trim();
+  if (payload.profileImage) updatePrefs.profileImage = payload.profileImage;
+
+  // Update preferences
+  if (
+    Object.keys(updatePrefs).length > 0 &&
+    JSON.stringify(updatePrefs) !== JSON.stringify(currentPrefs)
+  ) {
+    await users.updatePrefs(userId, updatePrefs);
+  }
+
+  // Update name if provided (this requires updating the user account)
+  if (payload.name && payload.name.trim() !== currentUser.name) {
+    await users.updateName(userId, payload.name.trim());
+  }
+
+  // Get updated user data
+  const updatedUser = await users.get(userId);
+  const updatedPrefs = updatedUser.prefs || {};
 
   return res.json(
     Utils.successResponse("User updated successfully", {
       id: updatedUser.$id,
       name: updatedUser.name,
-      phoneNumber: updatedUser.phoneNumber,
+      phoneNumber: updatedPrefs.phoneNumber || "",
       email: updatedUser.email,
-      upiId: updatedUser.upiId,
-      profileImage: updatedUser.profileImage,
-      joinedAt: updatedUser.joinedAt,
+      upiId: updatedPrefs.upiId || "",
+      profileImage: updatedPrefs.profileImage || "",
+      joinedAt: updatedUser.$createdAt,
     }),
     200,
     corsHeaders
@@ -613,11 +618,7 @@ async function getAllCampaigns(res, corsHeaders) {
   const enrichedCampaigns = await Promise.all(
     campaigns.documents.map(async (campaign) => {
       try {
-        const hostUser = await databases.getDocument(
-          config.databaseId,
-          config.collections.users,
-          campaign.hostId
-        );
+        const hostUser = await users.get(campaign.hostId);
 
         return {
           id: campaign.$id,
@@ -673,11 +674,7 @@ async function getCampaign(campaignId, res, corsHeaders) {
   // Get host user information
   let hostName = "Unknown User";
   try {
-    const hostUser = await databases.getDocument(
-      config.databaseId,
-      config.collections.users,
-      campaign.hostId
-    );
+    const hostUser = await users.get(campaign.hostId);
     hostName = hostUser.name;
   } catch (err) {
     // Host user not found, keep default name
@@ -736,11 +733,7 @@ async function getUserCampaigns(userId, res, corsHeaders) {
   // Get user information for hostName
   let hostName = "Unknown User";
   try {
-    const user = await databases.getDocument(
-      config.databaseId,
-      config.collections.users,
-      userId
-    );
+    const user = await users.get(userId);
     hostName = user.name;
   } catch (err) {
     // User not found, keep default name
@@ -780,17 +773,14 @@ async function createCampaign(payload, userId, res, log, corsHeaders) {
     "targetAmount",
   ]);
 
-  // Get user name for hostName
+  // Get user name for hostName from Users API
   let hostName = "Unknown User";
   try {
-    const user = await databases.getDocument(
-      config.databaseId,
-      config.collections.users,
-      userId
-    );
+    const user = await users.get(userId);
     hostName = user.name;
   } catch (err) {
     // User not found, keep default name
+    log(`Could not get user name for ${userId}: ${err.message}`);
   }
 
   const campaignData = {
@@ -1070,11 +1060,7 @@ async function createContribution(payload, userId, res, log, corsHeaders) {
   let contributorName = "Anonymous";
   if (!payload.isAnonymous && userId) {
     try {
-      const contributor = await databases.getDocument(
-        config.databaseId,
-        config.collections.users,
-        userId
-      );
+      const contributor = await users.get(userId);
       contributorName = contributor.name;
     } catch (err) {
       // User not found, keep anonymous

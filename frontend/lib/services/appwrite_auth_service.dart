@@ -140,7 +140,7 @@ class AppwriteService {
     }
   }
 
-  // User Profile Management
+  // User Profile Management using Auth Labels and Preferences
   static Future<app_user.User> createUserProfile({
     required String userId,
     required String name,
@@ -150,67 +150,86 @@ class AppwriteService {
     String? profileImage,
   }) async {
     try {
-      print('Creating user profile with data:');
+      print('Creating user profile using Auth preferences...');
       print('UserId: $userId');
       print('Name: $name');
       print('Phone: $phoneNumber');
       print('Email: $email');
       print('UPI: $upiId');
-      print('Database ID: ${AppwriteConfig.databaseId}');
-      print('Collection ID: ${AppwriteConfig.usersCollectionId}');
 
-      // Validate required fields with detailed logging
-      print('Validating fields...');
-      print('UserId isEmpty: ${userId.isEmpty}');
-      print('Name isEmpty: ${name.isEmpty}');
-      print('PhoneNumber isEmpty: ${phoneNumber.isEmpty}');
-      print('Email isEmpty: ${email.isEmpty}');
-
-      if (userId.isEmpty) {
-        throw Exception('Missing userId for user profile creation');
-      }
-      if (name.isEmpty) {
-        throw Exception('Missing name for user profile creation');
-      }
-      if (phoneNumber.isEmpty) {
-        throw Exception('Missing phoneNumber for user profile creation');
-      }
-      if (email.isEmpty) {
-        throw Exception('Missing email for user profile creation');
+      // Validate required fields
+      if (userId.isEmpty ||
+          name.isEmpty ||
+          phoneNumber.isEmpty ||
+          email.isEmpty) {
+        throw Exception('Missing required fields for user profile creation');
       }
 
-      print('All required fields validated successfully');
-
-      final document = await _databases.createDocument(
-        databaseId: AppwriteConfig.databaseId,
-        collectionId: AppwriteConfig.usersCollectionId,
-        documentId: userId,
-        data: {
-          'name': name,
-          'mobileNumber':
-              phoneNumber, // Using mobileNumber to match database schema
-          'email': email,
-          'upiId': upiId ?? '', // Ensure upiId is not null
+      // Store user data in preferences
+      await _account.updatePrefs(
+        prefs: {
+          'phoneNumber': phoneNumber,
+          'upiId': upiId ?? '',
+          'profileImage': profileImage ?? '',
+          'joinedAt': DateTime.now().toIso8601String(),
         },
       );
 
-      print('User profile document created successfully: ${document.data}');
-      return app_user.User.fromJson(document.data);
+      print('User profile created successfully using preferences');
+
+      // Return user object constructed from auth data and preferences
+      final user = await getCurrentUserProfile();
+      if (user != null) {
+        return user;
+      } else {
+        throw Exception('Failed to retrieve user after profile creation');
+      }
     } catch (e) {
       print('Error creating user profile: $e');
       throw _handleAppwriteException(e);
     }
   }
 
+  static Future<app_user.User?> getCurrentUserProfile() async {
+    try {
+      final account = await _account.get();
+      final prefs = account.prefs.data;
+
+      return app_user.User(
+        id: account.$id,
+        name: account.name,
+        email: account.email,
+        phoneNumber: prefs['phoneNumber'] ?? '',
+        upiId: prefs['upiId'],
+        profileImage: prefs['profileImage'],
+        joinedAt: prefs['joinedAt'] != null
+            ? DateTime.parse(prefs['joinedAt'])
+            : DateTime.now(),
+      );
+    } catch (e) {
+      print('Error getting current user: $e');
+      return null;
+    }
+  }
+
   static Future<app_user.User> getUserProfile(String userId) async {
     try {
-      final document = await _databases.getDocument(
-        databaseId: AppwriteConfig.databaseId,
-        collectionId: AppwriteConfig.usersCollectionId,
-        documentId: userId,
-      );
+      // For current user, we can get from account
+      final currentAccount = await _account.get();
+      if (currentAccount.$id == userId) {
+        final user = await getCurrentUserProfile();
+        if (user != null) {
+          return user;
+        } else {
+          throw Exception('User not found');
+        }
+      }
 
-      return app_user.User.fromJson(document.data);
+      // For other users, we'll need to use a different approach
+      // since we can't access other users' preferences directly
+      throw Exception(
+        'Cannot access other users\' profiles without users collection',
+      );
     } catch (e) {
       throw _handleAppwriteException(e);
     }
@@ -224,23 +243,32 @@ class AppwriteService {
     String? profileImage,
   }) async {
     try {
-      final updateData = <String, dynamic>{};
-      if (name != null) updateData['name'] = name;
-      if (phoneNumber != null)
-        updateData['mobileNumber'] = phoneNumber; // Fixed: using mobileNumber
-      if (upiId != null) updateData['upiId'] = upiId;
-      if (profileImage != null) updateData['profileImage'] = profileImage;
-      updateData['updatedAt'] = DateTime.now()
-          .toIso8601String(); // Always update timestamp
+      // Update name in account if provided
+      if (name != null && name.isNotEmpty) {
+        await _account.updateName(name: name);
+      }
 
-      final document = await _databases.updateDocument(
-        databaseId: AppwriteConfig.databaseId,
-        collectionId: AppwriteConfig.usersCollectionId,
-        documentId: userId,
-        data: updateData,
-      );
+      // Get current preferences
+      final currentAccount = await _account.get();
+      final currentPrefs = Map<String, dynamic>.from(currentAccount.prefs.data);
 
-      return app_user.User.fromJson(document.data);
+      // Update preferences
+      final updatedPrefs = <String, dynamic>{
+        ...currentPrefs,
+        if (phoneNumber != null) 'phoneNumber': phoneNumber,
+        if (upiId != null) 'upiId': upiId,
+        if (profileImage != null) 'profileImage': profileImage,
+        'updatedAt': DateTime.now().toIso8601String(),
+      };
+
+      await _account.updatePrefs(prefs: updatedPrefs);
+
+      final user = await getCurrentUserProfile();
+      if (user != null) {
+        return user;
+      } else {
+        throw Exception('Failed to get updated user');
+      }
     } catch (e) {
       throw _handleAppwriteException(e);
     }
