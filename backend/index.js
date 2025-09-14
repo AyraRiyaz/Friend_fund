@@ -385,6 +385,7 @@ module.exports = async ({ req, res, log, error }) => {
           requestData,
           res,
           log,
+          error,
           corsHeaders
         );
 
@@ -398,6 +399,7 @@ module.exports = async ({ req, res, log, error }) => {
           userId,
           res,
           log,
+          error,
           corsHeaders
         );
 
@@ -411,6 +413,7 @@ module.exports = async ({ req, res, log, error }) => {
           userId,
           res,
           log,
+          error,
           corsHeaders
         );
 
@@ -423,6 +426,7 @@ module.exports = async ({ req, res, log, error }) => {
           userId,
           res,
           log,
+          error,
           corsHeaders
         );
 
@@ -436,6 +440,7 @@ module.exports = async ({ req, res, log, error }) => {
           userId,
           res,
           log,
+          error,
           corsHeaders
         );
 
@@ -449,12 +454,13 @@ module.exports = async ({ req, res, log, error }) => {
           userId,
           res,
           log,
+          error,
           corsHeaders
         );
 
       case "qr":
         log(`Routing to: qr handler`);
-        return await handleQR(requestMethod, id, res, log, corsHeaders);
+        return await handleQR(requestMethod, id, res, log, error, corsHeaders);
 
       default:
         log(`ERROR: No handler found for endpoint: '${endpoint}'`);
@@ -484,7 +490,15 @@ module.exports = async ({ req, res, log, error }) => {
 /**
  * Authentication handlers
  */
-async function handleAuth(method, action, payload, res, log, corsHeaders) {
+async function handleAuth(
+  method,
+  action,
+  payload,
+  res,
+  log,
+  error,
+  corsHeaders
+) {
   try {
     switch (method) {
       case "POST":
@@ -613,6 +627,7 @@ async function handleUsers(
   userId,
   res,
   log,
+  error,
   corsHeaders
 ) {
   try {
@@ -731,6 +746,7 @@ async function handleCampaigns(
   userId,
   res,
   log,
+  error,
   corsHeaders
 ) {
   log(`========== CAMPAIGNS HANDLER ==========`);
@@ -1202,6 +1218,7 @@ async function handleContributions(
   userId,
   res,
   log,
+  error,
   corsHeaders
 ) {
   try {
@@ -1486,6 +1503,7 @@ async function handleOCR(
   userId,
   res,
   log,
+  error,
   corsHeaders
 ) {
   if (method !== "POST" || action !== "process") {
@@ -1537,6 +1555,7 @@ async function handleNotifications(
   userId,
   res,
   log,
+  error,
   corsHeaders
 ) {
   try {
@@ -1624,7 +1643,7 @@ async function getOverdueLoans(userId, res, corsHeaders) {
 /**
  * QR Code handlers
  */
-async function handleQR(method, campaignId, res, log, corsHeaders) {
+async function handleQR(method, campaignId, res, log, error, corsHeaders) {
   if (method !== "GET") {
     return res.json(
       Utils.errorResponse("Invalid QR operation"),
