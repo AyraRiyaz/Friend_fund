@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:appwrite/models.dart' as appwrite;
 import '../services/appwrite_auth_service.dart';
 import '../services/api_service.dart';
+import '../services/auth_token_service.dart';
 import '../models/user.dart' as app_user;
 
 enum AuthStatus { unknown, authenticated, unauthenticated }
@@ -83,10 +84,13 @@ class AuthController extends GetxController {
       );
 
       // Automatically login after registration
-      await AppwriteService.createEmailSession(
+      final session = await AppwriteService.createEmailSession(
         email: email,
         password: password,
       );
+
+      // Store authentication token
+      await AuthTokenService.storeToken(session.$id, user.$id);
 
       // Create user profile in backend
       final profile = await ApiService.createUserProfile(
@@ -131,7 +135,7 @@ class AuthController extends GetxController {
       _errorMessage.value = '';
 
       // Create session in Appwrite
-      await AppwriteService.createEmailSession(
+      final session = await AppwriteService.createEmailSession(
         email: email,
         password: password,
       );
@@ -140,8 +144,11 @@ class AuthController extends GetxController {
       final user = await AppwriteService.getCurrentUser();
       _appwriteUser.value = user;
 
+      // Store authentication token
+      await AuthTokenService.storeToken(session.$id, user!.$id);
+
       // Load user profile
-      await _loadUserProfile(user!.$id);
+      await _loadUserProfile(user.$id);
 
       _authStatus.value = AuthStatus.authenticated;
 
@@ -301,6 +308,8 @@ class AuthController extends GetxController {
     try {
       _isLoading.value = true;
       await AppwriteService.logout();
+      // Clear stored authentication data
+      await AuthTokenService.clearAuth();
     } catch (e) {
       print('Logout error: $e');
     } finally {
@@ -317,6 +326,8 @@ class AuthController extends GetxController {
     try {
       _isLoading.value = true;
       await AppwriteService.logoutFromAllDevices();
+      // Clear stored authentication data
+      await AuthTokenService.clearAuth();
     } catch (e) {
       print('Logout from all devices error: $e');
     } finally {

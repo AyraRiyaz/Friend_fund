@@ -70,6 +70,14 @@ class AppwriteService {
     }
   }
 
+  static Future<Session?> getCurrentSession() async {
+    try {
+      return await _account.getSession(sessionId: 'current');
+    } catch (e) {
+      return null;
+    }
+  }
+
   static Future<void> logout() async {
     try {
       await _account.deleteSession(sessionId: 'current');

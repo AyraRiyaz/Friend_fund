@@ -28,7 +28,7 @@ class ContributionCard extends StatelessWidget {
           children: [
             Icon(
               type == 'Loan' ? Icons.handshake : Icons.card_giftcard,
-              color: Colors.teal,
+              color: Theme.of(context).primaryColor,
               size: 32,
             ),
             const SizedBox(width: 16),

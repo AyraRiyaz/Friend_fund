@@ -13,7 +13,7 @@ class CustomFAB extends StatelessWidget {
       tooltip: tooltip ?? 'Add',
       child: const Icon(Icons.add, size: 32),
       shape: const StadiumBorder(),
-      backgroundColor: Colors.teal,
+      backgroundColor: Theme.of(context).primaryColor,
       elevation: 6,
     );
   }

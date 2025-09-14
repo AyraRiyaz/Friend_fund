@@ -345,7 +345,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                       ? null
                                       : _register,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.teal,
+                                    backgroundColor: Theme.of(
+                                      context,
+                                    ).primaryColor,
                                     foregroundColor: Colors.white,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16),

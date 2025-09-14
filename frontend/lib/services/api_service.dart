@@ -3,18 +3,29 @@ import 'package:http/http.dart' as http;
 import '../config/appwrite_config.dart';
 import '../models/campaign.dart';
 import '../models/user.dart' as app_user;
+import 'auth_token_service.dart';
 
 class ApiService {
   static const String baseUrl = AppwriteConfig.backendFunctionUrl;
 
-  static Map<String, String> _getHeaders({String? userId}) {
+  static Future<Map<String, String>> _getHeaders({String? userId}) async {
     final headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     };
 
-    if (userId != null) {
-      headers['x-appwrite-user-id'] = userId;
+    // Add authentication headers if user is logged in
+    try {
+      final token = await AuthTokenService.getToken();
+      final currentUserId = userId ?? AuthTokenService.getUserId();
+
+      if (token != null && currentUserId != null) {
+        headers['x-appwrite-user-id'] = currentUserId;
+        headers['x-appwrite-user-jwt'] = token;
+        headers['Authorization'] = 'Bearer $token';
+      }
+    } catch (e) {
+      print('Error getting auth headers: $e');
     }
 
     return headers;
@@ -33,9 +44,10 @@ class ApiService {
         if (body != null) 'bodyJson': body,
       };
 
+      final headers = await _getHeaders(userId: userId);
       final response = await http.post(
         Uri.parse(baseUrl),
-        headers: _getHeaders(userId: userId),
+        headers: headers,
         body: jsonEncode(requestBody),
       );
 
