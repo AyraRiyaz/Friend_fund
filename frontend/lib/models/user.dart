@@ -32,7 +32,7 @@ class User {
           ? DateTime.parse(json['createdAt'])
           : (json['joinedAt'] != null
                 ? DateTime.parse(json['joinedAt'])
-                : DateTime.now()),
+                : DateTime.now()), // Default to now if no timestamp available
     );
   }
 
@@ -44,8 +44,7 @@ class User {
       'email': email,
       'upiId': upiId,
       'profileImage': profileImage,
-      'createdAt': joinedAt.toIso8601String(),
-      'updatedAt': DateTime.now().toIso8601String(),
+      // Removed timestamp fields since they're not in the database schema
     };
   }
 }

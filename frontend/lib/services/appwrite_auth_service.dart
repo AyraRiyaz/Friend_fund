@@ -33,14 +33,19 @@ class AppwriteService {
     required String name,
   }) async {
     try {
+      print('Creating Appwrite Auth account for: $email with name: $name');
+
       final user = await _account.create(
         userId: ID.unique(),
         email: email,
         password: password,
         name: name,
       );
+
+      print('Appwrite Auth account created successfully: ${user.$id}');
       return user;
     } catch (e) {
+      print('Error creating Appwrite Auth account: $e');
       throw _handleAppwriteException(e);
     }
   }
@@ -154,6 +159,14 @@ class AppwriteService {
       print('Database ID: ${AppwriteConfig.databaseId}');
       print('Collection ID: ${AppwriteConfig.usersCollectionId}');
 
+      // Validate required fields
+      if (userId.isEmpty ||
+          name.isEmpty ||
+          phoneNumber.isEmpty ||
+          email.isEmpty) {
+        throw Exception('Missing required fields for user profile creation');
+      }
+
       final document = await _databases.createDocument(
         databaseId: AppwriteConfig.databaseId,
         collectionId: AppwriteConfig.usersCollectionId,
@@ -161,11 +174,9 @@ class AppwriteService {
         data: {
           'name': name,
           'mobileNumber':
-              phoneNumber, // Fixed: using mobileNumber to match database schema
+              phoneNumber, // Using mobileNumber to match database schema
           'email': email,
-          'upiId': upiId,
-          'createdAt': DateTime.now().toIso8601String(),
-          'updatedAt': DateTime.now().toIso8601String(),
+          'upiId': upiId ?? '', // Ensure upiId is not null
         },
       );
 

@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:flutter/material.dart';
 import 'package:appwrite/models.dart' as appwrite;
 import '../services/appwrite_auth_service.dart';
 import '../services/auth_token_service.dart';
@@ -92,8 +93,27 @@ class AuthController extends GetxController {
       _isLoading.value = true;
       _errorMessage.value = '';
 
+      // Validate input fields
+      if (email.isEmpty ||
+          password.isEmpty ||
+          name.isEmpty ||
+          phoneNumber.isEmpty) {
+        throw Exception('All required fields must be filled');
+      }
+
+      // Basic email validation
+      if (!GetUtils.isEmail(email)) {
+        throw Exception('Please enter a valid email address');
+      }
+
+      // Basic phone number validation (remove any spaces/special chars)
+      final cleanPhoneNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+      if (cleanPhoneNumber.length < 10) {
+        throw Exception('Please enter a valid phone number');
+      }
+
       print(
-        'Starting registration for: $email with name: $name and phone: $phoneNumber',
+        'Starting registration for: $email with name: $name and phone: $cleanPhoneNumber',
       );
 
       // Create account in Appwrite Auth
@@ -118,18 +138,38 @@ class AuthController extends GetxController {
 
       // Create user profile directly in Appwrite database
       try {
+        print('Attempting to create user profile in database...');
+        print('User ID: ${user.$id}');
+        print('Name: $name');
+        print('Phone: $phoneNumber');
+        print('Email: $email');
+        print('UPI ID: $upiId');
+
         final profile = await AppwriteService.createUserProfile(
           userId: user.$id,
           name: name,
-          phoneNumber: phoneNumber,
+          phoneNumber: cleanPhoneNumber,
           email: email,
           upiId: upiId,
         );
 
-        print('User profile created successfully in database');
+        print(
+          'User profile created successfully in database: ${profile.toJson()}',
+        );
         _userProfile.value = profile;
       } catch (profileError) {
         print('Failed to create user profile: $profileError');
+        print('Profile error details: ${profileError.runtimeType}');
+
+        // Show error to user if profile creation fails
+        Get.snackbar(
+          'Warning',
+          'Account created but profile setup failed. Please contact support.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+        );
+
         // Even if profile creation fails, we still have a valid auth user
         // We'll try to create the profile again when the user logs in next time
       }
