@@ -1,11 +1,14 @@
 import 'package:get/get.dart';
-import '../services/api_service.dart';
+import '../services/http_api_service.dart';
 import '../services/cache_service.dart';
 import '../models/campaign.dart';
 import 'auth_controller.dart';
 
 class CampaignController extends GetxController {
   static CampaignController get instance => Get.find();
+
+  // Get HTTP API service instance
+  HttpApiService get _httpApiService => Get.find<HttpApiService>();
 
   // Observables
   final RxList<Campaign> _campaigns = <Campaign>[].obs;
@@ -24,13 +27,6 @@ class CampaignController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _initializeWithBackendTest();
-  }
-
-  Future<void> _initializeWithBackendTest() async {
-    // Test backend connectivity first
-    await ApiService.testBackendConnectivity();
-    // Then load campaigns
     loadCampaigns();
   }
 
@@ -40,11 +36,10 @@ class CampaignController extends GetxController {
       _isLoading.value = true;
       _errorMessage.value = '';
 
-      // Skip cache temporarily to see fresh data
-      print('Loading campaigns from API...');
+      print('Loading campaigns from HTTP API...');
 
       // Fetch from API
-      final campaigns = await ApiService.getCampaigns();
+      final campaigns = await _httpApiService.getAllCampaigns();
       _campaigns.assignAll(campaigns);
 
       // Cache the results
@@ -71,8 +66,8 @@ class CampaignController extends GetxController {
       _isLoading.value = true;
       _errorMessage.value = '';
 
-      final campaigns = await ApiService.getUserCampaigns(
-        authController.appwriteUser!.$id,
+      final campaigns = await _httpApiService.getAllCampaigns(
+        creatorId: authController.appwriteUser!.$id,
       );
       _myCampaigns.assignAll(campaigns);
     } catch (e) {
@@ -93,7 +88,7 @@ class CampaignController extends GetxController {
       _isLoading.value = true;
       _errorMessage.value = '';
 
-      final campaign = await ApiService.getCampaign(campaignId);
+      final campaign = await _httpApiService.getCampaign(campaignId);
       _selectedCampaign.value = campaign;
     } catch (e) {
       _errorMessage.value = e.toString();
@@ -129,13 +124,18 @@ class CampaignController extends GetxController {
       _isLoading.value = true;
       _errorMessage.value = '';
 
-      final campaign = await ApiService.createCampaign(
+      final campaignData = {
+        'creatorId': authController.appwriteUser!.$id,
+        'title': title,
+        'description': description,
+        'purpose': purpose,
+        'targetAmount': targetAmount,
+        'dueDate': dueDate?.toIso8601String(),
+      };
+
+      final campaign = await _httpApiService.createCampaign(
+        campaignData,
         userId: authController.appwriteUser!.$id,
-        title: title,
-        description: description,
-        purpose: purpose,
-        targetAmount: targetAmount,
-        dueDate: dueDate,
       );
 
       // Add to campaigns list
@@ -180,13 +180,17 @@ class CampaignController extends GetxController {
       _isLoading.value = true;
       _errorMessage.value = '';
 
-      final updatedCampaign = await ApiService.updateCampaign(
-        campaignId: campaignId,
+      final updateData = {
+        if (title != null) 'title': title,
+        if (description != null) 'description': description,
+        if (status != null) 'status': status,
+        if (targetAmount != null) 'targetAmount': targetAmount,
+      };
+
+      final updatedCampaign = await _httpApiService.updateCampaign(
+        campaignId,
+        updateData,
         userId: authController.appwriteUser!.$id,
-        title: title,
-        description: description,
-        status: status,
-        targetAmount: targetAmount,
       );
 
       // Update in lists
@@ -235,8 +239,8 @@ class CampaignController extends GetxController {
       _isLoading.value = true;
       _errorMessage.value = '';
 
-      await ApiService.deleteCampaign(
-        campaignId: campaignId,
+      await _httpApiService.deleteCampaign(
+        campaignId,
         userId: authController.appwriteUser!.$id,
       );
 
@@ -272,8 +276,8 @@ class CampaignController extends GetxController {
   Future<String?> generateQRCode(String campaignId) async {
     try {
       _isLoading.value = true;
-      final qrCodeUrl = await ApiService.generateQRCode(campaignId);
-      return qrCodeUrl;
+      final qrData = await _httpApiService.generateQRCode(campaignId);
+      return qrData['qrCode'] as String?;
     } catch (e) {
       Get.snackbar(
         'Error',

@@ -6,7 +6,7 @@ import 'package:url_strategy/url_strategy.dart';
 import 'controllers/auth_controller.dart';
 import 'controllers/campaign_controller.dart';
 import 'services/appwrite_auth_service.dart';
-import 'services/api_service.dart';
+import 'services/http_api_service.dart';
 import 'theme/app_theme.dart';
 import 'pages/home_page.dart';
 import 'pages/login_page.dart';
@@ -30,12 +30,14 @@ void main() async {
   // Initialize GetStorage for token management
   await GetStorage.init();
 
-  // Initialize Appwrite
+  // Initialize Appwrite for authentication only
   AppwriteService.initialize();
-  final apiService = ApiService();
+
+  // Initialize HTTP API service for backend communication
+  final httpApiService = HttpApiService();
 
   // Initialize Controllers with dependency injection
-  Get.put(apiService);
+  Get.put(httpApiService);
   Get.put(AuthController());
   Get.put(CampaignController());
 

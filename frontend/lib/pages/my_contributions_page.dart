@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../components/app_bar_with_menu.dart';
 import '../controllers/auth_controller.dart';
-import '../services/api_service.dart';
+import '../services/http_api_service.dart';
 import '../models/campaign.dart';
 
 class MyContributionsPage extends StatefulWidget {
@@ -33,7 +33,8 @@ class _MyContributionsPageState extends State<MyContributionsPage> {
         _errorMessage = null;
       });
 
-      final contributions = await ApiService.getUserContributions(
+      final httpApiService = Get.find<HttpApiService>();
+      final contributions = await httpApiService.getUserContributions(
         authController.appwriteUser!.$id,
       );
 
@@ -219,7 +220,7 @@ class _MyContributionsPageState extends State<MyContributionsPage> {
     if (!authController.isAuthenticated) return;
 
     try {
-      await ApiService.markLoanRepaid(
+      await HttpApiService().markLoanRepaid(
         contributionId: contribution.id,
         userId: authController.appwriteUser!.$id,
       );
