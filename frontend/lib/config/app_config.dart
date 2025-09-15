@@ -1,19 +1,8 @@
 /// Configuration class for API endpoints and app settings
-/// Modified for FriendFund HTTP backend integration
+/// Modified for FriendFund Appwrite Function integration
 class AppConfig {
-  // Deployment Configuration
-  static const bool useLocalhost = false; // Set to true for local development
-
-  // API Configuration - dual mode (localhost + Appwrite function)
-  static const String localhostUrl = 'http://localhost:3000';
-  static const String appwriteFunctionUrl =
-      'https://68b699f80025cf96484e.fra.appwrite.run';
-
-  // Dynamic base URL based on deployment mode
-  // When useLocalhost = true: Uses local HTTP server at localhost:3000
-  // When useLocalhost = false: Uses deployed Appwrite function
-  static String get baseUrl =>
-      useLocalhost ? localhostUrl : appwriteFunctionUrl;
+  // API Configuration - Production Appwrite Function URL
+  static const String baseUrl = 'https://68b699f80025cf96484e.fra.appwrite.run';
 
   static const String apiVersion = 'v1';
 
@@ -46,8 +35,8 @@ class AppConfig {
   static String get configInfo =>
       '''
 🔧 FriendFund Configuration:
-📡 API Mode: ${useLocalhost ? 'Local Development' : 'Production (Appwrite Function)'}
+📡 API Mode: Production (Appwrite Function)
 🌐 Base URL: $baseUrl
-🔗 Appwrite Endpoint: ${useLocalhost ? 'N/A (using local server)' : appwriteFunctionUrl}
+🔗 Appwrite Function URL: $baseUrl
 ''';
 }
