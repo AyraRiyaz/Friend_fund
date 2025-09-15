@@ -108,9 +108,9 @@ class FriendFundAPI {
         ID.unique(),
         {
           ...campaignData,
-          createdAt: new Date().toISOString(),
-          status: "active",
-          currentAmount: 0,
+          status: campaignData.status || "active",
+          collectedAmount: 0,
+          contributions: [],
         },
         [Permission.read(Role.any())]
       );
@@ -134,10 +134,7 @@ class FriendFundAPI {
         this.databaseId,
         this.campaignsCollectionId,
         campaignId,
-        {
-          ...updateData,
-          updatedAt: new Date().toISOString(),
-        }
+        updateData
       );
 
       return {
@@ -228,13 +225,14 @@ class FriendFundAPI {
         ID.unique(),
         {
           ...contributionData,
-          createdAt: new Date().toISOString(),
-          status: "pending",
+          repaymentStatus: contributionData.repaymentStatus || "pending",
+          type: contributionData.type || "donation",
+          isAnonymous: contributionData.isAnonymous || false,
         },
         [Permission.read(Role.any())]
       );
 
-      // Update campaign current amount
+      // Update campaign collected amount
       const campaign = await this.databases.getDocument(
         this.databaseId,
         this.campaignsCollectionId,
@@ -246,8 +244,8 @@ class FriendFundAPI {
         this.campaignsCollectionId,
         contributionData.campaignId,
         {
-          currentAmount:
-            (campaign.currentAmount || 0) + contributionData.amount,
+          collectedAmount:
+            (campaign.collectedAmount || 0) + contributionData.amount,
         }
       );
 
@@ -369,9 +367,12 @@ export default async ({ req, res, log, error: logError }) => {
         const queries = [];
 
         // Build Appwrite queries from URL parameters
+        if (query.hostId) queries.push(Query.equal("hostId", query.hostId));
         if (query.creatorId)
-          queries.push(Query.equal("creatorId", query.creatorId));
+          // Keep backward compatibility
+          queries.push(Query.equal("hostId", query.creatorId));
         if (query.status) queries.push(Query.equal("status", query.status));
+        if (query.purpose) queries.push(Query.equal("purpose", query.purpose));
         if (query.search) queries.push(Query.search("title", query.search));
         if (query.limit) queries.push(Query.limit(parseInt(query.limit)));
         if (query.offset) queries.push(Query.offset(parseInt(query.offset)));

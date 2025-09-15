@@ -84,7 +84,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"$id\": \"campaign_123\",\n      \"title\": \"Help John's Medical Treatment\",\n      \"description\": \"Support for medical expenses and surgery costs\",\n      \"targetAmount\": 5000,\n      \"currentAmount\": 1200,\n      \"creatorId\": \"user_456\",\n      \"status\": \"active\",\n      \"category\": \"medical\",\n      \"deadline\": \"2025-12-31T23:59:59.000Z\",\n      \"createdAt\": \"2025-09-15T10:00:00.000Z\",\n      \"updatedAt\": \"2025-09-15T11:30:00.000Z\"\n    },\n    {\n      \"$id\": \"campaign_456\",\n      \"title\": \"Education Fund for Rural School\",\n      \"description\": \"Building a library and computer lab for underprivileged children\",\n      \"targetAmount\": 15000,\n      \"currentAmount\": 3500,\n      \"creatorId\": \"user_789\",\n      \"status\": \"active\",\n      \"category\": \"education\",\n      \"deadline\": \"2026-03-31T23:59:59.000Z\",\n      \"createdAt\": \"2025-09-10T08:00:00.000Z\",\n      \"updatedAt\": \"2025-09-14T16:45:00.000Z\"\n    },\n    {\n      \"$id\": \"campaign_789\",\n      \"title\": \"Emergency Food Relief\",\n      \"description\": \"Providing meals for flood-affected families\",\n      \"targetAmount\": 8000,\n      \"currentAmount\": 8000,\n      \"creatorId\": \"user_101\",\n      \"status\": \"completed\",\n      \"category\": \"emergency\",\n      \"deadline\": \"2025-10-15T23:59:59.000Z\",\n      \"createdAt\": \"2025-08-20T12:00:00.000Z\",\n      \"updatedAt\": \"2025-09-12T09:30:00.000Z\"\n    }\n  ],\n  \"total\": 3\n}\n"
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"$id\": \"campaign_123\",\n      \"title\": \"Help John's Medical Treatment\",\n      \"description\": \"Support for medical expenses and surgery costs\",\n      \"purpose\": \"medical\",\n      \"targetAmount\": 5000,\n      \"collectedAmount\": 1200,\n      \"hostId\": \"user_456\",\n      \"hostName\": \"Dr. Sarah Wilson\",\n      \"status\": \"active\",\n      \"dueDate\": \"2025-12-31T23:59:59.000Z\",\n      \"repaymentDueDate\": \"2026-01-31\",\n      \"contributions\": [],\n      \"$createdAt\": \"2025-09-15T10:00:00.000Z\",\n      \"$updatedAt\": \"2025-09-15T11:30:00.000Z\"\n    },\n    {\n      \"$id\": \"campaign_456\",\n      \"title\": \"Education Fund for Rural School\",\n      \"description\": \"Building a library and computer lab for underprivileged children\",\n      \"purpose\": \"education\",\n      \"targetAmount\": 15000,\n      \"collectedAmount\": 3500,\n      \"hostId\": \"user_789\",\n      \"hostName\": \"Maria Rodriguez\",\n      \"status\": \"active\",\n      \"dueDate\": \"2026-03-31T23:59:59.000Z\",\n      \"repaymentDueDate\": \"2026-04-30\",\n      \"contributions\": [],\n      \"$createdAt\": \"2025-09-10T08:00:00.000Z\",\n      \"$updatedAt\": \"2025-09-14T16:45:00.000Z\"\n    },\n    {\n      \"$id\": \"campaign_789\",\n      \"title\": \"Emergency Food Relief\",\n      \"description\": \"Providing meals for flood-affected families\",\n      \"purpose\": \"emergency\",\n      \"targetAmount\": 8000,\n      \"collectedAmount\": 8000,\n      \"hostId\": \"user_101\",\n      \"hostName\": \"Relief Foundation\",\n      \"status\": \"completed\",\n      \"dueDate\": \"2025-10-15T23:59:59.000Z\",\n      \"repaymentDueDate\": \"2025-11-15\",\n      \"contributions\": [],\n      \"$createdAt\": \"2025-08-20T12:00:00.000Z\",\n      \"$updatedAt\": \"2025-09-12T09:30:00.000Z\"\n    }\n  ],\n  \"total\": 3\n}\n"
             },
             {
               "name": "Success Response - Empty List",
@@ -146,17 +146,21 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/campaigns?creatorId={{userId}}&status=active&limit=10&offset=0&search=medical",
+              "raw": "{{baseUrl}}/campaigns?hostId={{userId}}&status=active&limit=10&offset=0&search=medical&purpose=emergency",
               "host": ["{{baseUrl}}"],
               "path": ["campaigns"],
               "query": [
                 {
-                  "key": "creatorId",
+                  "key": "hostId",
                   "value": "{{userId}}"
                 },
                 {
                   "key": "status",
                   "value": "active"
+                },
+                {
+                  "key": "purpose",
+                  "value": "emergency"
                 },
                 {
                   "key": "limit",
@@ -266,7 +270,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Emergency Surgery Fund\",\n  \"description\": \"Help cover emergency surgery costs for a family member\",\n  \"targetAmount\": 10000,\n  \"creatorId\": \"{{userId}}\",\n  \"category\": \"medical\",\n  \"deadline\": \"2025-12-31T23:59:59.000Z\"\n}"
+              "raw": "{\n  \"title\": \"Emergency Surgery Fund\",\n  \"description\": \"Help cover emergency surgery costs for a family member\",\n  \"purpose\": \"medical\",\n  \"targetAmount\": 10000,\n  \"hostId\": \"{{userId}}\",\n  \"hostName\": \"John Doe\",\n  \"status\": \"active\",\n  \"dueDate\": \"2025-12-31T23:59:59.000Z\",\n  \"repaymentDueDate\": \"2026-01-31\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/campaigns",
@@ -575,7 +579,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"campaignId\": \"{{campaignId}}\",\n  \"contributorId\": \"{{userId}}\",\n  \"amount\": 250,\n  \"message\": \"Happy to help with this cause!\",\n  \"paymentMethod\": \"upi\",\n  \"transactionId\": \"txn_12345\"\n}"
+              "raw": "{\n  \"campaignId\": \"{{campaignId}}\",\n  \"contributorId\": \"{{userId}}\",\n  \"contributorName\": \"John Smith\",\n  \"amount\": 250,\n  \"utr\": \"UTR123456789\",\n  \"type\": \"donation\",\n  \"repaymentStatus\": \"pending\",\n  \"isAnonymous\": false,\n  \"repaymentDueDate\": \"2026-01-15T23:59:59.000Z\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/contributions",
@@ -614,7 +618,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"$id\": \"contrib_002\",\n    \"campaignId\": \"campaign_123\",\n    \"contributorId\": \"user_789\",\n    \"amount\": 250,\n    \"message\": \"Happy to help with this cause!\",\n    \"paymentMethod\": \"upi\",\n    \"transactionId\": \"txn_12345\",\n    \"status\": \"pending\",\n    \"createdAt\": \"2025-09-15T13:00:00.000Z\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"$id\": \"contrib_002\",\n    \"campaignId\": \"campaign_123\",\n    \"contributorId\": \"user_789\",\n    \"contributorName\": \"John Smith\",\n    \"amount\": 250,\n    \"utr\": \"UTR123456789\",\n    \"type\": \"donation\",\n    \"repaymentStatus\": \"pending\",\n    \"isAnonymous\": false,\n    \"repaymentDueDate\": \"2026-01-15T23:59:59.000Z\",\n    \"$createdAt\": \"2025-09-15T13:00:00.000Z\",\n    \"$updatedAt\": \"2025-09-15T13:00:00.000Z\"\n  }\n}"
             },
             {
               "name": "Error Response - Invalid Campaign",
@@ -778,7 +782,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"completed\",\n  \"paymentMethod\": \"bank_transfer\",\n  \"screenshotFileId\": \"file_12345\"\n}"
+              "raw": "{\n  \"repaymentStatus\": \"completed\",\n  \"type\": \"loan_repayment\",\n  \"utr\": \"UTR987654321\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/contributions/{{contributionId}}",
