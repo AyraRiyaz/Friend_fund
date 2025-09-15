@@ -67,7 +67,9 @@ class CampaignController extends GetxController {
       _errorMessage.value = '';
 
       final campaigns = await _httpApiService.getAllCampaigns(
-        creatorId: authController.appwriteUser!.$id,
+        creatorId: authController
+            .appwriteUser!
+            .$id, // This will be mapped to hostId in the service
       );
       _myCampaigns.assignAll(campaigns);
     } catch (e) {
@@ -125,7 +127,7 @@ class CampaignController extends GetxController {
       _errorMessage.value = '';
 
       final campaignData = {
-        'creatorId': authController.appwriteUser!.$id,
+        'hostId': authController.appwriteUser!.$id, // Backend expects 'hostId'
         'title': title,
         'description': description,
         'purpose': purpose,

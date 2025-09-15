@@ -70,7 +70,8 @@ class HttpApiService {
 
       final queryParams = <String, String>{};
       if (creatorId != null && creatorId.isNotEmpty)
-        queryParams['creatorId'] = creatorId;
+        queryParams['hostId'] =
+            creatorId; // Backend expects 'hostId' not 'creatorId'
       if (status != null && status.isNotEmpty) queryParams['status'] = status;
       if (search != null && search.isNotEmpty) queryParams['search'] = search;
       if (limit != null) queryParams['limit'] = limit.toString();
@@ -390,7 +391,7 @@ class HttpApiService {
       AppConfig.debugPrint('PATCH Contribution (mark as repaid): $uri');
 
       final updateData = {
-        'status': 'repaid',
+        'repaymentStatus': 'repaid', // Backend expects 'repaymentStatus'
         'repaidAt': DateTime.now().toIso8601String(),
       };
 
