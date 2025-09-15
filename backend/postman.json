@@ -1,114 +1,48 @@
 {
   "info": {
-    "name": "FriendFund HTTP API Collection",
-    "description": "Complete API collection for FriendFund HTTP Server - A peer-to-peer fundraising platform",
-    "version": "2.0.0",
+    "name": "FriendFund API",
+    "description": "Complete API testing collection for FriendFund backend",
+    "version": "1.0.0",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://fra.cloud.appwrite.io/v1/functions/YOUR_FUNCTION_ID/executions",
+      "type": "string"
+    },
+    {
+      "key": "campaignId",
+      "value": "sample_campaign_id",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "sample_user_id",
+      "type": "string"
+    },
+    {
+      "key": "contributionId",
+      "value": "sample_contribution_id",
+      "type": "string"
+    }
+  ],
   "auth": {
     "type": "apikey",
     "apikey": [
       {
         "key": "key",
-        "value": "x-user-id",
+        "value": "X-Appwrite-Key",
         "type": "string"
       },
       {
         "key": "value",
-        "value": "{{userId}}",
-        "type": "string"
-      },
-      {
-        "key": "in",
-        "value": "header",
+        "value": "YOUR_API_KEY",
         "type": "string"
       }
     ]
   },
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:3000",
-      "type": "string",
-      "description": "Local development server URL"
-    },
-    {
-      "key": "prodUrl",
-      "value": "https://68b699f80025cf96484e.fra.appwrite.run",
-      "type": "string",
-      "description": "Production Appwrite Function URL"
-    },
-    {
-      "key": "userId",
-      "value": "68b542650008ea019d84",
-      "type": "string",
-      "description": "Sample user ID for testing"
-    },
-    {
-      "key": "campaignId",
-      "value": "",
-      "type": "string",
-      "description": "Campaign ID to be set dynamically"
-    },
-    {
-      "key": "contributionId",
-      "value": "",
-      "type": "string",
-      "description": "Contribution ID to be set dynamically"
-    }
-  ],
   "item": [
-    {
-      "name": "Health Check",
-      "item": [
-        {
-          "name": "Server Health",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/",
-              "host": ["{{baseUrl}}"],
-              "path": [""]
-            },
-            "description": "Check if the server is running and shows available routes"
-          },
-          "response": [
-            {
-              "name": "Available Routes",
-              "originalRequest": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": {
-                  "raw": "{{baseUrl}}/unknown",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["unknown"]
-                }
-              },
-              "status": "Not Found",
-              "code": 404,
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"success\": false,\n  \"error\": \"Route not found\",\n  \"availableRoutes\": [\n    \"GET /campaigns - Get all campaigns\",\n    \"POST /campaigns - Create campaign\",\n    \"GET /campaigns/{id} - Get specific campaign\",\n    \"PATCH /campaigns/{id} - Update campaign\",\n    \"DELETE /campaigns/{id} - Delete campaign\",\n    \"GET /contributions/campaign/{id} - Get campaign contributions\",\n    \"GET /contributions/user/{id} - Get user contributions\",\n    \"POST /contributions - Create contribution\",\n    \"PATCH /contributions/{id} - Update contribution\",\n    \"GET /qr/{campaignId} - Generate QR code\",\n    \"GET /users/{id} - Get user info\"\n  ]\n}"
-            }
-          ]
-        }
-      ]
-    },
     {
       "name": "Campaigns",
       "item": [
@@ -126,20 +60,14 @@
               "raw": "{{baseUrl}}/campaigns",
               "host": ["{{baseUrl}}"],
               "path": ["campaigns"]
-            },
-            "description": "Retrieve all campaigns with optional filters"
+            }
           },
           "response": [
             {
-              "name": "Success Response",
+              "name": "Success Response - Multiple Campaigns",
               "originalRequest": {
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
+                "header": [],
                 "url": {
                   "raw": "{{baseUrl}}/campaigns",
                   "host": ["{{baseUrl}}"],
@@ -148,13 +76,62 @@
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "json",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"$id\": \"64f1a2b3c4d5e6f7g8h9\",\n      \"title\": \"Help Sarah with Medical Bills\",\n      \"description\": \"Sarah needs help with her medical expenses after a recent surgery.\",\n      \"purpose\": \"Medical Emergency\",\n      \"targetAmount\": 50000,\n      \"currentAmount\": 15000,\n      \"creatorId\": \"68b542650008ea019d84\",\n      \"creatorName\": \"John Doe\",\n      \"status\": \"active\",\n      \"createdAt\": \"2025-09-14T10:30:00.000Z\",\n      \"updatedAt\": \"2025-09-14T10:30:00.000Z\",\n      \"dueDate\": null,\n      \"upiId\": \"sarah@paytm\",\n      \"phoneNumber\": \"+1234567890\",\n      \"screenshot\": null\n    }\n  ],\n  \"total\": 1\n}"
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"$id\": \"campaign_123\",\n      \"title\": \"Help John's Medical Treatment\",\n      \"description\": \"Support for medical expenses and surgery costs\",\n      \"targetAmount\": 5000,\n      \"currentAmount\": 1200,\n      \"creatorId\": \"user_456\",\n      \"status\": \"active\",\n      \"category\": \"medical\",\n      \"deadline\": \"2025-12-31T23:59:59.000Z\",\n      \"createdAt\": \"2025-09-15T10:00:00.000Z\",\n      \"updatedAt\": \"2025-09-15T11:30:00.000Z\"\n    },\n    {\n      \"$id\": \"campaign_456\",\n      \"title\": \"Education Fund for Rural School\",\n      \"description\": \"Building a library and computer lab for underprivileged children\",\n      \"targetAmount\": 15000,\n      \"currentAmount\": 3500,\n      \"creatorId\": \"user_789\",\n      \"status\": \"active\",\n      \"category\": \"education\",\n      \"deadline\": \"2026-03-31T23:59:59.000Z\",\n      \"createdAt\": \"2025-09-10T08:00:00.000Z\",\n      \"updatedAt\": \"2025-09-14T16:45:00.000Z\"\n    },\n    {\n      \"$id\": \"campaign_789\",\n      \"title\": \"Emergency Food Relief\",\n      \"description\": \"Providing meals for flood-affected families\",\n      \"targetAmount\": 8000,\n      \"currentAmount\": 8000,\n      \"creatorId\": \"user_101\",\n      \"status\": \"completed\",\n      \"category\": \"emergency\",\n      \"deadline\": \"2025-10-15T23:59:59.000Z\",\n      \"createdAt\": \"2025-08-20T12:00:00.000Z\",\n      \"updatedAt\": \"2025-09-12T09:30:00.000Z\"\n    }\n  ],\n  \"total\": 3\n}\n"
+            },
+            {
+              "name": "Success Response - Empty List",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/campaigns?status=inactive",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["campaigns"],
+                  "query": [{"key": "status", "value": "inactive"}]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": [],\n  \"total\": 0\n}"
+            },
+            {
+              "name": "Error Response - Database Connection",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/campaigns",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["campaigns"]
+                }
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": \"Failed to get campaigns\"\n}"
             }
           ]
         },
@@ -169,92 +146,235 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/campaigns?creatorId={{userId}}&status=active&search=medical&limit=10&offset=0",
+              "raw": "{{baseUrl}}/campaigns?creatorId={{userId}}&status=active&limit=10&offset=0&search=medical",
               "host": ["{{baseUrl}}"],
               "path": ["campaigns"],
               "query": [
                 {
                   "key": "creatorId",
-                  "value": "{{userId}}",
-                  "description": "Filter by creator ID"
+                  "value": "{{userId}}"
                 },
                 {
                   "key": "status",
-                  "value": "active",
-                  "description": "Filter by campaign status"
-                },
-                {
-                  "key": "search",
-                  "value": "medical",
-                  "description": "Search in campaign titles"
+                  "value": "active"
                 },
                 {
                   "key": "limit",
-                  "value": "10",
-                  "description": "Limit number of results"
+                  "value": "10"
                 },
                 {
                   "key": "offset",
-                  "value": "0",
-                  "description": "Offset for pagination"
+                  "value": "0"
+                },
+                {
+                  "key": "search",
+                  "value": "medical"
                 }
               ]
-            },
-            "description": "Get campaigns with various filters applied"
+            }
           },
           "response": [
             {
-              "name": "Filtered Campaigns Success",
+              "name": "Success Response - Filtered Results",
               "originalRequest": {
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
+                "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/campaigns?creatorId={{userId}}&status=active&search=medical&limit=10&offset=0",
+                  "raw": "{{baseUrl}}/campaigns?status=active&search=medical",
                   "host": ["{{baseUrl}}"],
                   "path": ["campaigns"],
                   "query": [
-                    {
-                      "key": "creatorId",
-                      "value": "{{userId}}"
-                    },
-                    {
-                      "key": "status",
-                      "value": "active"
-                    },
-                    {
-                      "key": "search",
-                      "value": "medical"
-                    },
-                    {
-                      "key": "limit",
-                      "value": "10"
-                    },
-                    {
-                      "key": "offset",
-                      "value": "0"
-                    }
+                    {"key": "status", "value": "active"},
+                    {"key": "search", "value": "medical"}
                   ]
                 }
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "json",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"$id\": \"campaign123\",\n      \"title\": \"Medical Emergency Fund\",\n      \"description\": \"Help support medical expenses for John\",\n      \"goal\": 5000,\n      \"currentAmount\": 2500,\n      \"status\": \"active\",\n      \"creatorId\": \"user123\",\n      \"createdAt\": \"2024-01-15T10:30:00.000Z\",\n      \"updatedAt\": \"2024-01-20T14:45:00.000Z\",\n      \"contributorsCount\": 15,\n      \"contributors\": [\n        {\n          \"$id\": \"contrib1\",\n          \"amount\": 100,\n          \"contributorId\": \"user456\",\n          \"message\": \"Hope this helps!\",\n          \"createdAt\": \"2024-01-16T09:00:00.000Z\"\n        }\n      ]\n    }\n  ],\n  \"pagination\": {\n    \"total\": 1,\n    \"limit\": 10,\n    \"offset\": 0,\n    \"hasMore\": false\n  }\n}"
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"$id\": \"campaign_123\",\n      \"title\": \"Help John's Medical Treatment\",\n      \"description\": \"Support for medical expenses and surgery costs\",\n      \"targetAmount\": 5000,\n      \"currentAmount\": 1200,\n      \"creatorId\": \"user_456\",\n      \"status\": \"active\",\n      \"category\": \"medical\",\n      \"deadline\": \"2025-12-31T23:59:59.000Z\",\n      \"createdAt\": \"2025-09-15T10:00:00.000Z\"\n    }\n  ],\n  \"total\": 1\n}"
+            },
+            {
+              "name": "Success Response - Creator Filter",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/campaigns?creatorId=user_456",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["campaigns"],
+                  "query": [{"key": "creatorId", "value": "user_456"}]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"$id\": \"campaign_123\",\n      \"title\": \"Help John's Medical Treatment\",\n      \"description\": \"Support for medical expenses and surgery costs\",\n      \"targetAmount\": 5000,\n      \"currentAmount\": 1200,\n      \"creatorId\": \"user_456\",\n      \"status\": \"active\",\n      \"category\": \"medical\",\n      \"createdAt\": \"2025-09-15T10:00:00.000Z\"\n    },\n    {\n      \"$id\": \"campaign_567\",\n      \"title\": \"Animal Shelter Support\",\n      \"description\": \"Help us provide food and shelter for abandoned pets\",\n      \"targetAmount\": 3000,\n      \"currentAmount\": 850,\n      \"creatorId\": \"user_456\",\n      \"status\": \"active\",\n      \"category\": \"animals\",\n      \"createdAt\": \"2025-09-12T14:20:00.000Z\"\n    }\n  ],\n  \"total\": 2\n}"
+            },
+            {
+              "name": "Success Response - Pagination",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/campaigns?limit=5&offset=5",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["campaigns"],
+                  "query": [
+                    {"key": "limit", "value": "5"},
+                    {"key": "offset", "value": "5"}
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"$id\": \"campaign_890\",\n      \"title\": \"Community Garden Project\",\n      \"description\": \"Creating a sustainable garden for the neighborhood\",\n      \"targetAmount\": 2500,\n      \"currentAmount\": 750,\n      \"creatorId\": \"user_202\",\n      \"status\": \"active\",\n      \"category\": \"environment\",\n      \"createdAt\": \"2025-09-08T09:15:00.000Z\"\n    }\n  ],\n  \"total\": 15\n}"
             }
           ]
         },
         {
-          "name": "Get Campaign by ID",
+          "name": "Create Campaign",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Emergency Surgery Fund\",\n  \"description\": \"Help cover emergency surgery costs for a family member\",\n  \"targetAmount\": 10000,\n  \"creatorId\": \"{{userId}}\",\n  \"category\": \"medical\",\n  \"deadline\": \"2025-12-31T23:59:59.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/campaigns",
+              "host": ["{{baseUrl}}"],
+              "path": ["campaigns"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Emergency Surgery Fund\",\n  \"description\": \"Help cover emergency surgery costs for a family member\",\n  \"targetAmount\": 10000,\n  \"creatorId\": \"user_456\",\n  \"category\": \"medical\",\n  \"deadline\": \"2025-12-31T23:59:59.000Z\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/campaigns",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["campaigns"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"$id\": \"campaign_789\",\n    \"title\": \"Emergency Surgery Fund\",\n    \"description\": \"Help cover emergency surgery costs for a family member\",\n    \"targetAmount\": 10000,\n    \"currentAmount\": 0,\n    \"creatorId\": \"user_456\",\n    \"status\": \"active\",\n    \"category\": \"medical\",\n    \"deadline\": \"2025-12-31T23:59:59.000Z\",\n    \"createdAt\": \"2025-09-15T10:30:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "Error Response - Missing Required Fields",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Incomplete Campaign\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/campaigns",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["campaigns"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": \"Failed to create campaign\"\n}"
+            },
+            {
+              "name": "Error Response - Invalid Data",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"\",\n  \"description\": \"Valid description\",\n  \"targetAmount\": -1000,\n  \"creatorId\": \"invalid_user\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/campaigns",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["campaigns"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": \"Invalid campaign data provided\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Specific Campaign",
           "request": {
             "method": "GET",
             "header": [
@@ -267,102 +387,77 @@
               "raw": "{{baseUrl}}/campaigns/{{campaignId}}",
               "host": ["{{baseUrl}}"],
               "path": ["campaigns", "{{campaignId}}"]
-            },
-            "description": "Get a specific campaign with its contributions"
+            }
           },
           "response": [
             {
-              "name": "Success Response",
+              "name": "Success Response - With Contributions",
               "originalRequest": {
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
+                "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/campaigns/64f1a2b3c4d5e6f7g8h9",
+                  "raw": "{{baseUrl}}/campaigns/campaign_123",
                   "host": ["{{baseUrl}}"],
-                  "path": ["campaigns", "64f1a2b3c4d5e6f7g8h9"]
+                  "path": ["campaigns", "campaign_123"]
                 }
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "json",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"$id\": \"64f1a2b3c4d5e6f7g8h9\",\n    \"title\": \"Help Sarah with Medical Bills\",\n    \"description\": \"Sarah needs help with her medical expenses after a recent surgery.\",\n    \"purpose\": \"Medical Emergency\",\n    \"targetAmount\": 50000,\n    \"currentAmount\": 15000,\n    \"creatorId\": \"68b542650008ea019d84\",\n    \"creatorName\": \"John Doe\",\n    \"status\": \"active\",\n    \"createdAt\": \"2025-09-14T10:30:00.000Z\",\n    \"updatedAt\": \"2025-09-14T10:30:00.000Z\",\n    \"contributions\": [\n      {\n        \"$id\": \"contrib123\",\n        \"campaignId\": \"64f1a2b3c4d5e6f7g8h9\",\n        \"contributorId\": \"user456\",\n        \"contributorName\": \"Jane Smith\",\n        \"amount\": 5000,\n        \"message\": \"Hope this helps!\",\n        \"isAnonymous\": false,\n        \"createdAt\": \"2025-09-14T11:00:00.000Z\"\n      }\n    ]\n  }\n}"
-            }
-          ]
-        },
-        {
-          "name": "Create Campaign",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "x-user-id",
-                "value": "{{userId}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"Emergency Medical Fund\",\n  \"description\": \"Urgent medical expenses for surgery\",\n  \"purpose\": \"Medical Emergency\",\n  \"targetAmount\": 75000,\n  \"creatorId\": \"{{userId}}\",\n  \"creatorName\": \"John Doe\",\n  \"upiId\": \"john@paytm\",\n  \"phoneNumber\": \"+1234567890\",\n  \"dueDate\": null\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"$id\": \"campaign_123\",\n    \"title\": \"Help John's Medical Treatment\",\n    \"description\": \"Support for medical expenses and emergency surgery costs\",\n    \"targetAmount\": 5000,\n    \"currentAmount\": 1200,\n    \"creatorId\": \"user_456\",\n    \"status\": \"active\",\n    \"category\": \"medical\",\n    \"deadline\": \"2025-12-31T23:59:59.000Z\",\n    \"createdAt\": \"2025-09-15T10:00:00.000Z\",\n    \"updatedAt\": \"2025-09-15T11:30:00.000Z\",\n    \"contributions\": [\n      {\n        \"$id\": \"contrib_001\",\n        \"amount\": 500,\n        \"contributorId\": \"user_789\",\n        \"campaignId\": \"campaign_123\",\n        \"message\": \"Hope this helps! Get well soon.\",\n        \"status\": \"completed\",\n        \"paymentMethod\": \"upi\",\n        \"createdAt\": \"2025-09-15T11:00:00.000Z\"\n      },\n      {\n        \"$id\": \"contrib_002\",\n        \"amount\": 700,\n        \"contributorId\": \"user_101\",\n        \"campaignId\": \"campaign_123\",\n        \"message\": \"Sending prayers and support!\",\n        \"status\": \"completed\",\n        \"paymentMethod\": \"bank_transfer\",\n        \"createdAt\": \"2025-09-15T12:30:00.000Z\"\n      }\n    ]\n  }\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/campaigns",
-              "host": ["{{baseUrl}}"],
-              "path": ["campaigns"]
-            },
-            "description": "Create a new fundraising campaign"
-          },
-          "response": [
             {
-              "name": "Campaign Created",
+              "name": "Success Response - No Contributions",
               "originalRequest": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "x-user-id",
-                    "value": "{{userId}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"title\": \"Emergency Medical Fund\",\n  \"description\": \"Urgent medical expenses for surgery\",\n  \"purpose\": \"Medical Emergency\",\n  \"targetAmount\": 75000,\n  \"creatorId\": \"{{userId}}\",\n  \"creatorName\": \"John Doe\",\n  \"upiId\": \"john@paytm\",\n  \"phoneNumber\": \"+1234567890\"\n}"
-                },
+                "method": "GET",
+                "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/campaigns",
+                  "raw": "{{baseUrl}}/campaigns/campaign_456",
                   "host": ["{{baseUrl}}"],
-                  "path": ["campaigns"]
+                  "path": ["campaigns", "campaign_456"]
                 }
               },
-              "status": "Created",
-              "code": 201,
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"$id\": \"64f1a2b3c4d5e6f7g8h9\",\n    \"title\": \"Emergency Medical Fund\",\n    \"description\": \"Urgent medical expenses for surgery\",\n    \"purpose\": \"Medical Emergency\",\n    \"targetAmount\": 75000,\n    \"currentAmount\": 0,\n    \"creatorId\": \"{{userId}}\",\n    \"creatorName\": \"John Doe\",\n    \"status\": \"active\",\n    \"createdAt\": \"2025-09-14T10:30:00.000Z\",\n    \"upiId\": \"john@paytm\",\n    \"phoneNumber\": \"+1234567890\"\n  }\n}"
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"$id\": \"campaign_456\",\n    \"title\": \"New Education Initiative\",\n    \"description\": \"Building a computer lab for underprivileged students\",\n    \"targetAmount\": 8000,\n    \"currentAmount\": 0,\n    \"creatorId\": \"user_789\",\n    \"status\": \"active\",\n    \"category\": \"education\",\n    \"deadline\": \"2026-02-28T23:59:59.000Z\",\n    \"createdAt\": \"2025-09-15T14:00:00.000Z\",\n    \"contributions\": []\n  }\n}"
+            },
+            {
+              "name": "Error Response - Campaign Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/campaigns/invalid_campaign_id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["campaigns", "invalid_campaign_id"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": \"Campaign not found\"\n}"
             }
           ]
         },
@@ -374,31 +469,21 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
-              },
-              {
-                "key": "x-user-id",
-                "value": "{{userId}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Updated Campaign Title\",\n  \"description\": \"Updated description with more details\",\n  \"targetAmount\": 100000,\n  \"status\": \"active\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "raw": "{\n  \"title\": \"Updated Campaign Title\",\n  \"description\": \"Updated description with more details\",\n  \"status\": \"active\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/campaigns/{{campaignId}}",
               "host": ["{{baseUrl}}"],
               "path": ["campaigns", "{{campaignId}}"]
-            },
-            "description": "Update an existing campaign"
+            }
           },
           "response": [
             {
-              "name": "Campaign Updated",
+              "name": "Success Response",
               "originalRequest": {
                 "method": "PATCH",
                 "header": [
@@ -409,23 +494,25 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"title\": \"Updated Campaign Title\",\n  \"description\": \"Updated description\"\n}"
+                  "raw": "{\n  \"title\": \"Updated Campaign Title\"\n}"
                 },
                 "url": {
-                  "raw": "{{baseUrl}}/campaigns/64f1a2b3c4d5e6f7g8h9",
+                  "raw": "{{baseUrl}}/campaigns/campaign_123",
                   "host": ["{{baseUrl}}"],
-                  "path": ["campaigns", "64f1a2b3c4d5e6f7g8h9"]
+                  "path": ["campaigns", "campaign_123"]
                 }
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "json",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"$id\": \"64f1a2b3c4d5e6f7g8h9\",\n    \"title\": \"Updated Campaign Title\",\n    \"description\": \"Updated description\",\n    \"targetAmount\": 100000,\n    \"updatedAt\": \"2025-09-14T12:00:00.000Z\"\n  }\n}"
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"$id\": \"campaign_123\",\n    \"title\": \"Updated Campaign Title\",\n    \"description\": \"Updated description with more details\",\n    \"targetAmount\": 5000,\n    \"currentAmount\": 1200,\n    \"creatorId\": \"user_456\",\n    \"status\": \"active\",\n    \"createdAt\": \"2025-09-15T10:00:00.000Z\",\n    \"updatedAt\": \"2025-09-15T12:00:00.000Z\"\n  }\n}"
             }
           ]
         },
@@ -437,44 +524,36 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
-              },
-              {
-                "key": "x-user-id",
-                "value": "{{userId}}"
               }
             ],
             "url": {
               "raw": "{{baseUrl}}/campaigns/{{campaignId}}",
               "host": ["{{baseUrl}}"],
               "path": ["campaigns", "{{campaignId}}"]
-            },
-            "description": "Delete a campaign (only by creator)"
+            }
           },
           "response": [
             {
-              "name": "Campaign Deleted",
+              "name": "Success Response",
               "originalRequest": {
                 "method": "DELETE",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
+                "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/campaigns/64f1a2b3c4d5e6f7g8h9",
+                  "raw": "{{baseUrl}}/campaigns/campaign_123",
                   "host": ["{{baseUrl}}"],
-                  "path": ["campaigns", "64f1a2b3c4d5e6f7g8h9"]
+                  "path": ["campaigns", "campaign_123"]
                 }
               },
               "status": "No Content",
               "code": 204,
+              "_postman_previewlanguage": "json",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
+              "cookie": [],
               "body": "{\n  \"success\": true,\n  \"message\": \"Campaign deleted successfully\"\n}"
             }
           ]
@@ -484,6 +563,125 @@
     {
       "name": "Contributions",
       "item": [
+        {
+          "name": "Create Contribution",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"campaignId\": \"{{campaignId}}\",\n  \"contributorId\": \"{{userId}}\",\n  \"amount\": 250,\n  \"message\": \"Happy to help with this cause!\",\n  \"paymentMethod\": \"upi\",\n  \"transactionId\": \"txn_12345\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/contributions",
+              "host": ["{{baseUrl}}"],
+              "path": ["contributions"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"campaignId\": \"campaign_123\",\n  \"contributorId\": \"user_789\",\n  \"amount\": 250,\n  \"message\": \"Happy to help with this cause!\",\n  \"paymentMethod\": \"upi\",\n  \"transactionId\": \"txn_12345\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/contributions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["contributions"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"$id\": \"contrib_002\",\n    \"campaignId\": \"campaign_123\",\n    \"contributorId\": \"user_789\",\n    \"amount\": 250,\n    \"message\": \"Happy to help with this cause!\",\n    \"paymentMethod\": \"upi\",\n    \"transactionId\": \"txn_12345\",\n    \"status\": \"pending\",\n    \"createdAt\": \"2025-09-15T13:00:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "Error Response - Invalid Campaign",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"campaignId\": \"invalid_campaign\",\n  \"contributorId\": \"user_789\",\n  \"amount\": 250\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/contributions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["contributions"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": \"Failed to create contribution\"\n}"
+            },
+            {
+              "name": "Error Response - Invalid Amount",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"campaignId\": \"campaign_123\",\n  \"contributorId\": \"user_789\",\n  \"amount\": -100\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/contributions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["contributions"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": \"Invalid contribution amount\"\n}"
+            }
+          ]
+        },
         {
           "name": "Get Campaign Contributions",
           "request": {
@@ -498,35 +696,31 @@
               "raw": "{{baseUrl}}/contributions/campaign/{{campaignId}}",
               "host": ["{{baseUrl}}"],
               "path": ["contributions", "campaign", "{{campaignId}}"]
-            },
-            "description": "Get all contributions for a specific campaign"
+            }
           },
           "response": [
             {
               "name": "Success Response",
               "originalRequest": {
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
+                "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/contributions/campaign/64f1a2b3c4d5e6f7g8h9",
+                  "raw": "{{baseUrl}}/contributions/campaign/campaign_123",
                   "host": ["{{baseUrl}}"],
-                  "path": ["contributions", "campaign", "64f1a2b3c4d5e6f7g8h9"]
+                  "path": ["contributions", "campaign", "campaign_123"]
                 }
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "json",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"$id\": \"contrib123\",\n      \"campaignId\": \"64f1a2b3c4d5e6f7g8h9\",\n      \"contributorId\": \"user456\",\n      \"contributorName\": \"Jane Smith\",\n      \"amount\": 5000,\n      \"message\": \"Hope this helps!\",\n      \"isAnonymous\": false,\n      \"status\": \"confirmed\",\n      \"createdAt\": \"2025-09-14T11:00:00.000Z\"\n    }\n  ],\n  \"total\": 1\n}"
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"$id\": \"contrib_001\",\n      \"amount\": 500,\n      \"contributorId\": \"user_789\",\n      \"campaignId\": \"campaign_123\",\n      \"message\": \"Hope this helps!\",\n      \"status\": \"completed\",\n      \"createdAt\": \"2025-09-15T11:00:00.000Z\"\n    },\n    {\n      \"$id\": \"contrib_002\",\n      \"amount\": 250,\n      \"contributorId\": \"user_456\",\n      \"campaignId\": \"campaign_123\",\n      \"message\": \"Glad to contribute!\",\n      \"status\": \"completed\",\n      \"createdAt\": \"2025-09-15T12:00:00.000Z\"\n    }\n  ],\n  \"total\": 2\n}"
             }
           ]
         },
@@ -544,102 +738,31 @@
               "raw": "{{baseUrl}}/contributions/user/{{userId}}",
               "host": ["{{baseUrl}}"],
               "path": ["contributions", "user", "{{userId}}"]
-            },
-            "description": "Get all contributions made by a specific user"
+            }
           },
           "response": [
             {
               "name": "Success Response",
               "originalRequest": {
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
+                "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/contributions/user/68b542650008ea019d84",
+                  "raw": "{{baseUrl}}/contributions/user/user_789",
                   "host": ["{{baseUrl}}"],
-                  "path": ["contributions", "user", "68b542650008ea019d84"]
+                  "path": ["contributions", "user", "user_789"]
                 }
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "json",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"$id\": \"contrib456\",\n      \"campaignId\": \"campaign789\",\n      \"campaignTitle\": \"Help John's Family\",\n      \"contributorId\": \"68b542650008ea019d84\",\n      \"contributorName\": \"John Doe\",\n      \"amount\": 10000,\n      \"message\": \"Wishing you all the best\",\n      \"isAnonymous\": false,\n      \"status\": \"confirmed\",\n      \"createdAt\": \"2025-09-14T09:00:00.000Z\"\n    }\n  ],\n  \"total\": 1\n}"
-            }
-          ]
-        },
-        {
-          "name": "Create Contribution",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "x-user-id",
-                "value": "{{userId}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"campaignId\": \"{{campaignId}}\",\n  \"contributorId\": \"{{userId}}\",\n  \"contributorName\": \"John Doe\",\n  \"amount\": 5000,\n  \"message\": \"Hope this helps with your situation!\",\n  \"isAnonymous\": false,\n  \"paymentMethod\": \"UPI\",\n  \"transactionId\": \"TXN123456789\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/contributions",
-              "host": ["{{baseUrl}}"],
-              "path": ["contributions"]
-            },
-            "description": "Make a contribution to a campaign"
-          },
-          "response": [
-            {
-              "name": "Contribution Created",
-              "originalRequest": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "x-user-id",
-                    "value": "{{userId}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"campaignId\": \"{{campaignId}}\",\n  \"contributorId\": \"{{userId}}\",\n  \"contributorName\": \"John Doe\",\n  \"amount\": 5000,\n  \"message\": \"Hope this helps!\",\n  \"isAnonymous\": false\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/contributions",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["contributions"]
-                }
-              },
-              "status": "Created",
-              "code": 201,
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"$id\": \"contrib789\",\n    \"campaignId\": \"{{campaignId}}\",\n    \"contributorId\": \"{{userId}}\",\n    \"contributorName\": \"John Doe\",\n    \"amount\": 5000,\n    \"message\": \"Hope this helps!\",\n    \"isAnonymous\": false,\n    \"status\": \"pending\",\n    \"createdAt\": \"2025-09-14T11:30:00.000Z\"\n  }\n}"
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"$id\": \"contrib_001\",\n      \"amount\": 500,\n      \"contributorId\": \"user_789\",\n      \"campaignId\": \"campaign_123\",\n      \"message\": \"Hope this helps!\",\n      \"status\": \"completed\",\n      \"createdAt\": \"2025-09-15T11:00:00.000Z\"\n    }\n  ],\n  \"total\": 1\n}"
             }
           ]
         },
@@ -651,31 +774,21 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
-              },
-              {
-                "key": "x-user-id",
-                "value": "{{userId}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"confirmed\",\n  \"transactionId\": \"TXN987654321\",\n  \"paymentMethod\": \"UPI\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "raw": "{\n  \"status\": \"completed\",\n  \"paymentMethod\": \"bank_transfer\",\n  \"screenshotFileId\": \"file_12345\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/contributions/{{contributionId}}",
               "host": ["{{baseUrl}}"],
               "path": ["contributions", "{{contributionId}}"]
-            },
-            "description": "Update contribution status or details"
+            }
           },
           "response": [
             {
-              "name": "Contribution Updated",
+              "name": "Success Response",
               "originalRequest": {
                 "method": "PATCH",
                 "header": [
@@ -686,23 +799,25 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"status\": \"confirmed\"\n}"
+                  "raw": "{\n  \"status\": \"completed\"\n}"
                 },
                 "url": {
-                  "raw": "{{baseUrl}}/contributions/contrib789",
+                  "raw": "{{baseUrl}}/contributions/contrib_002",
                   "host": ["{{baseUrl}}"],
-                  "path": ["contributions", "contrib789"]
+                  "path": ["contributions", "contrib_002"]
                 }
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "json",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"$id\": \"contrib789\",\n    \"status\": \"confirmed\",\n    \"transactionId\": \"TXN987654321\",\n    \"updatedAt\": \"2025-09-14T12:00:00.000Z\"\n  }\n}"
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"$id\": \"contrib_002\",\n    \"campaignId\": \"campaign_123\",\n    \"contributorId\": \"user_789\",\n    \"amount\": 250,\n    \"message\": \"Happy to help!\",\n    \"status\": \"completed\",\n    \"createdAt\": \"2025-09-15T13:00:00.000Z\",\n    \"updatedAt\": \"2025-09-15T14:00:00.000Z\"\n  }\n}"
             }
           ]
         }
@@ -712,7 +827,7 @@
       "name": "QR Code",
       "item": [
         {
-          "name": "Generate QR Code",
+          "name": "Generate QR Code for Campaign",
           "request": {
             "method": "GET",
             "header": [
@@ -725,35 +840,77 @@
               "raw": "{{baseUrl}}/qr/{{campaignId}}",
               "host": ["{{baseUrl}}"],
               "path": ["qr", "{{campaignId}}"]
-            },
-            "description": "Generate QR code for a campaign"
+            }
           },
           "response": [
             {
-              "name": "QR Code Generated",
+              "name": "Success Response",
               "originalRequest": {
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
+                "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/qr/64f1a2b3c4d5e6f7g8h9",
+                  "raw": "{{baseUrl}}/qr/campaign_123",
                   "host": ["{{baseUrl}}"],
-                  "path": ["qr", "64f1a2b3c4d5e6f7g8h9"]
+                  "path": ["qr", "campaign_123"]
                 }
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "json",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"campaignId\": \"64f1a2b3c4d5e6f7g8h9\",\n    \"qrCodeDataUrl\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...\",\n    \"campaignUrl\": \"https://68b699f80025cf96484e.fra.appwrite.run/campaign/64f1a2b3c4d5e6f7g8h9\",\n    \"generatedAt\": \"2025-09-14T11:45:00.000Z\"\n  }\n}"
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"qrCode\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEwAACxMBAJqcGAAABfZJREFUeJzt3VGL1TAUh/G/c...\",\n    \"url\": \"https://friendfund.app/campaign/campaign_123\"\n  }\n}"
+            },
+            {
+              "name": "Error Response - Campaign Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/qr/invalid_campaign",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["qr", "invalid_campaign"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": \"Failed to generate QR code\"\n}"
+            },
+            {
+              "name": "Error Response - QR Generation Failed",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/qr/campaign_123",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["qr", "campaign_123"]
+                }
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": \"QR code generation service temporarily unavailable\"\n}"
             }
           ]
         }
@@ -776,35 +933,189 @@
               "raw": "{{baseUrl}}/users/{{userId}}",
               "host": ["{{baseUrl}}"],
               "path": ["users", "{{userId}}"]
-            },
-            "description": "Get user information by ID"
+            }
           },
           "response": [
             {
-              "name": "User Info Retrieved",
+              "name": "Success Response - Complete Profile",
               "originalRequest": {
                 "method": "GET",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
+                "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/users/68b542650008ea019d84",
+                  "raw": "{{baseUrl}}/users/user_789",
                   "host": ["{{baseUrl}}"],
-                  "path": ["users", "68b542650008ea019d84"]
+                  "path": ["users", "user_789"]
                 }
               },
               "status": "OK",
               "code": 200,
+              "_postman_previewlanguage": "json",
               "header": [
                 {
                   "key": "Content-Type",
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"$id\": \"68b542650008ea019d84\",\n    \"name\": \"John Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"phone\": \"+1234567890\",\n    \"status\": true,\n    \"registration\": \"2025-09-10T10:00:00.000Z\",\n    \"emailVerification\": true,\n    \"phoneVerification\": false\n  }\n}"
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"user_789\",\n    \"name\": \"John Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"phone\": \"+1234567890\",\n    \"prefs\": {\n      \"notifications\": true,\n      \"theme\": \"light\",\n      \"language\": \"en\",\n      \"emailNotifications\": true,\n      \"pushNotifications\": false\n    }\n  }\n}"
+            },
+            {
+              "name": "Success Response - Minimal Profile",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/users/user_456",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", "user_456"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"user_456\",\n    \"name\": \"Jane Smith\",\n    \"email\": \"jane.smith@example.com\",\n    \"phone\": null,\n    \"prefs\": {\n      \"notifications\": false,\n      \"theme\": \"dark\"\n    }\n  }\n}"
+            },
+            {
+              "name": "Error Response - User Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/users/invalid_user_id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", "invalid_user_id"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": \"User not found\"\n}"
+            },
+            {
+              "name": "Error Response - Access Denied",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/users/restricted_user",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", "restricted_user"]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": \"Access denied to user information\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Error Scenarios",
+      "item": [
+        {
+          "name": "404 - Route Not Found",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/invalid-route",
+              "host": ["{{baseUrl}}"],
+              "path": ["invalid-route"]
+            }
+          },
+          "response": [
+            {
+              "name": "404 Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/invalid-route",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["invalid-route"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": \"Route not found\",\n  \"availableRoutes\": [\n    \"GET /campaigns - Get all campaigns\",\n    \"POST /campaigns - Create campaign\",\n    \"GET /campaigns/{id} - Get specific campaign\",\n    \"PATCH /campaigns/{id} - Update campaign\",\n    \"DELETE /campaigns/{id} - Delete campaign\",\n    \"GET /contributions/campaign/{id} - Get campaign contributions\",\n    \"GET /contributions/user/{id} - Get user contributions\",\n    \"POST /contributions - Create contribution\",\n    \"PATCH /contributions/{id} - Update contribution\",\n    \"GET /qr/{campaignId} - Generate QR code\",\n    \"GET /users/{id} - Get user info\"\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "405 - Method Not Allowed",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/campaigns",
+              "host": ["{{baseUrl}}"],
+              "path": ["campaigns"]
+            }
+          },
+          "response": [
+            {
+              "name": "405 Response",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/campaigns",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["campaigns"]
+                }
+              },
+              "status": "Method Not Allowed",
+              "code": 405,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": \"Method not allowed\"\n}"
             }
           ]
         }
@@ -817,17 +1128,21 @@
       "script": {
         "type": "text/javascript",
         "exec": [
-          "// Set dynamic variables",
-          "if (!pm.globals.get('campaignId')) {",
-          "    pm.globals.set('campaignId', '64f1a2b3c4d5e6f7g8h9');",
-          "}",
+          "// Pre-request script to set dynamic variables",
+          "// You can add authentication logic here if needed",
           "",
-          "if (!pm.globals.get('contributionId')) {",
-          "    pm.globals.set('contributionId', 'contrib123');",
-          "}",
+          "// Set timestamp for unique IDs",
+          "pm.globals.set('timestamp', Date.now());",
           "",
           "// Log request details",
-          "console.log('Making request to:', pm.request.url.toString());"
+          "console.log('Making request to:', pm.request.url.toString());",
+          "console.log('Method:', pm.request.method);",
+          "",
+          "// Add any additional headers if needed",
+          "pm.request.headers.add({",
+          "    key: 'X-Appwrite-Project',",
+          "    value: pm.environment.get('projectId') || 'YOUR_PROJECT_ID'",
+          "});"
         ]
       }
     },
@@ -837,43 +1152,48 @@
         "type": "text/javascript",
         "exec": [
           "// Global test script for all requests",
-          "pm.test('Response status is successful', function () {",
-          "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+          "",
+          "// Test response time",
+          "pm.test('Response time is less than 5000ms', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
           "});",
           "",
-          "if (pm.response.code !== 204) {",
-          "    pm.test('Response has JSON content-type', function () {",
-          "        pm.expect(pm.response.headers.get('content-type')).to.include('application/json');",
-          "    });",
+          "// Test response format",
+          "pm.test('Response has proper JSON format', function () {",
+          "    pm.response.to.have.jsonBody();",
+          "});",
           "",
-          "    pm.test('Response has success field', function () {",
-          "        const jsonData = pm.response.json();",
+          "// Test success responses",
+          "if (pm.response.code >= 200 && pm.response.code < 300) {",
+          "    pm.test('Successful response has success field', function () {",
+          "        var jsonData = pm.response.json();",
           "        pm.expect(jsonData).to.have.property('success');",
+          "        pm.expect(jsonData.success).to.be.true;",
           "    });",
-          "",
-          "    // Auto-set variables from responses",
-          "    try {",
-          "        const jsonData = pm.response.json();",
-          "        if (jsonData.success && jsonData.data) {",
-          "            if (jsonData.data.$id) {",
-          "                if (pm.request.url.path.includes('campaigns')) {",
-          "                    pm.globals.set('campaignId', jsonData.data.$id);",
-          "                    console.log('Set campaignId:', jsonData.data.$id);",
-          "                } else if (pm.request.url.path.includes('contributions')) {",
-          "                    pm.globals.set('contributionId', jsonData.data.$id);",
-          "                    console.log('Set contributionId:', jsonData.data.$id);",
-          "                }",
-          "            }",
-          "        }",
-          "    } catch (e) {",
-          "        console.log('Could not parse response or set variables');",
-          "    }",
+          "    ",
+          "    pm.test('Successful response has data field', function () {",
+          "        var jsonData = pm.response.json();",
+          "        pm.expect(jsonData).to.have.property('data');",
+          "    });",
           "}",
           "",
-          "// CORS headers check",
-          "pm.test('Has CORS headers', function () {",
-          "    pm.expect(pm.response.headers.get('Access-Control-Allow-Origin')).to.eql('*');",
-          "});"
+          "// Test error responses",
+          "if (pm.response.code >= 400) {",
+          "    pm.test('Error response has success field set to false', function () {",
+          "        var jsonData = pm.response.json();",
+          "        pm.expect(jsonData).to.have.property('success');",
+          "        pm.expect(jsonData.success).to.be.false;",
+          "    });",
+          "    ",
+          "    pm.test('Error response has error field', function () {",
+          "        var jsonData = pm.response.json();",
+          "        pm.expect(jsonData).to.have.property('error');",
+          "    });",
+          "}",
+          "",
+          "// Log response for debugging",
+          "console.log('Response Status:', pm.response.code);",
+          "console.log('Response Body:', pm.response.text());"
         ]
       }
     }
