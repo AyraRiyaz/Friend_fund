@@ -341,6 +341,16 @@ export default async ({ req, res, log, error: logError }) => {
   log(`${req.method} ${req.path}`);
   log(`Headers: ${JSON.stringify(req.headers)}`);
 
+  // Handle CORS preflight requests
+  if (req.method === "OPTIONS") {
+    return res.json({ success: true, message: "CORS preflight" }, 200, {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, x-user-id",
+      "Access-Control-Max-Age": "86400",
+    });
+  }
+
   try {
     const friendFundAPI = new FriendFundAPI();
     const method = req.method;
@@ -479,16 +489,32 @@ export default async ({ req, res, log, error: logError }) => {
     log(`Response status: ${statusCode}`);
     log(`Response: ${JSON.stringify(result)}`);
 
-    return res.json(result, statusCode);
+    // Add CORS headers to all responses
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, x-user-id",
+    };
+
+    return res.json(result, statusCode, corsHeaders);
   } catch (err) {
     logError("Function execution error:", err);
+
+    // Add CORS headers to error responses too
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, x-user-id",
+    };
+
     return res.json(
       {
         success: false,
         error: err.message || "Internal server error",
         stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
       },
-      500
+      500,
+      corsHeaders
     );
   }
 };
