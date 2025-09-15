@@ -1,11 +1,9 @@
 /**
- * FriendFund HTTP Server Backend - Single File
- * Standalone HTTP server with Appwrite integration for full-stack development
+ * FriendFund Appwrite Function Entry Point
+ * This is the main entry point for the Appwrite Function deployment
  * Author: Ayra Riyaz
- * Modified from Appwrite Function to HTTP Server for better development experience
  */
 
-import "dotenv/config";
 import {
   Client,
   Databases,
@@ -17,14 +15,10 @@ import {
   Role,
 } from "node-appwrite";
 import QRCode from "qrcode";
-import http from "http";
-import url from "url";
-
-const PORT = process.env.PORT || 3000;
 
 /**
  * @class FriendFundAPI
- * @description Main class for handling FriendFund operations via HTTP API
+ * @description Main class for handling FriendFund operations via Appwrite Function
  */
 class FriendFundAPI {
   constructor() {
@@ -33,12 +27,13 @@ class FriendFundAPI {
     this.storage = new Storage(this.client);
     this.users = new Users(this.client);
 
-    // Initialize Appwrite client
+    // Initialize Appwrite client - for functions, these are automatically available
     this.client
       .setEndpoint(
-        process.env.APPWRITE_ENDPOINT || "https://fra.cloud.appwrite.io/v1"
+        process.env.APPWRITE_FUNCTION_ENDPOINT ||
+          "https://fra.cloud.appwrite.io/v1"
       )
-      .setProject(process.env.APPWRITE_PROJECT_ID || "68b542650008ea019d84")
+      .setProject(process.env.APPWRITE_FUNCTION_PROJECT_ID)
       .setKey(process.env.APPWRITE_API_KEY);
 
     this.databaseId =
@@ -295,8 +290,7 @@ class FriendFundAPI {
   async generateQRCode(campaignId) {
     try {
       const campaignUrl = `${
-        process.env.FRONTEND_URL ||
-        "https://68b699f80025cf96484e.fra.appwrite.run"
+        process.env.FRONTEND_BASE_URL || "https://friendfund.pro26.in"
       }/campaign/${campaignId}`;
       const qrCodeDataURL = await QRCode.toDataURL(campaignUrl);
 
@@ -340,51 +334,29 @@ class FriendFundAPI {
   }
 }
 
-// HTTP Server Setup
-console.log(
-  `🚀 FriendFund Backend-Frontend Connected: Running HTTP Server on port ${PORT}`
-);
-
-const server = http.createServer(async (req, res) => {
-  // Set CORS headers for frontend integration
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PATCH, DELETE, OPTIONS"
-  );
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, x-user-id"
-  );
-
-  // Handle preflight OPTIONS request
-  if (req.method === "OPTIONS") {
-    res.writeHead(200);
-    res.end();
-    return;
-  }
+/**
+ * Main function for Appwrite Function execution
+ * This is the entry point that Appwrite will call
+ */
+export default async ({ req, res, log, error: logError }) => {
+  // Log the incoming request
+  log(`${req.method} ${req.path}`);
+  log(`Headers: ${JSON.stringify(req.headers)}`);
 
   try {
     const friendFundAPI = new FriendFundAPI();
-    const parsedUrl = url.parse(req.url, true);
-    const path = parsedUrl.pathname;
-    const query = parsedUrl.query;
     const method = req.method;
+    const path = req.path || req.url || "/";
+    const query = req.query || {};
+    const body = req.body || {};
 
-    console.log(`${method} ${path}`);
-
-    // Parse body for POST/PATCH requests
-    let body = {};
-    if (method === "POST" || method === "PATCH") {
-      const chunks = [];
-      for await (const chunk of req) {
-        chunks.push(chunk);
-      }
-      const bodyString = Buffer.concat(chunks).toString();
+    // Parse body if it's a string
+    let parsedBody = body;
+    if (typeof body === "string") {
       try {
-        body = JSON.parse(bodyString);
+        parsedBody = JSON.parse(body);
       } catch (e) {
-        body = {};
+        parsedBody = {};
       }
     }
 
@@ -392,22 +364,22 @@ const server = http.createServer(async (req, res) => {
     let statusCode = 200;
 
     // Route handling
-    if (path === "/campaigns" || path === "/") {
+    if (path === "/" || path === "/campaigns") {
       if (method === "GET") {
         const queries = [];
 
         // Build Appwrite queries from URL parameters
         if (query.creatorId)
-          queries.push(`equal("creatorId", "${query.creatorId}")`);
-        if (query.status) queries.push(`equal("status", "${query.status}")`);
-        if (query.search) queries.push(`search("title", "${query.search}")`);
-        if (query.limit) queries.push(`limit(${parseInt(query.limit)})`);
-        if (query.offset) queries.push(`offset(${parseInt(query.offset)})`);
+          queries.push(Query.equal("creatorId", query.creatorId));
+        if (query.status) queries.push(Query.equal("status", query.status));
+        if (query.search) queries.push(Query.search("title", query.search));
+        if (query.limit) queries.push(Query.limit(parseInt(query.limit)));
+        if (query.offset) queries.push(Query.offset(parseInt(query.offset)));
 
         result = await friendFundAPI.getAllCampaigns(queries);
       } else if (method === "POST") {
-        result = await friendFundAPI.createCampaign(body);
-        statusCode = 201; // Created
+        result = await friendFundAPI.createCampaign(parsedBody);
+        statusCode = 201;
       } else {
         result = { success: false, error: "Method not allowed" };
         statusCode = 405;
@@ -419,10 +391,10 @@ const server = http.createServer(async (req, res) => {
       if (method === "GET") {
         result = await friendFundAPI.getCampaign(campaignId);
       } else if (method === "PATCH") {
-        result = await friendFundAPI.updateCampaign(campaignId, body);
+        result = await friendFundAPI.updateCampaign(campaignId, parsedBody);
       } else if (method === "DELETE") {
         result = await friendFundAPI.deleteCampaign(campaignId);
-        statusCode = 204; // No Content
+        statusCode = 204;
       } else {
         result = { success: false, error: "Method not allowed" };
         statusCode = 405;
@@ -441,15 +413,18 @@ const server = http.createServer(async (req, res) => {
       } else if (pathParts[1] && method === "PATCH") {
         // PATCH /contributions/{id}
         const contributionId = pathParts[1];
-        result = await friendFundAPI.updateContribution(contributionId, body);
+        result = await friendFundAPI.updateContribution(
+          contributionId,
+          parsedBody
+        );
       } else {
         result = { success: false, error: "Invalid contributions endpoint" };
         statusCode = 400;
       }
     } else if (path === "/contributions") {
       if (method === "POST") {
-        result = await friendFundAPI.createContribution(body);
-        statusCode = 201; // Created
+        result = await friendFundAPI.createContribution(parsedBody);
+        statusCode = 201;
       } else {
         result = { success: false, error: "Method not allowed" };
         statusCode = 405;
@@ -497,43 +472,22 @@ const server = http.createServer(async (req, res) => {
 
     // Set response status based on result
     if (result && !result.success && statusCode === 200) {
-      statusCode = 400; // Bad Request
+      statusCode = 400;
     }
 
-    res.writeHead(statusCode, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(result || { success: false, error: "No response" }));
-  } catch (error) {
-    console.error("Server error:", error);
-    if (!res.headersSent) {
-      res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(
-        JSON.stringify({
-          success: false,
-          error: error.message,
-        })
-      );
-    }
+    log(`Response status: ${statusCode}`);
+    log(`Response: ${JSON.stringify(result)}`);
+
+    return res.json(result, statusCode);
+  } catch (err) {
+    logError("Function execution error:", err);
+    return res.json(
+      {
+        success: false,
+        error: err.message || "Internal server error",
+        stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+      },
+      500
+    );
   }
-});
-
-server.listen(PORT, () => {
-  console.log(`🚀 FriendFund Server running on http://localhost:${PORT}`);
-  console.log("📋 Available endpoints:");
-  console.log("  GET    /campaigns - Get all campaigns");
-  console.log("  POST   /campaigns - Create campaign");
-  console.log("  GET    /campaigns/:id - Get specific campaign");
-  console.log("  PATCH  /campaigns/:id - Update campaign");
-  console.log("  DELETE /campaigns/:id - Delete campaign");
-  console.log(
-    "  GET    /contributions/campaign/:id - Get campaign contributions"
-  );
-  console.log("  GET    /contributions/user/:id - Get user contributions");
-  console.log("  POST   /contributions - Create contribution");
-  console.log("  PATCH  /contributions/:id - Update contribution");
-  console.log("  GET    /qr/:campaignId - Generate QR code");
-  console.log("  GET    /users/:id - Get user info");
-  console.log("");
-  console.log(
-    "💡 Make sure to configure your .env file with Appwrite credentials"
-  );
-});
+};
