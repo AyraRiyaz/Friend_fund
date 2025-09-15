@@ -330,6 +330,198 @@ class FriendFundAPI {
       };
     }
   }
+
+  // Enhanced Campaign Operations
+  async getCampaignSummary() {
+    try {
+      const campaigns = await this.databases.listDocuments(
+        this.databaseId,
+        this.campaignsCollectionId,
+        [Query.equal("status", "active"), Query.limit(20)]
+      );
+
+      const contributions = await this.databases.listDocuments(
+        this.databaseId,
+        this.contributionsCollectionId,
+        [Query.limit(100)]
+      );
+
+      const totalCampaigns = campaigns.total;
+      const totalRaised = campaigns.documents.reduce(
+        (sum, campaign) => sum + (campaign.collectedAmount || 0),
+        0
+      );
+      const totalContributions = contributions.total;
+
+      return {
+        success: true,
+        data: {
+          totalActiveCampaigns: totalCampaigns,
+          totalAmountRaised: totalRaised,
+          totalContributions: totalContributions,
+          recentCampaigns: campaigns.documents.slice(0, 6),
+          urgentCampaigns: campaigns.documents.filter((campaign) => {
+            if (!campaign.dueDate) return false;
+            const dueDate = new Date(campaign.dueDate);
+            const now = new Date();
+            const daysDiff = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
+            return daysDiff <= 7 && daysDiff >= 0;
+          }),
+        },
+      };
+    } catch (error) {
+      console.error("Error getting campaign summary:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to get campaign summary",
+      };
+    }
+  }
+
+  async getUserDashboard(userId) {
+    try {
+      // Get user's campaigns
+      const userCampaigns = await this.databases.listDocuments(
+        this.databaseId,
+        this.campaignsCollectionId,
+        [Query.equal("hostId", userId)]
+      );
+
+      // Get user's contributions
+      const userContributions = await this.databases.listDocuments(
+        this.databaseId,
+        this.contributionsCollectionId,
+        [Query.equal("contributorId", userId)]
+      );
+
+      // Get loans user needs to repay (contributions others made to user's campaigns that are loans)
+      const loansToRepay = [];
+      for (const campaign of userCampaigns.documents) {
+        const campaignContributions = await this.databases.listDocuments(
+          this.databaseId,
+          this.contributionsCollectionId,
+          [
+            Query.equal("campaignId", campaign.$id),
+            Query.equal("type", "loan"),
+            Query.equal("repaymentStatus", "pending"),
+          ]
+        );
+        loansToRepay.push(...campaignContributions.documents);
+      }
+
+      const totalRaised = userCampaigns.documents.reduce(
+        (sum, campaign) => sum + (campaign.collectedAmount || 0),
+        0
+      );
+
+      const totalContributed = userContributions.documents.reduce(
+        (sum, contribution) => sum + (contribution.amount || 0),
+        0
+      );
+
+      const totalLoansToRepay = loansToRepay.reduce(
+        (sum, loan) => sum + (loan.amount || 0),
+        0
+      );
+
+      return {
+        success: true,
+        data: {
+          campaigns: userCampaigns.documents,
+          contributions: userContributions.documents,
+          loansToRepay: loansToRepay,
+          stats: {
+            totalCampaigns: userCampaigns.total,
+            activeCampaigns: userCampaigns.documents.filter(
+              (c) => c.status === "active"
+            ).length,
+            totalRaised: totalRaised,
+            totalContributed: totalContributed,
+            totalLoansToRepay: totalLoansToRepay,
+            totalContributions: userContributions.total,
+          },
+        },
+      };
+    } catch (error) {
+      console.error("Error getting user dashboard:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to get user dashboard",
+      };
+    }
+  }
+
+  async markLoanRepaid(contributionId, repaymentData) {
+    try {
+      const contribution = await this.databases.updateDocument(
+        this.databaseId,
+        this.contributionsCollectionId,
+        contributionId,
+        {
+          repaymentStatus: "repaid",
+          repaidAt: new Date().toISOString(),
+          ...repaymentData,
+        }
+      );
+
+      return {
+        success: true,
+        data: contribution,
+        message: "Loan marked as repaid successfully",
+      };
+    } catch (error) {
+      console.error("Error marking loan as repaid:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to mark loan as repaid",
+      };
+    }
+  }
+
+  async getOverdueLoans(userId) {
+    try {
+      // Get all user's campaigns
+      const userCampaigns = await this.databases.listDocuments(
+        this.databaseId,
+        this.campaignsCollectionId,
+        [Query.equal("hostId", userId)]
+      );
+
+      const overdueLoans = [];
+      const now = new Date();
+
+      for (const campaign of userCampaigns.documents) {
+        const contributions = await this.databases.listDocuments(
+          this.databaseId,
+          this.contributionsCollectionId,
+          [
+            Query.equal("campaignId", campaign.$id),
+            Query.equal("type", "loan"),
+            Query.equal("repaymentStatus", "pending"),
+          ]
+        );
+
+        const overdue = contributions.documents.filter((contribution) => {
+          if (!contribution.repaymentDueDate) return false;
+          const dueDate = new Date(contribution.repaymentDueDate);
+          return dueDate < now;
+        });
+
+        overdueLoans.push(...overdue);
+      }
+
+      return {
+        success: true,
+        data: overdueLoans,
+      };
+    } catch (error) {
+      console.error("Error getting overdue loans:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to get overdue loans",
+      };
+    }
+  }
 }
 
 /**
@@ -455,10 +647,37 @@ export default async ({ req, res, log, error: logError }) => {
       const userId = pathParts[1];
 
       if (method === "GET") {
-        result = await friendFundAPI.getUser(userId);
+        if (pathParts[2] === "dashboard") {
+          // GET /users/{id}/dashboard
+          result = await friendFundAPI.getUserDashboard(userId);
+        } else if (pathParts[2] === "overdue-loans") {
+          // GET /users/{id}/overdue-loans
+          result = await friendFundAPI.getOverdueLoans(userId);
+        } else {
+          // GET /users/{id}
+          result = await friendFundAPI.getUser(userId);
+        }
       } else {
         result = { success: false, error: "Method not allowed" };
         statusCode = 405;
+      }
+    } else if (path === "/summary") {
+      if (method === "GET") {
+        result = await friendFundAPI.getCampaignSummary();
+      } else {
+        result = { success: false, error: "Method not allowed" };
+        statusCode = 405;
+      }
+    } else if (path.startsWith("/loans/")) {
+      const pathParts = path.split("/").filter((p) => p);
+      const loanId = pathParts[1];
+
+      if (pathParts[2] === "repaid" && method === "PATCH") {
+        // PATCH /loans/{id}/repaid
+        result = await friendFundAPI.markLoanRepaid(loanId, parsedBody);
+      } else {
+        result = { success: false, error: "Invalid loan endpoint" };
+        statusCode = 400;
       }
     } else {
       result = {
@@ -476,6 +695,10 @@ export default async ({ req, res, log, error: logError }) => {
           "PATCH /contributions/{id} - Update contribution",
           "GET /qr/{campaignId} - Generate QR code",
           "GET /users/{id} - Get user info",
+          "GET /users/{id}/dashboard - Get user dashboard with stats",
+          "GET /users/{id}/overdue-loans - Get user's overdue loans",
+          "GET /summary - Get platform summary statistics",
+          "PATCH /loans/{id}/repaid - Mark loan as repaid",
         ],
       };
       statusCode = 404;

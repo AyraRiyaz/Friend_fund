@@ -8,13 +8,15 @@ import 'controllers/campaign_controller.dart';
 import 'services/appwrite_auth_service.dart';
 import 'services/http_api_service.dart';
 import 'theme/app_theme.dart';
-import 'pages/home_page.dart';
+import 'screens/home_screen.dart';
 import 'pages/login_page.dart';
 import 'pages/register_page.dart';
 import 'pages/my_campaigns_page.dart';
 import 'pages/add_campaign_page.dart';
 import 'pages/campaign_details_page.dart';
-import 'pages/my_contributions_page.dart';
+import 'screens/campaign_details_screen.dart';
+import 'models/campaign.dart';
+import 'screens/my_contributions_screen.dart';
 import 'pages/profile_page.dart';
 import 'pages/help_page.dart';
 import 'pages/about_page.dart';
@@ -71,7 +73,7 @@ class MyApp extends StatelessWidget {
         // App Routes (require authentication)
         GetPage(
           name: '/home',
-          page: () => const AuthProtectedPage(child: HomePage()),
+          page: () => const AuthProtectedPage(child: HomeScreen()),
         ),
         GetPage(
           name: '/my-campaigns',
@@ -83,11 +85,21 @@ class MyApp extends StatelessWidget {
         ),
         GetPage(
           name: '/campaign-details',
-          page: () => const AuthProtectedPage(child: CampaignDetailsPage()),
+          page: () => AuthProtectedPage(
+            child: Builder(
+              builder: (context) {
+                final arguments = Get.arguments;
+                if (arguments != null && arguments is Campaign) {
+                  return CampaignDetailsScreen(campaign: arguments);
+                }
+                return const CampaignDetailsPage(); // Fallback to old page
+              },
+            ),
+          ),
         ),
         GetPage(
           name: '/my-contributions',
-          page: () => const AuthProtectedPage(child: MyContributionsPage()),
+          page: () => const AuthProtectedPage(child: MyContributionsScreen()),
         ),
         GetPage(
           name: '/profile',

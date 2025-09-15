@@ -496,6 +496,188 @@ class HttpApiService {
     }
   }
 
+  /// Get platform summary statistics
+  Future<Map<String, dynamic>> getSummary() async {
+    try {
+      final uri = Uri.parse('${AppConfig.baseUrl}/summary');
+
+      AppConfig.debugPrint('GET Summary: $uri');
+
+      final response = await _client
+          .get(uri, headers: _headers)
+          .timeout(AppConfig.connectTimeout);
+
+      final data = _handleResponse(response);
+      return data['data'] ?? {};
+    } on TimeoutException {
+      throw Exception(
+        'Connection timeout. Please check your internet connection.',
+      );
+    } on SocketException {
+      throw Exception('No internet connection. Please check your network.');
+    } catch (e) {
+      if (e.toString().contains('Exception:')) {
+        rethrow;
+      }
+      throw Exception('Failed to load summary. Please try again later.');
+    }
+  }
+
+  /// Get user dashboard with statistics
+  Future<Map<String, dynamic>> getUserDashboard(String userId) async {
+    try {
+      final uri = Uri.parse(
+        '${AppConfig.baseUrl}${AppConfig.usersEndpoint}/$userId/dashboard',
+      );
+
+      AppConfig.debugPrint('GET User Dashboard: $uri');
+
+      final response = await _client
+          .get(uri, headers: _headersWithAuth(userId))
+          .timeout(AppConfig.connectTimeout);
+
+      final data = _handleResponse(response);
+      return data['data'] ?? {};
+    } on TimeoutException {
+      throw Exception(
+        'Connection timeout. Please check your internet connection.',
+      );
+    } on SocketException {
+      throw Exception('No internet connection. Please check your network.');
+    } catch (e) {
+      if (e.toString().contains('Exception:')) {
+        rethrow;
+      }
+      throw Exception('Failed to load dashboard. Please try again later.');
+    }
+  }
+
+  /// Get user's overdue loans
+  Future<List<dynamic>> getOverdueLoans(String userId) async {
+    try {
+      final uri = Uri.parse(
+        '${AppConfig.baseUrl}${AppConfig.usersEndpoint}/$userId/overdue-loans',
+      );
+
+      AppConfig.debugPrint('GET Overdue Loans: $uri');
+
+      final response = await _client
+          .get(uri, headers: _headersWithAuth(userId))
+          .timeout(AppConfig.connectTimeout);
+
+      final data = _handleResponse(response);
+      return data['data'] ?? [];
+    } on TimeoutException {
+      throw Exception(
+        'Connection timeout. Please check your internet connection.',
+      );
+    } on SocketException {
+      throw Exception('No internet connection. Please check your network.');
+    } catch (e) {
+      if (e.toString().contains('Exception:')) {
+        rethrow;
+      }
+      throw Exception('Failed to load overdue loans. Please try again later.');
+    }
+  }
+
+  /// Mark loan as repaid (enhanced version)
+  Future<Map<String, dynamic>> markLoanRepaidV2(
+    String loanId,
+    Map<String, dynamic> repaymentData,
+    String userId,
+  ) async {
+    try {
+      final uri = Uri.parse('${AppConfig.baseUrl}/loans/$loanId/repaid');
+
+      AppConfig.debugPrint('PATCH Mark Loan Repaid: $uri');
+      AppConfig.debugPrint('Repayment Data: ${json.encode(repaymentData)}');
+
+      final response = await _client
+          .patch(
+            uri,
+            headers: _headersWithAuth(userId),
+            body: json.encode(repaymentData),
+          )
+          .timeout(AppConfig.connectTimeout);
+
+      final data = _handleResponse(response);
+      return data;
+    } on TimeoutException {
+      throw Exception(
+        'Connection timeout. Please check your internet connection.',
+      );
+    } on SocketException {
+      throw Exception('No internet connection. Please check your network.');
+    } catch (e) {
+      if (e.toString().contains('Exception:')) {
+        rethrow;
+      }
+      throw Exception('Failed to mark loan as repaid. Please try again later.');
+    }
+  }
+
+  /// Enhanced contribution creation with better validation
+  Future<Map<String, dynamic>> createContributionV2({
+    required String campaignId,
+    required String contributorId,
+    required String contributorName,
+    required double amount,
+    required String utr,
+    required String type,
+    String? repaymentStatus,
+    bool isAnonymous = false,
+    DateTime? repaymentDueDate,
+    Map<String, dynamic>? additionalData,
+  }) async {
+    try {
+      final contributionData = {
+        'campaignId': campaignId,
+        'contributorId': contributorId,
+        'contributorName': isAnonymous ? 'Anonymous' : contributorName,
+        'amount': amount,
+        'utr': utr,
+        'type': type,
+        'repaymentStatus':
+            repaymentStatus ?? (type == 'loan' ? 'pending' : null),
+        'isAnonymous': isAnonymous,
+        'repaymentDueDate': repaymentDueDate?.toIso8601String(),
+        ...?additionalData,
+      };
+
+      final uri = Uri.parse(
+        '${AppConfig.baseUrl}${AppConfig.contributionsEndpoint}',
+      );
+
+      AppConfig.debugPrint('POST Enhanced Contribution: $uri');
+      AppConfig.debugPrint(
+        'Contribution Data: ${json.encode(contributionData)}',
+      );
+
+      final response = await _client
+          .post(
+            uri,
+            headers: _headersWithAuth(contributorId),
+            body: json.encode(contributionData),
+          )
+          .timeout(AppConfig.connectTimeout);
+
+      final data = _handleResponse(response);
+      return data;
+    } on TimeoutException {
+      throw Exception(
+        'Connection timeout. Please check your internet connection.',
+      );
+    } on SocketException {
+      throw Exception('No internet connection. Please check your network.');
+    } catch (e) {
+      if (e.toString().contains('Exception:')) {
+        rethrow;
+      }
+      throw Exception('Failed to create contribution. Please try again later.');
+    }
+  }
+
   /// Dispose resources
   void dispose() {
     _client.close();
