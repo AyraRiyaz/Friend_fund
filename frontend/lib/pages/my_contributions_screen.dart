@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import '../widgets/main_layout.dart';
-import '../data/dummy_data.dart';
 import '../theme/app_theme.dart';
 import '../models/campaign.dart';
 
 class MyContributionsScreen extends StatefulWidget {
-  const MyContributionsScreen({Key? key}) : super(key: key);
+  const MyContributionsScreen({super.key});
 
   @override
   State<MyContributionsScreen> createState() => _MyContributionsScreenState();
@@ -23,10 +22,10 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final myContributions = DummyData.getMyContributions();
-    final gifts = myContributions.where((c) => c.type == 'gift').toList();
-    final loansGiven = myContributions.where((c) => c.type == 'loan').toList();
-    final loansToRepay = DummyData.getLoansToRepay();
+    // TODO: Replace with real API calls when contributions endpoint is implemented
+    final gifts = <Contribution>[];
+    final loansGiven = <Contribution>[];
+    final loansToRepay = <Contribution>[];
 
     // Calculate summary stats
     final totalGifted = gifts.fold<double>(0, (sum, c) => sum + c.amount);
@@ -138,14 +137,14 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppTheme.primaryBlue.withOpacity(0.1),
-            AppTheme.secondaryBlue.withOpacity(0.05),
+            AppTheme.primaryBlue.withValues(alpha: 0.1),
+            AppTheme.secondaryBlue.withValues(alpha: 0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.primaryBlue.withOpacity(0.2)),
+        border: Border.all(color: AppTheme.primaryBlue.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,8 +242,19 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
         itemCount: contributions.length,
         itemBuilder: (context, index) {
           final contribution = contributions[index];
-          final campaign = DummyData.allCampaigns.firstWhere(
-            (c) => c.id == contribution.campaignId,
+          // TODO: Get campaign details from API
+          final campaign = Campaign(
+            id: contribution.campaignId,
+            title: 'Campaign Title',
+            description: 'Campaign Description',
+            targetAmount: 0,
+            collectedAmount: 0,
+            hostId: '',
+            hostName: '',
+            purpose: '',
+            status: 'active',
+            createdAt: DateTime.now(),
+            contributions: [],
           );
 
           return Padding(
@@ -285,8 +295,8 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
                 children: [
                   CircleAvatar(
                     backgroundColor: isLoan
-                        ? Colors.orange.withOpacity(0.2)
-                        : AppTheme.success.withOpacity(0.2),
+                        ? Colors.orange.withValues(alpha: 0.2)
+                        : AppTheme.success.withValues(alpha: 0.2),
                     child: Icon(
                       isLoan ? Icons.handshake : Icons.card_giftcard,
                       color: isLoan ? Colors.orange : AppTheme.success,
@@ -321,8 +331,8 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
                     ),
                     decoration: BoxDecoration(
                       color: isLoan
-                          ? Colors.orange.withOpacity(0.1)
-                          : AppTheme.success.withOpacity(0.1),
+                          ? Colors.orange.withValues(alpha: 0.1)
+                          : AppTheme.success.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -368,8 +378,8 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
                       ),
                       decoration: BoxDecoration(
                         color: isOverdue
-                            ? Colors.red.withOpacity(0.1)
-                            : Colors.blue.withOpacity(0.1),
+                            ? Colors.red.withValues(alpha: 0.1)
+                            : Colors.blue.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -427,8 +437,19 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
         itemCount: loansToRepay.length,
         itemBuilder: (context, index) {
           final loan = loansToRepay[index];
-          final campaign = DummyData.allCampaigns.firstWhere(
-            (c) => c.id == loan.campaignId,
+          // TODO: Get campaign details from API
+          final campaign = Campaign(
+            id: loan.campaignId,
+            title: 'Campaign Title',
+            description: 'Campaign Description',
+            targetAmount: 0,
+            collectedAmount: 0,
+            hostId: '',
+            hostName: '',
+            purpose: '',
+            status: 'active',
+            createdAt: DateTime.now(),
+            contributions: [],
           );
 
           return Padding(
@@ -455,7 +476,7 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
             ? BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: Colors.red.withOpacity(0.5),
+                  color: Colors.red.withValues(alpha: 0.5),
                   width: 2,
                 ),
               )
@@ -469,8 +490,8 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
                 children: [
                   CircleAvatar(
                     backgroundColor: isOverdue
-                        ? Colors.red.withOpacity(0.2)
-                        : Colors.orange.withOpacity(0.2),
+                        ? Colors.red.withValues(alpha: 0.2)
+                        : Colors.orange.withValues(alpha: 0.2),
                     child: Icon(
                       Icons.schedule,
                       color: isOverdue ? Colors.red : Colors.orange,
@@ -505,8 +526,8 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
                     ),
                     decoration: BoxDecoration(
                       color: isOverdue
-                          ? Colors.red.withOpacity(0.1)
-                          : Colors.orange.withOpacity(0.1),
+                          ? Colors.red.withValues(alpha: 0.1)
+                          : Colors.orange.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -525,10 +546,10 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: isOverdue
-                        ? Colors.red.withOpacity(0.1)
+                        ? Colors.red.withValues(alpha: 0.1)
                         : daysUntilDue != null && daysUntilDue <= 3
-                        ? Colors.orange.withOpacity(0.1)
-                        : Colors.blue.withOpacity(0.1),
+                        ? Colors.orange.withValues(alpha: 0.1)
+                        : Colors.blue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(

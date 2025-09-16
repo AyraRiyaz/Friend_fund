@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 class CustomFAB extends StatelessWidget {
   final VoidCallback onPressed;
   final String? tooltip;
-  const CustomFAB({Key? key, required this.onPressed, this.tooltip})
-    : super(key: key);
+  const CustomFAB({super.key, required this.onPressed, this.tooltip});
 
   @override
   Widget build(BuildContext context) {

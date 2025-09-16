@@ -152,7 +152,7 @@ class _MainLayoutState extends State<MainLayout> {
         ),
       ),
       selected: isSelected,
-      selectedTileColor: AppTheme.primaryBlue.withOpacity(0.1),
+      selectedTileColor: AppTheme.primaryBlue.withValues(alpha: 0.1),
       onTap: onTap,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     );

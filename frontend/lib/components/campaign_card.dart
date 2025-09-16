@@ -11,7 +11,7 @@ class CampaignCard extends StatelessWidget {
   final String? status;
 
   const CampaignCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.purpose,
     required this.collected,
@@ -19,7 +19,7 @@ class CampaignCard extends StatelessWidget {
     this.onTap,
     this.isOwner = false,
     this.status,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +54,7 @@ class CampaignCard extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: _getStatusColor(status!).withOpacity(0.1),
+                        color: _getStatusColor(status!).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -74,7 +74,9 @@ class CampaignCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      color: Theme.of(
+                        context,
+                      ).primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(

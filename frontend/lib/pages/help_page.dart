@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../components/app_bar_with_menu.dart';
 
 class HelpPage extends StatelessWidget {
-  const HelpPage({Key? key}) : super(key: key);
+  const HelpPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -160,7 +160,7 @@ class HelpPage extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: Colors.teal.withOpacity(0.1),
+          backgroundColor: Colors.teal.withValues(alpha: 0.1),
           child: Icon(icon, color: Colors.teal),
         ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),

@@ -5,8 +5,7 @@ import '../controllers/auth_controller.dart';
 class AppBarWithMenu extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final VoidCallback? onMenuSelected;
-  const AppBarWithMenu({Key? key, required this.title, this.onMenuSelected})
-    : super(key: key);
+  const AppBarWithMenu({super.key, required this.title, this.onMenuSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +23,7 @@ class AppBarWithMenu extends StatelessWidget implements PreferredSizeWidget {
 }
 
 class AppDrawer extends StatelessWidget {
-  const AppDrawer({Key? key}) : super(key: key);
+  const AppDrawer({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -205,7 +204,7 @@ class AppDrawer extends StatelessWidget {
         ),
       ),
       selected: isSelected,
-      selectedTileColor: Colors.teal.withOpacity(0.1),
+      selectedTileColor: Colors.teal.withValues(alpha: 0.1),
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
     );

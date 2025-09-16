@@ -1,23 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 import '../widgets/main_layout.dart';
-import '../data/dummy_data.dart';
+import '../controllers/auth_controller.dart';
 import '../theme/app_theme.dart';
 import '../models/campaign.dart';
 
 class CampaignDetailsScreen extends StatefulWidget {
   final Campaign campaign;
 
-  const CampaignDetailsScreen({Key? key, required this.campaign})
-    : super(key: key);
+  const CampaignDetailsScreen({super.key, required this.campaign});
 
   @override
   State<CampaignDetailsScreen> createState() => _CampaignDetailsScreenState();
 }
 
 class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
-  bool get isMyOwnCampaign =>
-      widget.campaign.hostId == DummyData.currentUser.id;
+  bool get isMyOwnCampaign {
+    final authController = Get.find<AuthController>();
+    return widget.campaign.hostId == authController.appwriteUser?.$id;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,14 +61,14 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppTheme.primaryBlue.withOpacity(0.1),
-            AppTheme.secondaryBlue.withOpacity(0.05),
+            AppTheme.primaryBlue.withValues(alpha: 0.1),
+            AppTheme.secondaryBlue.withValues(alpha: 0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.primaryBlue.withOpacity(0.2)),
+        border: Border.all(color: AppTheme.primaryBlue.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -89,7 +91,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppTheme.primaryBlue.withOpacity(0.1),
+              color: AppTheme.primaryBlue.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -166,9 +168,9 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: chipColor.withOpacity(0.1),
+        color: chipColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: chipColor.withOpacity(0.3)),
+        border: Border.all(color: chipColor.withValues(alpha: 0.3)),
       ),
       child: Text(
         statusText,
@@ -531,8 +533,8 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: isLoan
-              ? Colors.orange.withOpacity(0.2)
-              : AppTheme.success.withOpacity(0.2),
+              ? Colors.orange.withValues(alpha: 0.2)
+              : AppTheme.success.withValues(alpha: 0.2),
           child: Icon(
             isLoan ? Icons.handshake : Icons.card_giftcard,
             color: isLoan ? Colors.orange : AppTheme.success,
@@ -604,7 +606,9 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                   children: publicContributions.take(5).map((contribution) {
                     return ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: AppTheme.primaryBlue.withOpacity(0.2),
+                        backgroundColor: AppTheme.primaryBlue.withValues(
+                          alpha: 0.2,
+                        ),
                         child: Text(
                           contribution.contributorName[0].toUpperCase(),
                           style: const TextStyle(
@@ -834,8 +838,11 @@ class _ContributionDialog extends StatefulWidget {
 class _ContributionDialogState extends State<_ContributionDialog> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
-  final _nameController = TextEditingController(
-    text: DummyData.currentUser.name,
+  late final _nameController = TextEditingController(
+    text:
+        Get.find<AuthController>().userProfile?.name ??
+        Get.find<AuthController>().appwriteUser?.name ??
+        '',
   );
   final _utrController = TextEditingController();
   String _contributionType = 'gift';

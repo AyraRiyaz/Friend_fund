@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../components/app_bar_with_menu.dart';
 
 class AboutPage extends StatelessWidget {
-  const AboutPage({Key? key}) : super(key: key);
+  const AboutPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +18,7 @@ class AboutPage extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.teal.withOpacity(0.1),
+                color: Colors.teal.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.handshake, size: 80, color: Colors.teal),
@@ -218,7 +218,7 @@ class AboutPage extends StatelessWidget {
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: Colors.teal.withOpacity(0.1),
+            backgroundColor: Colors.teal.withValues(alpha: 0.1),
             radius: 20,
             child: Icon(icon, color: Colors.teal, size: 20),
           ),

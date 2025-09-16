@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class PublicCampaignPage extends StatelessWidget {
-  const PublicCampaignPage({Key? key}) : super(key: key);
+  const PublicCampaignPage({super.key});
 
   @override
   Widget build(BuildContext context) {

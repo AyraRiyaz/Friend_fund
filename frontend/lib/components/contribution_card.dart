@@ -8,14 +8,14 @@ class ContributionCard extends StatelessWidget {
   final String? repaymentStatus; // 'Pending' or 'Repaid', only for loans
   final VoidCallback? onMarkRepaid;
   const ContributionCard({
-    Key? key,
+    super.key,
     required this.contributor,
     required this.amount,
     required this.type,
     required this.date,
     this.repaymentStatus,
     this.onMarkRepaid,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

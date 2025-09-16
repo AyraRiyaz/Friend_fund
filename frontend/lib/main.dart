@@ -8,15 +8,14 @@ import 'controllers/campaign_controller.dart';
 import 'services/appwrite_auth_service.dart';
 import 'services/http_api_service.dart';
 import 'theme/app_theme.dart';
-import 'screens/home_screen.dart';
+import 'pages/home_screen.dart';
+import 'pages/my_campaigns_screen.dart';
 import 'pages/login_page.dart';
 import 'pages/register_page.dart';
-import 'pages/my_campaigns_page.dart';
 import 'pages/add_campaign_page.dart';
-import 'pages/campaign_details_page.dart';
-import 'screens/campaign_details_screen.dart';
+import 'pages/campaign_details_screen.dart';
 import 'models/campaign.dart';
-import 'screens/my_contributions_screen.dart';
+import 'pages/my_contributions_screen.dart';
 import 'pages/profile_page.dart';
 import 'pages/help_page.dart';
 import 'pages/about_page.dart';
@@ -77,7 +76,7 @@ class MyApp extends StatelessWidget {
         ),
         GetPage(
           name: '/my-campaigns',
-          page: () => const AuthProtectedPage(child: MyCampaignsPage()),
+          page: () => const AuthProtectedPage(child: MyCampaignsScreen()),
         ),
         GetPage(
           name: '/add-campaign',
@@ -92,7 +91,11 @@ class MyApp extends StatelessWidget {
                 if (arguments != null && arguments is Campaign) {
                   return CampaignDetailsScreen(campaign: arguments);
                 }
-                return const CampaignDetailsPage(); // Fallback to old page
+                // If no campaign provided, redirect to home
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  Get.offAllNamed('/home');
+                });
+                return const SizedBox.shrink();
               },
             ),
           ),
@@ -126,7 +129,7 @@ class MyApp extends StatelessWidget {
 class GuestProtectedPage extends StatelessWidget {
   final Widget child;
 
-  const GuestProtectedPage({Key? key, required this.child}) : super(key: key);
+  const GuestProtectedPage({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -168,7 +171,7 @@ class GuestProtectedPage extends StatelessWidget {
 class AuthProtectedPage extends StatelessWidget {
   final Widget child;
 
-  const AuthProtectedPage({Key? key, required this.child}) : super(key: key);
+  const AuthProtectedPage({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -208,7 +211,7 @@ class AuthProtectedPage extends StatelessWidget {
 
 // Auth Wrapper to check if user is authenticated
 class AuthWrapper extends StatelessWidget {
-  const AuthWrapper({Key? key}) : super(key: key);
+  const AuthWrapper({super.key});
 
   @override
   Widget build(BuildContext context) {

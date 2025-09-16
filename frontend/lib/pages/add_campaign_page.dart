@@ -4,7 +4,7 @@ import '../components/app_bar_with_menu.dart';
 import '../controllers/campaign_controller.dart';
 
 class AddCampaignPage extends StatefulWidget {
-  const AddCampaignPage({Key? key}) : super(key: key);
+  const AddCampaignPage({super.key});
 
   @override
   State<AddCampaignPage> createState() => _AddCampaignPageState();
