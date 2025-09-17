@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../components/app_bar_with_menu.dart';
+import '../widgets/app_bar_with_menu.dart';
 import '../controllers/auth_controller.dart';
 
 class ProfilePage extends StatefulWidget {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../components/app_bar_with_menu.dart';
+import '../widgets/app_bar_with_menu.dart';
 import '../theme/app_theme.dart';
 import '../models/campaign.dart';
 

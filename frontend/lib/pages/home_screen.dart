@@ -32,9 +32,13 @@ class _HomeScreenState extends State<HomeScreen> {
     return GetBuilder<CampaignController>(
       builder: (campaignController) {
         final allCampaigns = campaignController.campaigns;
+        // Filter to only show active campaigns
+        final activeCampaigns = allCampaigns
+            .where((campaign) => campaign.status == 'active')
+            .toList();
         final displayCampaigns = _showAllCampaigns
-            ? allCampaigns
-            : allCampaigns.take(6).toList();
+            ? activeCampaigns
+            : activeCampaigns.take(6).toList();
 
         return Scaffold(
           appBar: const AppBarWithMenu(title: 'FriendFund'),
@@ -59,7 +63,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 20),
                   _buildDashboardSummary(context),
                   const SizedBox(height: 24),
-                  _buildRecentCampaigns(context, displayCampaigns),
+                  _buildRecentCampaigns(
+                    context,
+                    displayCampaigns,
+                    activeCampaigns,
+                  ),
                   const SizedBox(height: 24),
                   _buildQuickActions(context),
                   const SizedBox(height: 80), // Space for FAB
@@ -163,7 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
           (sum, campaign) => sum + campaign.collectedAmount,
         );
         final totalContributed = 0.0; // TODO: Get from contributions API
-        final activeCampaigns = myCampaigns
+        final activeCampaigns = campaignController.campaigns
             .where((c) => c.status == 'active')
             .length;
 
@@ -328,6 +336,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildRecentCampaigns(
     BuildContext context,
     List<dynamic> recentCampaigns,
+    List<dynamic> allActiveCampaigns,
   ) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -338,19 +347,23 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                _showAllCampaigns ? 'All Campaigns' : 'Recent Campaigns',
+                _showAllCampaigns
+                    ? 'All Active Campaigns'
+                    : 'Recent Active Campaigns',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    _showAllCampaigns = !_showAllCampaigns;
-                  });
-                },
-                child: Text(_showAllCampaigns ? 'Show Less' : 'View All'),
-              ),
+              // Only show the button if there are more than 6 active campaigns
+              if (allActiveCampaigns.length > 6)
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _showAllCampaigns = !_showAllCampaigns;
+                    });
+                  },
+                  child: Text(_showAllCampaigns ? 'Show Less' : 'View All'),
+                ),
             ],
           ),
           const SizedBox(height: 16),
@@ -362,7 +375,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   physics: const NeverScrollableScrollPhysics(),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: constraints.maxWidth > 900 ? 4 : 3,
-                    childAspectRatio: 0.8,
+                    childAspectRatio: 1.0,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                   ),
@@ -378,7 +391,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   physics: const NeverScrollableScrollPhysics(),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.75,
+                    childAspectRatio: 0.9,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                   ),
@@ -418,7 +431,7 @@ class _HomeScreenState extends State<HomeScreen> {
             arguments: campaign,
           ),
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -427,28 +440,28 @@ class _HomeScreenState extends State<HomeScreen> {
                   campaign.title,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontSize: 12,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
 
                 // Purpose
                 Text(
                   campaign.purpose,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.grey[600],
-                    fontSize: 12,
+                    fontSize: 10,
                   ),
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const Spacer(),
 
                 // Progress bar
                 Container(
-                  height: 4,
+                  height: 3,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(2),
                     color: Colors.grey[200],
@@ -464,7 +477,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
 
                 // Amount info
                 Row(
@@ -480,7 +493,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: AppTheme.primaryBlue,
-                                  fontSize: 13,
+                                  fontSize: 11,
                                 ),
                           ),
                           Text(
@@ -488,7 +501,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
                                   color: Colors.grey[500],
-                                  fontSize: 10,
+                                  fontSize: 9,
                                 ),
                           ),
                         ],
@@ -496,18 +509,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
+                        horizontal: 4,
+                        vertical: 1,
                       ),
                       decoration: BoxDecoration(
                         color: AppTheme.primaryBlue.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         '${(campaign.progressPercentage * 100).toInt()}%',
                         style: TextStyle(
                           color: AppTheme.primaryBlue,
-                          fontSize: 10,
+                          fontSize: 9,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
