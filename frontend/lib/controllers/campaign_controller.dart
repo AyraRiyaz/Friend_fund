@@ -172,8 +172,10 @@ class CampaignController extends GetxController {
     required String campaignId,
     String? title,
     String? description,
+    String? purpose,
     String? status,
     double? targetAmount,
+    DateTime? dueDate,
   }) async {
     final authController = AuthController.instance;
     if (!authController.isAuthenticated) return false;
@@ -185,8 +187,10 @@ class CampaignController extends GetxController {
       final updateData = {
         if (title != null) 'title': title,
         if (description != null) 'description': description,
+        if (purpose != null) 'purpose': purpose,
         if (status != null) 'status': status,
         if (targetAmount != null) 'targetAmount': targetAmount,
+        if (dueDate != null) 'dueDate': dueDate.toIso8601String(),
       };
 
       final updatedCampaign = await _httpApiService.updateCampaign(
@@ -230,6 +234,21 @@ class CampaignController extends GetxController {
     } finally {
       _isLoading.value = false;
     }
+  }
+
+  // Pause campaign
+  Future<bool> pauseCampaign(String campaignId) async {
+    return updateCampaign(campaignId: campaignId, status: 'inactive');
+  }
+
+  // Activate campaign
+  Future<bool> activateCampaign(String campaignId) async {
+    return updateCampaign(campaignId: campaignId, status: 'active');
+  }
+
+  // Close campaign
+  Future<bool> closeCampaign(String campaignId) async {
+    return updateCampaign(campaignId: campaignId, status: 'closed');
   }
 
   // Delete campaign

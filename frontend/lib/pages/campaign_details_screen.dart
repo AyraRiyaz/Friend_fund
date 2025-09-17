@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../widgets/app_bar_with_menu.dart';
 import '../controllers/auth_controller.dart';
+import '../controllers/campaign_controller.dart';
 import '../theme/app_theme.dart';
 import '../models/campaign.dart';
+import 'edit_campaign_page.dart';
 
 class CampaignDetailsScreen extends StatefulWidget {
   final Campaign campaign;
@@ -16,9 +18,22 @@ class CampaignDetailsScreen extends StatefulWidget {
 }
 
 class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
+  final CampaignController _campaignController = Get.find<CampaignController>();
+  late Campaign _currentCampaign;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentCampaign = widget.campaign;
+  }
+
   bool get isMyOwnCampaign {
     final authController = Get.find<AuthController>();
-    return widget.campaign.hostId == authController.appwriteUser?.$id;
+    return _currentCampaign.hostId == authController.appwriteUser?.$id;
+  }
+
+  bool get canEdit {
+    return isMyOwnCampaign && _currentCampaign.status.toLowerCase() != 'closed';
   }
 
   @override
@@ -78,7 +93,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
             children: [
               Expanded(
                 child: Text(
-                  widget.campaign.title,
+                  _currentCampaign.title,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppTheme.textPrimary,
@@ -96,7 +111,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              widget.campaign.purpose,
+              _currentCampaign.purpose,
               style: const TextStyle(
                 color: AppTheme.primaryBlue,
                 fontWeight: FontWeight.w600,
@@ -106,7 +121,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            widget.campaign.description,
+            _currentCampaign.description,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               height: 1.5,
               color: AppTheme.textSecondary,
@@ -122,7 +137,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Hosted by ${widget.campaign.hostName}',
+                'Hosted by ${_currentCampaign.hostName}',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppTheme.textSecondary,
                   fontWeight: FontWeight.w500,
@@ -132,7 +147,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
               Icon(Icons.schedule, size: 16, color: AppTheme.textSecondary),
               const SizedBox(width: 4),
               Text(
-                _formatDate(widget.campaign.createdAt),
+                _formatDate(_currentCampaign.createdAt),
                 style: Theme.of(
                   context,
                 ).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
@@ -148,7 +163,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
     Color chipColor;
     String statusText;
 
-    switch (widget.campaign.status.toLowerCase()) {
+    switch (_currentCampaign.status.toLowerCase()) {
       case 'active':
         chipColor = AppTheme.success;
         statusText = 'Active';
@@ -158,12 +173,13 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
         statusText = 'Closed';
         break;
       case 'paused':
+      case 'inactive':
         chipColor = Colors.orange;
         statusText = 'Paused';
         break;
       default:
         chipColor = AppTheme.primaryBlue;
-        statusText = widget.campaign.status;
+        statusText = _currentCampaign.status;
     }
 
     return Container(
@@ -185,9 +201,9 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
   }
 
   Widget _buildProgressSection() {
-    final progressPercentage = widget.campaign.progressPercentage;
+    final progressPercentage = _currentCampaign.progressPercentage;
     final remainingAmount =
-        widget.campaign.targetAmount - widget.campaign.collectedAmount;
+        _currentCampaign.targetAmount - _currentCampaign.collectedAmount;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -226,14 +242,14 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                   Expanded(
                     child: _buildProgressStat(
                       'Raised',
-                      '₹${_formatAmount(widget.campaign.collectedAmount)}',
+                      '₹${_formatAmount(_currentCampaign.collectedAmount)}',
                       AppTheme.success,
                     ),
                   ),
                   Expanded(
                     child: _buildProgressStat(
                       'Goal',
-                      '₹${_formatAmount(widget.campaign.targetAmount)}',
+                      '₹${_formatAmount(_currentCampaign.targetAmount)}',
                       AppTheme.textSecondary,
                     ),
                   ),
@@ -248,7 +264,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                '${(progressPercentage * 100).toStringAsFixed(1)}% of goal reached • ${widget.campaign.contributions.length} contributors',
+                '${(progressPercentage * 100).toStringAsFixed(1)}% of goal reached • ${_currentCampaign.contributions.length} contributors',
                 style: Theme.of(
                   context,
                 ).textTheme.bodyMedium?.copyWith(color: AppTheme.textSecondary),
@@ -283,6 +299,12 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
   }
 
   Widget _buildHostActions() {
+    final isClosed = _currentCampaign.status.toLowerCase() == 'closed';
+    final isActive = _currentCampaign.status.toLowerCase() == 'active';
+    final isPaused =
+        _currentCampaign.status.toLowerCase() == 'inactive' ||
+        _currentCampaign.status.toLowerCase() == 'paused';
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Card(
@@ -298,62 +320,97 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _shareCampaign(),
-                      icon: const Icon(Icons.share),
-                      label: const Text('Share Campaign'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryBlue,
+              if (!isClosed) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _shareCampaign(),
+                        icon: const Icon(Icons.share),
+                        label: const Text('Share Campaign'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryBlue,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _editCampaign(),
-                      icon: const Icon(Icons.edit),
-                      label: const Text('Edit'),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: widget.campaign.status == 'active'
-                          ? () => _pauseCampaign()
-                          : () => _activateCampaign(),
-                      icon: Icon(
-                        widget.campaign.status == 'active'
-                            ? Icons.pause
-                            : Icons.play_arrow,
-                      ),
-                      label: Text(
-                        widget.campaign.status == 'active'
-                            ? 'Pause'
-                            : 'Activate',
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _editCampaign(),
+                        icon: const Icon(Icons.edit),
+                        label: const Text('Edit'),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _closeCampaign(),
-                      icon: const Icon(Icons.close),
-                      label: const Text('Close'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
-                        side: const BorderSide(color: Colors.red),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: isActive
+                            ? () => _pauseCampaign()
+                            : isPaused
+                            ? () => _activateCampaign()
+                            : null,
+                        icon: Icon(isActive ? Icons.pause : Icons.play_arrow),
+                        label: Text(isActive ? 'Pause' : 'Activate'),
                       ),
                     ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _closeCampaign(),
+                        icon: const Icon(Icons.close),
+                        label: const Text('Close'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                // Show only share button for closed campaigns
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.grey.withValues(alpha: 0.3),
+                    ),
                   ),
-                ],
-              ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.grey[600]),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'This campaign has been closed and cannot be edited or modified.',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _shareCampaign(),
+                    icon: const Icon(Icons.share),
+                    label: const Text('Share Campaign'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryBlue,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -362,6 +419,9 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
   }
 
   Widget _buildContributeSection() {
+    final isClosed = _currentCampaign.status.toLowerCase() == 'closed';
+    final isActive = _currentCampaign.status.toLowerCase() == 'active';
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Card(
@@ -378,37 +438,92 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              Text(
-                'Help ${widget.campaign.hostName} reach their goal by contributing to this campaign.',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: AppTheme.textSecondary),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: widget.campaign.status == 'active'
-                      ? () => _showContributionDialog()
-                      : null,
-                  icon: const Icon(Icons.volunteer_activism),
-                  label: const Text('Contribute Now'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryBlue,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+              if (isClosed) ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.grey.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.grey[600]),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'This campaign has been closed and is no longer accepting contributions.',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildQuickAmount('₹100'),
-                  _buildQuickAmount('₹500'),
-                  _buildQuickAmount('₹1000'),
-                  _buildQuickAmount('₹2000'),
-                ],
-              ),
+              ] else if (!isActive) ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.orange.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.pause_circle_outline,
+                        color: Colors.orange[600],
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'This campaign is currently paused and not accepting new contributions.',
+                          style: TextStyle(
+                            color: Colors.orange[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else ...[
+                Text(
+                  'Help ${_currentCampaign.hostName} reach their goal by contributing to this campaign.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showContributionDialog(),
+                    icon: const Icon(Icons.volunteer_activism),
+                    label: const Text('Contribute Now'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryBlue,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildQuickAmount('₹100'),
+                    _buildQuickAmount('₹500'),
+                    _buildQuickAmount('₹1000'),
+                    _buildQuickAmount('₹2000'),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -417,8 +532,9 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
   }
 
   Widget _buildQuickAmount(String amount) {
+    final isActive = _currentCampaign.status.toLowerCase() == 'active';
     return OutlinedButton(
-      onPressed: () => _contributeQuickAmount(amount),
+      onPressed: isActive ? () => _contributeQuickAmount(amount) : null,
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
@@ -427,10 +543,10 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
   }
 
   Widget _buildContributionsManagement() {
-    final gifts = widget.campaign.contributions
+    final gifts = _currentCampaign.contributions
         .where((c) => c.type == 'gift')
         .toList();
-    final loans = widget.campaign.contributions
+    final loans = _currentCampaign.contributions
         .where((c) => c.type == 'loan')
         .toList();
     final pendingLoans = loans
@@ -457,7 +573,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                   Expanded(
                     child: _buildContributionSummary(
                       'Total',
-                      widget.campaign.contributions.length,
+                      _currentCampaign.contributions.length,
                       AppTheme.primaryBlue,
                     ),
                   ),
@@ -485,7 +601,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                 ],
               ),
               const SizedBox(height: 20),
-              if (widget.campaign.contributions.isEmpty)
+              if (_currentCampaign.contributions.isEmpty)
                 const Center(
                   child: Padding(
                     padding: EdgeInsets.all(20),
@@ -494,7 +610,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                 )
               else
                 Column(
-                  children: widget.campaign.contributions.map((contribution) {
+                  children: _currentCampaign.contributions.map((contribution) {
                     return _buildContributionTile(contribution);
                   }).toList(),
                 ),
@@ -576,7 +692,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
   }
 
   Widget _buildPublicContributions() {
-    final publicContributions = widget.campaign.contributions
+    final publicContributions = _currentCampaign.contributions
         .where((c) => !c.contributorName.contains('Anonymous'))
         .toList();
 
@@ -654,14 +770,14 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              _buildInfoRow('Campaign ID', widget.campaign.id),
-              _buildInfoRow('Created', _formatDate(widget.campaign.createdAt)),
-              if (widget.campaign.dueDate != null)
+              _buildInfoRow('Campaign ID', _currentCampaign.id),
+              _buildInfoRow('Created', _formatDate(_currentCampaign.createdAt)),
+              if (_currentCampaign.dueDate != null)
                 _buildInfoRow(
                   'Due Date',
-                  _formatDate(widget.campaign.dueDate!),
+                  _formatDate(_currentCampaign.dueDate!),
                 ),
-              _buildInfoRow('Status', widget.campaign.status),
+              _buildInfoRow('Status', _currentCampaign.status),
             ],
           ),
         ),
@@ -702,7 +818,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
   }
 
   Widget? _buildContributorFAB() {
-    if (widget.campaign.status != 'active') return null;
+    if (_currentCampaign.status.toLowerCase() != 'active') return null;
 
     return FloatingActionButton.extended(
       onPressed: () => _showContributionDialog(),
@@ -715,7 +831,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
   void _shareCampaign() {
     // TODO: Implement share functionality
     final shareText =
-        'Check out this campaign: ${widget.campaign.title}\n\nTarget: ₹${widget.campaign.targetAmount}\nRaised: ₹${widget.campaign.collectedAmount}\n\nHelp me reach my goal!';
+        'Check out this campaign: ${_currentCampaign.title}\n\nTarget: ₹${_currentCampaign.targetAmount}\nRaised: ₹${_currentCampaign.collectedAmount}\n\nHelp me reach my goal!';
     Clipboard.setData(ClipboardData(text: shareText));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Campaign details copied to clipboard!')),
@@ -723,23 +839,104 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
   }
 
   void _editCampaign() {
-    // TODO: Navigate to edit campaign page
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Edit campaign functionality coming soon!')),
-    );
+    if (!canEdit) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Closed campaigns cannot be edited!')),
+      );
+      return;
+    }
+
+    Get.to(() => EditCampaignPage(campaign: _currentCampaign))?.then((result) {
+      // Refresh the campaign details if edit was successful
+      if (result == true) {
+        setState(() {
+          // The campaign data will be updated in the controller
+        });
+      }
+    });
   }
 
   void _pauseCampaign() {
-    // TODO: Implement pause campaign
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Campaign paused successfully!')),
+    if (!canEdit) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Pause Campaign'),
+        content: const Text(
+          'Are you sure you want to pause this campaign? It will no longer accept new contributions until reactivated.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final success = await _campaignController.pauseCampaign(
+                _currentCampaign.id,
+              );
+              if (success) {
+                setState(() {
+                  _currentCampaign = _currentCampaign.copyWith(
+                    status: 'inactive',
+                  );
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Campaign paused successfully!'),
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text('Pause'),
+          ),
+        ],
+      ),
     );
   }
 
   void _activateCampaign() {
-    // TODO: Implement activate campaign
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Campaign activated successfully!')),
+    if (!canEdit) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Activate Campaign'),
+        content: const Text(
+          'Are you sure you want to activate this campaign? It will start accepting contributions again.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final success = await _campaignController.activateCampaign(
+                _currentCampaign.id,
+              );
+              if (success) {
+                setState(() {
+                  _currentCampaign = _currentCampaign.copyWith(
+                    status: 'active',
+                  );
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Campaign activated successfully!'),
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.success),
+            child: const Text('Activate'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -749,7 +946,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Close Campaign'),
         content: const Text(
-          'Are you sure you want to close this campaign? This action cannot be undone.',
+          'Are you sure you want to close this campaign? This action cannot be undone. The campaign will no longer accept contributions and cannot be edited.',
         ),
         actions: [
           TextButton(
@@ -757,12 +954,23 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              // TODO: Implement close campaign
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Campaign closed successfully!')),
+              final success = await _campaignController.closeCampaign(
+                _currentCampaign.id,
               );
+              if (success) {
+                setState(() {
+                  _currentCampaign = _currentCampaign.copyWith(
+                    status: 'closed',
+                  );
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Campaign closed successfully!'),
+                  ),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Close'),
@@ -775,7 +983,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
   void _showContributionDialog() {
     showDialog(
       context: context,
-      builder: (context) => _ContributionDialog(campaign: widget.campaign),
+      builder: (context) => _ContributionDialog(campaign: _currentCampaign),
     );
   }
 

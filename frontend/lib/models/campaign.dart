@@ -30,6 +30,36 @@ class Campaign {
   double get progressPercentage =>
       targetAmount > 0 ? (collectedAmount / targetAmount).clamp(0.0, 1.0) : 0.0;
 
+  Campaign copyWith({
+    String? id,
+    String? title,
+    String? description,
+    String? purpose,
+    double? targetAmount,
+    double? collectedAmount,
+    String? hostId,
+    String? hostName,
+    DateTime? createdAt,
+    DateTime? dueDate,
+    String? status,
+    List<Contribution>? contributions,
+  }) {
+    return Campaign(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      purpose: purpose ?? this.purpose,
+      targetAmount: targetAmount ?? this.targetAmount,
+      collectedAmount: collectedAmount ?? this.collectedAmount,
+      hostId: hostId ?? this.hostId,
+      hostName: hostName ?? this.hostName,
+      createdAt: createdAt ?? this.createdAt,
+      dueDate: dueDate ?? this.dueDate,
+      status: status ?? this.status,
+      contributions: contributions ?? this.contributions,
+    );
+  }
+
   factory Campaign.fromJson(Map<String, dynamic> json) {
     return Campaign(
       id: json['id'] ?? json['\$id'] ?? '',
