@@ -6,7 +6,7 @@ import '../controllers/auth_controller.dart';
 import '../controllers/campaign_controller.dart';
 import '../theme/app_theme.dart';
 import '../models/campaign.dart';
-import 'edit_campaign_page.dart';
+import '../widgets/edit_campaign_modal.dart';
 
 class CampaignDetailsScreen extends StatefulWidget {
   final Campaign campaign;
@@ -846,14 +846,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
       return;
     }
 
-    Get.to(() => EditCampaignPage(campaign: _currentCampaign))?.then((result) {
-      // Refresh the campaign details if edit was successful
-      if (result == true) {
-        setState(() {
-          // The campaign data will be updated in the controller
-        });
-      }
-    });
+    showEditCampaignModal(context, _currentCampaign);
   }
 
   void _pauseCampaign() {

@@ -4,6 +4,7 @@ import '../widgets/app_bar_with_menu.dart';
 import '../controllers/campaign_controller.dart';
 import '../controllers/auth_controller.dart';
 import '../theme/app_theme.dart';
+import '../widgets/add_campaign_modal.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -44,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
           appBar: const AppBarWithMenu(title: 'FriendFund'),
           drawer: const AppDrawer(),
           floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => Navigator.pushNamed(context, '/add-campaign'),
+            onPressed: () => showAddCampaignModal(context),
             icon: const Icon(Icons.add),
             label: const Text('Create Campaign'),
             tooltip: 'Create New Campaign',

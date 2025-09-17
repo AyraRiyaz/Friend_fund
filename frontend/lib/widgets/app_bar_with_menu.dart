@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
 import '../theme/app_theme.dart';
+import 'add_campaign_modal.dart';
 
 class AppBarWithMenu extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -129,7 +130,7 @@ class AppDrawer extends StatelessWidget {
                   title: 'Create Campaign',
                   onTap: () {
                     Navigator.pop(context);
-                    Get.toNamed('/add-campaign');
+                    showAddCampaignModal(context);
                   },
                   isSelected: Get.currentRoute == '/add-campaign',
                 ),

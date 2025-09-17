@@ -128,6 +128,11 @@ class CampaignController extends GetxController {
 
       final campaignData = {
         'hostId': authController.appwriteUser!.$id, // Backend expects 'hostId'
+        'hostName':
+            authController.userProfile?.name ??
+            authController
+                .appwriteUser!
+                .name, // Use profile name if available, fallback to appwrite name
         'title': title,
         'description': description,
         'purpose': purpose,

@@ -12,7 +12,6 @@ import 'pages/home_screen.dart';
 import 'pages/my_campaigns_screen.dart';
 import 'pages/login_page.dart';
 import 'pages/register_page.dart';
-import 'pages/add_campaign_page.dart';
 import 'pages/campaign_details_screen.dart';
 import 'models/campaign.dart';
 import 'pages/my_contributions_screen.dart';
@@ -80,7 +79,7 @@ class MyApp extends StatelessWidget {
         ),
         GetPage(
           name: '/add-campaign',
-          page: () => const AuthProtectedPage(child: AddCampaignPage()),
+          page: () => const AuthProtectedPage(child: HomeScreen()),
         ),
         GetPage(
           name: '/campaign-details',

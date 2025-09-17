@@ -5,6 +5,7 @@ import '../widgets/campaign_card.dart';
 import '../controllers/campaign_controller.dart';
 import '../controllers/auth_controller.dart';
 import '../theme/app_theme.dart';
+import '../widgets/add_campaign_modal.dart';
 
 class MyCampaignsScreen extends StatelessWidget {
   const MyCampaignsScreen({super.key});
@@ -24,7 +25,7 @@ class MyCampaignsScreen extends StatelessWidget {
           appBar: const AppBarWithMenu(title: 'My Campaigns'),
           drawer: const AppDrawer(),
           floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => Navigator.pushNamed(context, '/add-campaign'),
+            onPressed: () => showAddCampaignModal(context),
             icon: const Icon(Icons.add),
             label: const Text('New Campaign'),
           ),
