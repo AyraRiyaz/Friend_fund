@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import '../widgets/main_layout.dart';
+import '../components/app_bar_with_menu.dart';
 import '../controllers/auth_controller.dart';
 import '../theme/app_theme.dart';
 import '../models/campaign.dart';
@@ -23,9 +23,10 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MainLayout(
-      title: 'Campaign Details',
-      child: SingleChildScrollView(
+    return Scaffold(
+      appBar: const AppBarWithMenu(title: 'Campaign Details'),
+      drawer: const AppDrawer(),
+      body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

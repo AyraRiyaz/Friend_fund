@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
+import '../theme/app_theme.dart';
 
 class AppBarWithMenu extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -10,11 +11,26 @@ class AppBarWithMenu extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      title: Text(title),
-      elevation: 1,
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.teal,
-      iconTheme: const IconThemeData(color: Colors.teal),
+      title: Row(
+        children: [
+          Icon(Icons.handshake, color: AppTheme.primaryBlue, size: 28),
+          const SizedBox(width: 8),
+          Text(title, style: Theme.of(context).appBarTheme.titleTextStyle),
+        ],
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.notifications_outlined),
+          onPressed: () {
+            // TODO: Show notifications
+          },
+        ),
+        const SizedBox(width: 8),
+      ],
+      elevation: 0,
+      backgroundColor: AppTheme.surfaceWhite,
+      foregroundColor: AppTheme.primaryBlue,
+      iconTheme: IconThemeData(color: AppTheme.primaryBlue),
     );
   }
 
@@ -66,9 +82,9 @@ class AppDrawer extends StatelessWidget {
                         user?.name ?? appwriteUser?.name ?? 'U',
                       ),
               ),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.teal, Colors.tealAccent],
+                  colors: [AppTheme.primaryBlue, AppTheme.secondaryBlue],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -175,10 +191,10 @@ class AppDrawer extends StatelessWidget {
   Widget _buildDefaultAvatar(String name) {
     return Text(
       name.isNotEmpty ? name[0].toUpperCase() : 'U',
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 24,
         fontWeight: FontWeight.bold,
-        color: Colors.teal,
+        color: AppTheme.primaryBlue,
       ),
     );
   }
@@ -194,17 +210,20 @@ class AppDrawer extends StatelessWidget {
     return ListTile(
       leading: Icon(
         icon,
-        color: iconColor ?? (isSelected ? Colors.teal : Colors.grey[600]),
+        color:
+            iconColor ?? (isSelected ? AppTheme.primaryBlue : Colors.grey[600]),
       ),
       title: Text(
         title,
         style: TextStyle(
-          color: textColor ?? (isSelected ? Colors.teal : Colors.grey[800]),
+          color:
+              textColor ??
+              (isSelected ? AppTheme.primaryBlue : Colors.grey[800]),
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
         ),
       ),
       selected: isSelected,
-      selectedTileColor: Colors.teal.withValues(alpha: 0.1),
+      selectedTileColor: AppTheme.primaryBlue.withValues(alpha: 0.1),
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
     );

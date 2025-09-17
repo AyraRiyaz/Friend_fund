@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../widgets/main_layout.dart';
+import '../components/app_bar_with_menu.dart';
 import '../theme/app_theme.dart';
 import '../models/campaign.dart';
 
@@ -35,9 +35,10 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
       (sum, c) => sum + c.amount,
     );
 
-    return MainLayout(
-      title: 'My Contributions',
-      child: Column(
+    return Scaffold(
+      appBar: const AppBarWithMenu(title: 'My Contributions'),
+      drawer: const AppDrawer(),
+      body: Column(
         children: [
           _buildSummarySection(context, totalGifted, totalLoaned, totalToRepay),
           Container(
