@@ -82,7 +82,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       // Profile Picture
                       CircleAvatar(
                         radius: 50,
-                        backgroundColor: Colors.teal.withValues(alpha: 0.1),
+                        backgroundColor: Colors.blue.withValues(alpha: 0.1),
                         child: user?.profileImage != null
                             ? ClipOval(
                                 child: Image.network(
@@ -130,7 +130,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _isEditing
                               ? Colors.grey
-                              : Colors.teal,
+                              : Colors.blue,
                           foregroundColor: Colors.white,
                         ),
                       ),
@@ -155,7 +155,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.teal,
+                              color: Colors.blue,
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -219,7 +219,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ? null
                                 : _updateProfile,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.teal,
+                              backgroundColor: Colors.blue,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
@@ -261,7 +261,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.teal,
+                            color: Colors.blue,
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -303,7 +303,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.teal,
+                          color: Colors.blue,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -376,7 +376,7 @@ class _ProfilePageState extends State<ProfilePage> {
       style: const TextStyle(
         fontSize: 32,
         fontWeight: FontWeight.bold,
-        color: Colors.teal,
+        color: Colors.blue,
       ),
     );
   }
@@ -386,7 +386,7 @@ class _ProfilePageState extends State<ProfilePage> {
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         children: [
-          Icon(icon, color: Colors.teal, size: 20),
+          Icon(icon, color: Colors.blue, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

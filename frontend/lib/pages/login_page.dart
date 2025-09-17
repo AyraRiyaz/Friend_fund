@@ -69,13 +69,13 @@ class _LoginPageState extends State<LoginPage> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.teal.withValues(alpha: 0.1),
+                        color: Colors.blue.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.handshake,
                         size: 48,
-                        color: Colors.teal,
+                        color: Colors.blue,
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -84,7 +84,7 @@ class _LoginPageState extends State<LoginPage> {
                       style: Theme.of(context).textTheme.headlineMedium
                           ?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: Colors.teal,
+                            color: Colors.blue,
                           ),
                     ),
                     const SizedBox(height: 8),
@@ -174,7 +174,7 @@ class _LoginPageState extends State<LoginPage> {
                                 child: const Text(
                                   'Forgot Password?',
                                   style: TextStyle(
-                                    color: Colors.teal,
+                                    color: Colors.blue,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -283,7 +283,7 @@ class _LoginPageState extends State<LoginPage> {
                             'Sign Up',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Colors.teal,
+                              color: Colors.blue,
                             ),
                           ),
                         ),

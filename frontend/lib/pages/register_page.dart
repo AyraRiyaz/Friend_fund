@@ -81,13 +81,13 @@ class _RegisterPageState extends State<RegisterPage> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.teal.withValues(alpha: 0.1),
+                        color: Colors.blue.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.handshake,
                         size: 48,
-                        color: Colors.teal,
+                        color: Colors.blue,
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -96,7 +96,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       style: Theme.of(context).textTheme.headlineMedium
                           ?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: Colors.teal,
+                            color: Colors.blue,
                           ),
                     ),
                     const SizedBox(height: 8),
@@ -296,7 +296,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                       _agreeToTerms = value ?? false;
                                     });
                                   },
-                                  activeColor: Colors.teal,
+                                  activeColor: Colors.blue,
                                 ),
                                 Expanded(
                                   child: GestureDetector(
@@ -315,7 +315,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                           TextSpan(
                                             text: 'Terms and Conditions',
                                             style: TextStyle(
-                                              color: Colors.teal,
+                                              color: Colors.blue,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
@@ -323,7 +323,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                           TextSpan(
                                             text: 'Privacy Policy',
                                             style: TextStyle(
-                                              color: Colors.teal,
+                                              color: Colors.blue,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
@@ -437,7 +437,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             'Sign In',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Colors.teal,
+                              color: Colors.blue,
                             ),
                           ),
                         ),

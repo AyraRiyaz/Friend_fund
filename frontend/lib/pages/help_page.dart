@@ -20,7 +20,7 @@ class HelpPage extends StatelessWidget {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.teal,
+                color: Colors.blue,
               ),
             ),
             const SizedBox(height: 20),
@@ -58,7 +58,7 @@ class HelpPage extends StatelessWidget {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.teal,
+                color: Colors.blue,
               ),
             ),
             const SizedBox(height: 20),
@@ -103,7 +103,7 @@ class HelpPage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.teal,
+                        color: Colors.blue,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -134,7 +134,7 @@ class HelpPage extends StatelessWidget {
           question,
           style: const TextStyle(
             fontWeight: FontWeight.w600,
-            color: Colors.teal,
+            color: Colors.blue,
           ),
         ),
         children: [
@@ -160,8 +160,8 @@ class HelpPage extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: Colors.teal.withValues(alpha: 0.1),
-          child: Icon(icon, color: Colors.teal),
+          backgroundColor: Colors.blue.withValues(alpha: 0.1),
+          child: Icon(icon, color: Colors.blue),
         ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
         subtitle: Text(content),

@@ -98,7 +98,7 @@ class _EditCampaignModalState extends State<EditCampaignModal> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.teal,
+                color: Colors.blue,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(12),
                   topRight: Radius.circular(12),
@@ -332,7 +332,7 @@ class _EditCampaignModalState extends State<EditCampaignModal> {
                           ? null
                           : _updateCampaign,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal,
+                        backgroundColor: Colors.blue,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,

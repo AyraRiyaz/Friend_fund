@@ -18,10 +18,10 @@ class AboutPage extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.teal.withValues(alpha: 0.1),
+                color: Colors.blue.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.handshake, size: 80, color: Colors.teal),
+              child: const Icon(Icons.handshake, size: 80, color: Colors.blue),
             ),
             const SizedBox(height: 24),
 
@@ -31,7 +31,7 @@ class AboutPage extends StatelessWidget {
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
-                color: Colors.teal,
+                color: Colors.blue,
               ),
             ),
             const SizedBox(height: 8),
@@ -52,7 +52,7 @@ class AboutPage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.teal,
+                        color: Colors.blue,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -82,7 +82,7 @@ class AboutPage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.teal,
+                        color: Colors.blue,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -126,7 +126,7 @@ class AboutPage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.teal,
+                        color: Colors.blue,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -218,9 +218,9 @@ class AboutPage extends StatelessWidget {
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: Colors.teal.withValues(alpha: 0.1),
+            backgroundColor: Colors.blue.withValues(alpha: 0.1),
             radius: 20,
-            child: Icon(icon, color: Colors.teal, size: 20),
+            child: Icon(icon, color: Colors.blue, size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(
