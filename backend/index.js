@@ -305,7 +305,8 @@ class FriendFundAPI {
           contributionData.campaignId,
           {
             collectedAmount:
-              (campaign.collectedAmount || 0) + contributionData.amount,
+              (campaign.collectedAmount || 0) +
+              parseFloat(contributionData.amount),
           }
         );
       }

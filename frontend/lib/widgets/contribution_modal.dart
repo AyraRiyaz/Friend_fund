@@ -471,7 +471,7 @@ class _ContributionModalState extends State<ContributionModal> {
       final contributionData = {
         'campaignId': widget.campaignId,
         'contributorName': _nameController.text.trim(),
-        'amount': double.parse(_amountController.text),
+        'amount': _amountController.text.trim(), // Send as string, not double
         'paymentScreenshotUrl': uploadResult['url'],
         'type': 'gift',
         'utrNumber': 'PENDING_OCR_VERIFICATION',
