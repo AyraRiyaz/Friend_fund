@@ -18,6 +18,7 @@ import 'pages/my_contributions_screen.dart';
 import 'pages/profile_page.dart';
 import 'pages/help_page.dart';
 import 'pages/about_page.dart';
+import 'pages/contribution_form_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -111,6 +112,25 @@ class MyApp extends StatelessWidget {
           name: '/help',
           page: () => const AuthProtectedPage(child: HelpPage()),
         ),
+
+        // Public contribution form route (no authentication required)
+        GetPage(
+          name: '/contribute/:campaignId',
+          page: () => Builder(
+            builder: (context) {
+              final campaignId = Get.parameters['campaignId'];
+              if (campaignId != null && campaignId.isNotEmpty) {
+                return ContributionFormScreen(campaignId: campaignId);
+              }
+              // If no campaign ID provided, redirect to home
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                Get.offAllNamed('/home');
+              });
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+
         GetPage(
           name: '/about',
           page: () => const AuthProtectedPage(child: AboutPage()),

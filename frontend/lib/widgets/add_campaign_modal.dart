@@ -14,6 +14,7 @@ class _AddCampaignModalState extends State<AddCampaignModal> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _targetAmountController = TextEditingController();
+  final _upiIdController = TextEditingController();
 
   String _selectedPurpose = 'Personal';
   DateTime? _dueDate;
@@ -34,6 +35,7 @@ class _AddCampaignModalState extends State<AddCampaignModal> {
     _titleController.dispose();
     _descriptionController.dispose();
     _targetAmountController.dispose();
+    _upiIdController.dispose();
     super.dispose();
   }
 
@@ -60,6 +62,7 @@ class _AddCampaignModalState extends State<AddCampaignModal> {
       purpose: _selectedPurpose,
       targetAmount: double.parse(_targetAmountController.text.trim()),
       dueDate: _dueDate,
+      upiId: _upiIdController.text.trim(),
     );
 
     if (success) {

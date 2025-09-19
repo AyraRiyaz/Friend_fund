@@ -11,6 +11,9 @@ class Campaign {
   final DateTime? dueDate;
   final String status; // 'active', 'closed', 'paused'
   final List<Contribution> contributions;
+  final String? upiId; // Host's UPI ID for payments
+  final String? qrCodeUrl; // Generated QR code image URL
+  final String? shareableUrl; // Shareable campaign URL
 
   Campaign({
     required this.id,
@@ -25,6 +28,9 @@ class Campaign {
     this.dueDate,
     required this.status,
     required this.contributions,
+    this.upiId,
+    this.qrCodeUrl,
+    this.shareableUrl,
   });
 
   double get progressPercentage =>
@@ -43,6 +49,9 @@ class Campaign {
     DateTime? dueDate,
     String? status,
     List<Contribution>? contributions,
+    String? upiId,
+    String? qrCodeUrl,
+    String? shareableUrl,
   }) {
     return Campaign(
       id: id ?? this.id,
@@ -57,6 +66,9 @@ class Campaign {
       dueDate: dueDate ?? this.dueDate,
       status: status ?? this.status,
       contributions: contributions ?? this.contributions,
+      upiId: upiId ?? this.upiId,
+      qrCodeUrl: qrCodeUrl ?? this.qrCodeUrl,
+      shareableUrl: shareableUrl ?? this.shareableUrl,
     );
   }
 
@@ -78,6 +90,9 @@ class Campaign {
       contributions: (json['contributions'] as List? ?? [])
           .map((contrib) => Contribution.fromJson(contrib))
           .toList(),
+      upiId: json['upiId'],
+      qrCodeUrl: json['qrCodeUrl'],
+      shareableUrl: json['shareableUrl'],
     );
   }
 
@@ -97,6 +112,9 @@ class Campaign {
       'contributions': contributions
           .map((contrib) => contrib.toJson())
           .toList(),
+      'upiId': upiId,
+      'qrCodeUrl': qrCodeUrl,
+      'shareableUrl': shareableUrl,
     };
   }
 }
@@ -112,6 +130,8 @@ class Contribution {
   final String? repaymentStatus; // 'pending', 'repaid' (for loans only)
   final DateTime? repaymentDueDate;
   final String utrNumber;
+  final String? paymentScreenshotUrl; // Screenshot of payment confirmation
+  final String? paymentStatus; // 'pending', 'verified', 'failed'
 
   Contribution({
     required this.id,
@@ -124,6 +144,8 @@ class Contribution {
     this.repaymentStatus,
     this.repaymentDueDate,
     required this.utrNumber,
+    this.paymentScreenshotUrl,
+    this.paymentStatus,
   });
 
   factory Contribution.fromJson(Map<String, dynamic> json) {
@@ -142,6 +164,8 @@ class Contribution {
           ? DateTime.parse(json['repaymentDueDate'])
           : null,
       utrNumber: json['utrNumber'] ?? '',
+      paymentScreenshotUrl: json['paymentScreenshotUrl'],
+      paymentStatus: json['paymentStatus'] ?? 'pending',
     );
   }
 
@@ -157,6 +181,8 @@ class Contribution {
       'repaymentStatus': repaymentStatus,
       'repaymentDueDate': repaymentDueDate?.toIso8601String(),
       'utrNumber': utrNumber,
+      'paymentScreenshotUrl': paymentScreenshotUrl,
+      'paymentStatus': paymentStatus,
     };
   }
 }

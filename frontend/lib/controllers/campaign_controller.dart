@@ -111,6 +111,7 @@ class CampaignController extends GetxController {
     required String purpose,
     required double targetAmount,
     DateTime? dueDate,
+    String? upiId,
   }) async {
     final authController = AuthController.instance;
     if (!authController.isAuthenticated) {
@@ -138,6 +139,7 @@ class CampaignController extends GetxController {
         'purpose': purpose,
         'targetAmount': targetAmount,
         'dueDate': dueDate?.toIso8601String(),
+        'upiId': upiId,
       };
 
       final campaign = await _httpApiService.createCampaign(

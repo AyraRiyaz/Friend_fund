@@ -102,15 +102,40 @@ class FriendFundAPI {
 
   async createCampaign(campaignData) {
     try {
+      // Generate unique campaign ID
+      const campaignId = ID.unique();
+
+      // Generate shareable URL for the campaign
+      const shareableUrl = `${
+        process.env.FRONTEND_URL || "http://localhost:8080"
+      }/contribute/${campaignId}`;
+
+      // Generate QR code for the shareable URL
+      let qrCodeDataUrl = null;
+      try {
+        qrCodeDataUrl = await QRCode.toDataURL(shareableUrl, {
+          width: 300,
+          margin: 2,
+          color: {
+            dark: "#000000",
+            light: "#FFFFFF",
+          },
+        });
+      } catch (qrError) {
+        console.warn("QR code generation failed:", qrError);
+      }
+
       const campaign = await this.databases.createDocument(
         this.databaseId,
         this.campaignsCollectionId,
-        ID.unique(),
+        campaignId,
         {
           ...campaignData,
           status: campaignData.status || "active",
           collectedAmount: 0,
           contributions: [],
+          shareableUrl: shareableUrl,
+          qrCodeUrl: qrCodeDataUrl,
         },
         [Permission.read(Role.any())]
       );
@@ -167,6 +192,38 @@ class FriendFundAPI {
       return {
         success: false,
         error: error.message || "Failed to delete campaign",
+      };
+    }
+  }
+
+  async getCampaignForContribution(campaignId) {
+    try {
+      const campaign = await this.databases.getDocument(
+        this.databaseId,
+        this.campaignsCollectionId,
+        campaignId
+      );
+
+      // Return only necessary fields for contribution form
+      return {
+        success: true,
+        data: {
+          id: campaign.$id,
+          title: campaign.title,
+          description: campaign.description,
+          purpose: campaign.purpose,
+          targetAmount: campaign.targetAmount,
+          collectedAmount: campaign.collectedAmount,
+          hostName: campaign.hostName,
+          upiId: campaign.upiId,
+          status: campaign.status,
+        },
+      };
+    } catch (error) {
+      console.error("Error getting campaign for contribution:", error);
+      return {
+        success: false,
+        error: error.message || "Campaign not found",
       };
     }
   }
@@ -228,26 +285,30 @@ class FriendFundAPI {
           repaymentStatus: contributionData.repaymentStatus || "pending",
           type: contributionData.type || "donation",
           isAnonymous: contributionData.isAnonymous || false,
+          paymentStatus: contributionData.paymentStatus || "pending",
+          date: contributionData.date || new Date().toISOString(),
         },
         [Permission.read(Role.any())]
       );
 
-      // Update campaign collected amount
-      const campaign = await this.databases.getDocument(
-        this.databaseId,
-        this.campaignsCollectionId,
-        contributionData.campaignId
-      );
+      // Only update campaign collected amount if payment is verified
+      if (contributionData.paymentStatus === "verified") {
+        const campaign = await this.databases.getDocument(
+          this.databaseId,
+          this.campaignsCollectionId,
+          contributionData.campaignId
+        );
 
-      await this.databases.updateDocument(
-        this.databaseId,
-        this.campaignsCollectionId,
-        contributionData.campaignId,
-        {
-          collectedAmount:
-            (campaign.collectedAmount || 0) + contributionData.amount,
-        }
-      );
+        await this.databases.updateDocument(
+          this.databaseId,
+          this.campaignsCollectionId,
+          contributionData.campaignId,
+          {
+            collectedAmount:
+              (campaign.collectedAmount || 0) + contributionData.amount,
+          }
+        );
+      }
 
       return {
         success: true,
@@ -591,7 +652,10 @@ export default async ({ req, res, log, error: logError }) => {
       const pathParts = path.split("/").filter((p) => p);
       const campaignId = pathParts[1];
 
-      if (method === "GET") {
+      if (pathParts[2] === "contribute" && method === "GET") {
+        // GET /campaigns/{id}/contribute - Get campaign details for contribution form
+        result = await friendFundAPI.getCampaignForContribution(campaignId);
+      } else if (method === "GET") {
         result = await friendFundAPI.getCampaign(campaignId);
       } else if (method === "PATCH") {
         result = await friendFundAPI.updateCampaign(campaignId, parsedBody);

@@ -1,12 +1,14 @@
 import 'package:appwrite/appwrite.dart';
 import '../config/appwrite_config.dart';
 import '../models/user.dart' as app_user;
+import 'http_api_service.dart';
 
 class AppwriteService {
   static Client? _client;
   static Databases? _databases;
   static Account? _account;
   static Storage? _storage;
+  static final HttpApiService _httpApiService = HttpApiService();
 
   static Client get client {
     _client ??= Client()
@@ -43,7 +45,7 @@ class AppwriteService {
     try {
       final user = await account.get();
       final prefs = user.prefs;
-      
+
       return app_user.User(
         id: user.$id,
         name: user.name,
@@ -56,5 +58,33 @@ class AppwriteService {
     } catch (e) {
       throw Exception('Failed to get user profile: $e');
     }
+  }
+
+  // Campaign contribution methods
+  Future<Map<String, dynamic>> getCampaignForContribution(
+    String campaignId,
+  ) async {
+    return await _httpApiService.getCampaignForContribution(campaignId);
+  }
+
+  Future<Map<String, dynamic>> createContribution(
+    Map<String, dynamic> contributionData,
+  ) async {
+    return await _httpApiService.createContributionV2(
+      campaignId: contributionData['campaignId'],
+      contributorId: contributionData['contributorId'] ?? 'anonymous',
+      contributorName: contributionData['contributorName'],
+      amount: contributionData['amount'],
+      utr: contributionData['utrNumber'],
+      type: contributionData['type'] ?? 'gift',
+      additionalData: {
+        'paymentScreenshotUrl': contributionData['paymentScreenshotUrl'],
+        'paymentStatus': contributionData['paymentStatus'],
+      },
+    );
+  }
+
+  Future<Map<String, dynamic>> uploadFile(dynamic file) async {
+    return await _httpApiService.uploadFile(file);
   }
 }

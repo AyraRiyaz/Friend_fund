@@ -143,6 +143,37 @@ class HttpApiService {
     }
   }
 
+  /// Get campaign details for contribution form (public access)
+  Future<Map<String, dynamic>> getCampaignForContribution(
+    String campaignId,
+  ) async {
+    try {
+      final uri = Uri.parse(
+        '${AppConfig.baseUrl}${AppConfig.campaignsEndpoint}/$campaignId/contribute',
+      );
+
+      AppConfig.debugPrint('GET Campaign for Contribution: $uri');
+
+      final response = await _client
+          .get(uri, headers: _headers)
+          .timeout(AppConfig.connectTimeout);
+
+      final data = _handleResponse(response);
+      return data;
+    } on TimeoutException {
+      throw Exception(
+        'Connection timeout. Please check your internet connection.',
+      );
+    } on SocketException {
+      throw Exception('No internet connection. Please check your network.');
+    } catch (e) {
+      if (e.toString().contains('Exception:')) {
+        rethrow;
+      }
+      throw Exception('Failed to load campaign. Please try again later.');
+    }
+  }
+
   /// Create a new campaign
   Future<Campaign> createCampaign(
     Map<String, dynamic> campaignData, {
@@ -675,6 +706,24 @@ class HttpApiService {
         rethrow;
       }
       throw Exception('Failed to create contribution. Please try again later.');
+    }
+  }
+
+  /// Upload a file (for payment screenshots)
+  Future<Map<String, dynamic>> uploadFile(dynamic file) async {
+    try {
+      // For now, we'll return a placeholder response
+      // In a real implementation, you would upload to a file storage service
+      // like Appwrite Storage, AWS S3, or Cloudinary
+
+      // This is a mock implementation - replace with actual file upload logic
+      return {
+        'success': true,
+        'fileUrl': 'https://placeholder.com/payment-screenshot.jpg',
+        'fileId': 'mock-file-id-${DateTime.now().millisecondsSinceEpoch}',
+      };
+    } catch (e) {
+      throw Exception('Failed to upload file: $e');
     }
   }
 
