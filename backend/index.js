@@ -452,13 +452,12 @@ class FriendFundAPI {
         {
           campaignId: campaignId,
           contributorName: contributorName,
-          amount: expectedAmount,
+          amount: expectedAmount.toString(),
           paymentStatus: paymentInfo.isValid ? "verified" : "pending_review",
           extractedText: text,
           extractedAmount: paymentInfo.extractedAmount,
           transactionId: paymentInfo.transactionId,
           ocrConfidence: paymentInfo.confidence,
-          date: new Date().toISOString(),
         },
         [Permission.read(Role.any())]
       );
