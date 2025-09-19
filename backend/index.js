@@ -15,8 +15,7 @@ import {
   Role,
 } from "node-appwrite";
 import QRCode from "qrcode";
-import Razorpay from "razorpay";
-import crypto from "crypto";
+import { createWorker } from "tesseract.js";
 
 /**
  * @class FriendFundAPI
@@ -46,12 +45,6 @@ class FriendFundAPI {
       process.env.CONTRIBUTIONS_COLLECTION_ID || "68b54a0700208ba7fdaa";
     this.screenshotsBucketId =
       process.env.SCREENSHOTS_BUCKET_ID || "68c66749001ad2d77cfa";
-
-    // Initialize Razorpay
-    this.razorpay = new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID || "rzp_test_1DP5mmOlF5G5ag",
-      key_secret: process.env.RAZORPAY_KEY_SECRET || "YOUR_SECRET_KEY",
-    });
   }
 
   // Campaign Operations
@@ -377,119 +370,192 @@ class FriendFundAPI {
     }
   }
 
-  // Razorpay Payment Operations
-  async createPaymentOrder(amount, currency = "INR", receipt = null) {
+  // OCR-based Payment Processing
+  async processPaymentScreenshot(
+    imageBuffer,
+    expectedAmount,
+    contributorName,
+    campaignId
+  ) {
     try {
-      const order = await this.razorpay.orders.create({
-        amount: Math.round(amount * 100), // Convert to paisa
-        currency: currency,
-        receipt: receipt || `order_${Date.now()}`,
-        partial_payment: false,
-      });
+      // Initialize Tesseract worker
+      const worker = await createWorker("eng");
 
-      return {
-        success: true,
-        data: order,
-      };
-    } catch (error) {
-      console.error("Error creating Razorpay order:", error);
-      return {
-        success: false,
-        error: error.message || "Failed to create payment order",
-      };
-    }
-  }
+      // Perform OCR on the image
+      const {
+        data: { text },
+      } = await worker.recognize(imageBuffer);
+      await worker.terminate();
 
-  async verifyPayment(paymentId, orderId, signature) {
-    try {
-      const expectedSignature = crypto
-        .createHmac(
-          "sha256",
-          process.env.RAZORPAY_KEY_SECRET || "YOUR_SECRET_KEY"
-        )
-        .update(`${orderId}|${paymentId}`)
-        .digest("hex");
+      // Extract payment information from text
+      const paymentInfo = this.extractPaymentInfo(text, expectedAmount);
 
-      if (expectedSignature === signature) {
-        // Get payment details from Razorpay
-        const payment = await this.razorpay.payments.fetch(paymentId);
-
-        return {
-          success: true,
-          data: {
-            verified: true,
-            payment: payment,
-          },
-        };
-      } else {
-        return {
-          success: false,
-          error: "Payment signature verification failed",
-        };
-      }
-    } catch (error) {
-      console.error("Error verifying payment:", error);
-      return {
-        success: false,
-        error: error.message || "Failed to verify payment",
-      };
-    }
-  }
-
-  async createContributionWithPayment(contributionData, paymentData) {
-    try {
-      // First verify the payment
-      const verificationResult = await this.verifyPayment(
-        paymentData.paymentId,
-        paymentData.orderId,
-        paymentData.signature
-      );
-
-      if (!verificationResult.success) {
-        throw new Error("Payment verification failed");
-      }
-
-      // Create contribution with verified payment status
+      // Create contribution with OCR extracted data
       const contribution = await this.databases.createDocument(
         this.databaseId,
         this.contributionsCollectionId,
         ID.unique(),
         {
-          ...contributionData,
-          paymentStatus: "verified",
-          razorpayPaymentId: paymentData.paymentId,
-          razorpayOrderId: paymentData.orderId,
+          campaignId: campaignId,
+          contributorName: contributorName,
+          amount: expectedAmount,
+          paymentStatus: paymentInfo.isValid ? "verified" : "pending_review",
+          extractedText: text,
+          extractedAmount: paymentInfo.extractedAmount,
+          transactionId: paymentInfo.transactionId,
+          ocrConfidence: paymentInfo.confidence,
           date: new Date().toISOString(),
         },
         [Permission.read(Role.any())]
       );
 
-      // Update campaign collected amount
-      const campaign = await this.databases.getDocument(
-        this.databaseId,
-        this.campaignsCollectionId,
-        contributionData.campaignId
+      // Update campaign collected amount if payment is verified
+      if (paymentInfo.isValid) {
+        const campaign = await this.databases.getDocument(
+          this.databaseId,
+          this.campaignsCollectionId,
+          campaignId
+        );
+
+        await this.databases.updateDocument(
+          this.databaseId,
+          this.campaignsCollectionId,
+          campaignId,
+          {
+            collectedAmount: (campaign.collectedAmount || 0) + expectedAmount,
+          }
+        );
+      }
+
+      return {
+        success: true,
+        data: {
+          contribution: contribution,
+          paymentInfo: paymentInfo,
+          autoVerified: paymentInfo.isValid,
+        },
+      };
+    } catch (error) {
+      console.error("Error processing payment screenshot:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to process payment screenshot",
+      };
+    }
+  }
+
+  extractPaymentInfo(text, expectedAmount) {
+    // Common UPI payment patterns
+    const amountPatterns = [
+      /₹\s*(\d+(?:,\d+)*(?:\.\d{2})?)/g,
+      /INR\s*(\d+(?:,\d+)*(?:\.\d{2})?)/g,
+      /Rs\.?\s*(\d+(?:,\d+)*(?:\.\d{2})?)/g,
+      /Amount.*?(\d+(?:,\d+)*(?:\.\d{2})?)/gi,
+    ];
+
+    // Transaction ID patterns
+    const transactionPatterns = [
+      /(?:Transaction|Txn|Trans|UPI|ID|Ref)\s*(?:ID|No|Number)?\s*:?\s*([A-Z0-9]+)/gi,
+      /([0-9]{12,16})/g, // Common transaction ID length
+      /([A-Z]{2,4}\d{10,14})/g, // Bank specific patterns
+    ];
+
+    // Success indicators
+    const successIndicators = [
+      /success/i,
+      /completed/i,
+      /paid/i,
+      /transferred/i,
+      /sent/i,
+      /debited/i,
+    ];
+
+    let extractedAmount = null;
+    let transactionId = null;
+    let hasSuccessIndicator = false;
+
+    // Extract amount
+    for (const pattern of amountPatterns) {
+      const matches = text.matchAll(pattern);
+      for (const match of matches) {
+        const amount = parseFloat(match[1].replace(/,/g, ""));
+        if (amount > 0) {
+          extractedAmount = amount;
+          break;
+        }
+      }
+      if (extractedAmount) break;
+    }
+
+    // Extract transaction ID
+    for (const pattern of transactionPatterns) {
+      const matches = text.matchAll(pattern);
+      for (const match of matches) {
+        if (match[1] && match[1].length >= 8) {
+          transactionId = match[1];
+          break;
+        }
+      }
+      if (transactionId) break;
+    }
+
+    // Check for success indicators
+    hasSuccessIndicator = successIndicators.some((pattern) =>
+      pattern.test(text)
+    );
+
+    // Calculate confidence and validity
+    let confidence = 0;
+    if (extractedAmount) confidence += 40;
+    if (transactionId) confidence += 30;
+    if (hasSuccessIndicator) confidence += 30;
+
+    const amountMatches =
+      extractedAmount && Math.abs(extractedAmount - expectedAmount) <= 1; // Allow ₹1 difference for fees
+
+    const isValid = confidence >= 70 && amountMatches && hasSuccessIndicator;
+
+    return {
+      extractedAmount,
+      transactionId,
+      hasSuccessIndicator,
+      confidence,
+      isValid,
+      amountMatches,
+    };
+  }
+
+  async uploadPaymentScreenshot(fileBuffer, fileName, contributionId) {
+    try {
+      const file = await this.storage.createFile(
+        this.screenshotsBucketId,
+        ID.unique(),
+        fileBuffer,
+        [Permission.read(Role.any())]
       );
 
+      // Update contribution with screenshot URL
       await this.databases.updateDocument(
         this.databaseId,
-        this.campaignsCollectionId,
-        contributionData.campaignId,
+        this.contributionsCollectionId,
+        contributionId,
         {
-          collectedAmount:
-            (campaign.collectedAmount || 0) + contributionData.amount,
+          paymentScreenshotUrl: file.$id,
         }
       );
 
       return {
         success: true,
-        data: contribution,
+        data: {
+          fileId: file.$id,
+          fileName: fileName,
+        },
       };
     } catch (error) {
-      console.error("Error creating contribution with payment:", error);
+      console.error("Error uploading payment screenshot:", error);
       return {
         success: false,
-        error: error.message || "Failed to create contribution",
+        error: error.message || "Failed to upload screenshot",
       };
     }
   }
@@ -850,39 +916,37 @@ export default async ({ req, res, log, error: logError }) => {
         result = { success: false, error: "Method not allowed" };
         statusCode = 405;
       }
-    } else if (path === "/payment/create-order") {
+    } else if (path === "/payment/process-screenshot") {
       if (method === "POST") {
-        const { amount, currency, receipt } = parsedBody;
-        result = await friendFundAPI.createPaymentOrder(
-          amount,
-          currency,
-          receipt
+        const { imageBase64, expectedAmount, contributorName, campaignId } =
+          parsedBody;
+
+        // Convert base64 to buffer
+        const imageBuffer = Buffer.from(imageBase64, "base64");
+
+        result = await friendFundAPI.processPaymentScreenshot(
+          imageBuffer,
+          expectedAmount,
+          contributorName,
+          campaignId
         );
         statusCode = 201;
       } else {
         result = { success: false, error: "Method not allowed" };
         statusCode = 405;
       }
-    } else if (path === "/payment/verify") {
+    } else if (path === "/payment/upload-screenshot") {
       if (method === "POST") {
-        const { paymentId, orderId, signature } = parsedBody;
-        result = await friendFundAPI.verifyPayment(
-          paymentId,
-          orderId,
-          signature
+        const { fileBase64, fileName, contributionId } = parsedBody;
+
+        // Convert base64 to buffer
+        const fileBuffer = Buffer.from(fileBase64, "base64");
+
+        result = await friendFundAPI.uploadPaymentScreenshot(
+          fileBuffer,
+          fileName,
+          contributionId
         );
-      } else {
-        result = { success: false, error: "Method not allowed" };
-        statusCode = 405;
-      }
-    } else if (path === "/contributions/with-payment") {
-      if (method === "POST") {
-        const { contributionData, paymentData } = parsedBody;
-        result = await friendFundAPI.createContributionWithPayment(
-          contributionData,
-          paymentData
-        );
-        statusCode = 201;
       } else {
         result = { success: false, error: "Method not allowed" };
         statusCode = 405;

@@ -979,7 +979,10 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
 
   void _showContributionDialog() {
     // Show the contribution modal
-    showContributionModal(context, _currentCampaign.id);
+    showDialog(
+      context: context,
+      builder: (context) => ContributionModal(campaignId: _currentCampaign.id),
+    );
   }
 
   void _contributeQuickAmount(String amount) {

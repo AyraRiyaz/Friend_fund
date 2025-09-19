@@ -727,25 +727,27 @@ class HttpApiService {
     }
   }
 
-  /// Create Razorpay payment order
-  Future<Map<String, dynamic>> createPaymentOrder({
-    required double amount,
-    String currency = 'INR',
-    String? receipt,
+  /// Process payment screenshot with OCR
+  Future<Map<String, dynamic>> processPaymentScreenshot({
+    required String imageBase64,
+    required double expectedAmount,
+    required String contributorName,
+    required String campaignId,
   }) async {
     try {
-      final uri = Uri.parse('${AppConfig.baseUrl}/payment/create-order');
+      final uri = Uri.parse('${AppConfig.baseUrl}/payment/process-screenshot');
 
-      AppConfig.debugPrint('POST Create Payment Order: $uri');
+      AppConfig.debugPrint('POST Process Payment Screenshot: $uri');
 
       final response = await _client
           .post(
             uri,
             headers: _headers,
             body: json.encode({
-              'amount': amount,
-              'currency': currency,
-              'receipt': receipt,
+              'imageBase64': imageBase64,
+              'expectedAmount': expectedAmount,
+              'contributorName': contributorName,
+              'campaignId': campaignId,
             }),
           )
           .timeout(AppConfig.connectTimeout);
@@ -763,30 +765,30 @@ class HttpApiService {
         rethrow;
       }
       throw Exception(
-        'Failed to create payment order. Please try again later.',
+        'Failed to process payment screenshot. Please try again later.',
       );
     }
   }
 
-  /// Verify Razorpay payment
-  Future<Map<String, dynamic>> verifyPayment({
-    required String paymentId,
-    required String orderId,
-    required String signature,
+  /// Upload payment screenshot to storage
+  Future<Map<String, dynamic>> uploadPaymentScreenshot({
+    required String fileBase64,
+    required String fileName,
+    required String contributionId,
   }) async {
     try {
-      final uri = Uri.parse('${AppConfig.baseUrl}/payment/verify');
+      final uri = Uri.parse('${AppConfig.baseUrl}/payment/upload-screenshot');
 
-      AppConfig.debugPrint('POST Verify Payment: $uri');
+      AppConfig.debugPrint('POST Upload Payment Screenshot: $uri');
 
       final response = await _client
           .post(
             uri,
             headers: _headers,
             body: json.encode({
-              'paymentId': paymentId,
-              'orderId': orderId,
-              'signature': signature,
+              'fileBase64': fileBase64,
+              'fileName': fileName,
+              'contributionId': contributionId,
             }),
           )
           .timeout(AppConfig.connectTimeout);
@@ -803,44 +805,7 @@ class HttpApiService {
       if (e.toString().contains('Exception:')) {
         rethrow;
       }
-      throw Exception('Failed to verify payment. Please try again later.');
-    }
-  }
-
-  /// Create contribution with verified payment
-  Future<Map<String, dynamic>> createContributionWithPayment({
-    required Map<String, dynamic> contributionData,
-    required Map<String, dynamic> paymentData,
-  }) async {
-    try {
-      final uri = Uri.parse('${AppConfig.baseUrl}/contributions/with-payment');
-
-      AppConfig.debugPrint('POST Create Contribution with Payment: $uri');
-
-      final response = await _client
-          .post(
-            uri,
-            headers: _headers,
-            body: json.encode({
-              'contributionData': contributionData,
-              'paymentData': paymentData,
-            }),
-          )
-          .timeout(AppConfig.connectTimeout);
-
-      final data = _handleResponse(response);
-      return data;
-    } on TimeoutException {
-      throw Exception(
-        'Connection timeout. Please check your internet connection.',
-      );
-    } on SocketException {
-      throw Exception('No internet connection. Please check your network.');
-    } catch (e) {
-      if (e.toString().contains('Exception:')) {
-        rethrow;
-      }
-      throw Exception('Failed to create contribution. Please try again later.');
+      throw Exception('Failed to upload screenshot. Please try again later.');
     }
   }
 
