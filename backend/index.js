@@ -305,7 +305,7 @@ class FriendFundAPI {
           contributionData.campaignId,
           {
             collectedAmount:
-              (campaign.collectedAmount || 0) +
+              (parseFloat(campaign.collectedAmount) || 0) +
               parseFloat(contributionData.amount),
           }
         );
@@ -476,7 +476,9 @@ class FriendFundAPI {
           this.campaignsCollectionId,
           campaignId,
           {
-            collectedAmount: (campaign.collectedAmount || 0) + expectedAmount,
+            collectedAmount:
+              (parseFloat(campaign.collectedAmount) || 0) +
+              parseFloat(expectedAmount),
           }
         );
       }
