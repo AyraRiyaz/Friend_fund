@@ -287,7 +287,6 @@ class FriendFundAPI {
           type: contributionData.type || "donation",
           isAnonymous: contributionData.isAnonymous || false,
           paymentStatus: contributionData.paymentStatus || "pending",
-          date: contributionData.date || new Date().toISOString(),
         },
         [Permission.read(Role.any())]
       );
@@ -346,7 +345,61 @@ class FriendFundAPI {
     }
   }
 
-  // QR Code Generation
+  // QR Code Generation for UPI Payment
+  async generatePaymentQRCode(campaignId, upiId, amount = null) {
+    try {
+      // Get campaign details
+      const campaign = await this.databases.getDocument(
+        this.databaseId,
+        this.campaignsCollectionId,
+        campaignId
+      );
+
+      if (!campaign) {
+        throw new Error("Campaign not found");
+      }
+
+      // Create UPI payment URL
+      const upiPaymentUrl = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(
+        campaign.title
+      )}&mc=0000&tid=${campaignId}&tr=${campaignId}${Date.now()}&tn=${encodeURIComponent(
+        `Contribution to ${campaign.title}`
+      )}${amount ? `&am=${amount}` : ""}&cu=INR`;
+
+      // Generate QR code for UPI payment
+      const qrCodeDataURL = await QRCode.toDataURL(upiPaymentUrl, {
+        width: 400,
+        margin: 2,
+        color: {
+          dark: "#000000",
+          light: "#FFFFFF",
+        },
+      });
+
+      // Also create a campaign URL for sharing
+      const campaignUrl = `${
+        process.env.FRONTEND_BASE_URL || "https://friendfund.pro26.in"
+      }/campaign/${campaignId}`;
+
+      return {
+        success: true,
+        data: {
+          qrCode: qrCodeDataURL,
+          upiPaymentUrl: upiPaymentUrl,
+          campaignUrl: campaignUrl,
+          upiId: upiId,
+        },
+      };
+    } catch (error) {
+      console.error("Error generating payment QR code:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to generate payment QR code",
+      };
+    }
+  }
+
+  // Legacy QR Code Generation (for campaign sharing)
   async generateQRCode(campaignId) {
     try {
       const campaignUrl = `${
@@ -893,6 +946,21 @@ export default async ({ req, res, log, error: logError }) => {
 
       if (method === "GET") {
         result = await friendFundAPI.generateQRCode(campaignId);
+      } else {
+        result = { success: false, error: "Method not allowed" };
+        statusCode = 405;
+      }
+    } else if (path.startsWith("/payment-qr/")) {
+      const pathParts = path.split("/").filter((p) => p);
+      const campaignId = pathParts[1];
+
+      if (method === "POST") {
+        const { upiId, amount } = parsedBody;
+        result = await friendFundAPI.generatePaymentQRCode(
+          campaignId,
+          upiId,
+          amount
+        );
       } else {
         result = { success: false, error: "Method not allowed" };
         statusCode = 405;

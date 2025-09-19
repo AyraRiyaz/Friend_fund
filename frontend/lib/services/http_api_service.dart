@@ -491,6 +491,49 @@ class HttpApiService {
     }
   }
 
+  /// Generate UPI payment QR code for a campaign with amount
+  Future<Map<String, dynamic>> generatePaymentQR({
+    required String campaignId,
+    required String upiId,
+    required double amount,
+  }) async {
+    try {
+      final uri = Uri.parse(
+        '${AppConfig.baseUrl}${AppConfig.paymentQrEndpoint}/$campaignId',
+      );
+
+      final body = json.encode({'upiId': upiId, 'amount': amount});
+
+      AppConfig.debugPrint('POST Payment QR: $uri');
+      AppConfig.debugPrint('Payment QR Body: $body');
+
+      final response = await _client
+          .post(uri, headers: _headers, body: body)
+          .timeout(AppConfig.connectTimeout);
+
+      final data = _handleResponse(response);
+
+      if (data['data'] != null) {
+        return data['data'] as Map<String, dynamic>;
+      } else {
+        throw Exception('Failed to generate payment QR code');
+      }
+    } on TimeoutException {
+      throw Exception(
+        'Connection timeout. Please check your internet connection.',
+      );
+    } on SocketException {
+      throw Exception('No internet connection. Please check your network.');
+    } catch (e) {
+      if (e.toString().contains('Exception:')) {
+        rethrow;
+      }
+      throw Exception(
+        'Failed to generate payment QR code. Please try again later.',
+      );
+    }
+  }
+
   /// Get user information
   Future<app_user.User> getUser(String userId) async {
     try {

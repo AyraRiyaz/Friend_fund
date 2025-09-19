@@ -11,6 +11,7 @@ class AppConfig {
   static const String contributionsEndpoint = '/contributions';
   static const String usersEndpoint = '/users';
   static const String qrEndpoint = '/qr';
+  static const String paymentQrEndpoint = '/payment-qr';
 
   // Request timeouts
   static const Duration connectTimeout = Duration(seconds: 15);

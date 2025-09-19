@@ -87,4 +87,16 @@ class AppwriteService {
   Future<Map<String, dynamic>> uploadFile(dynamic file) async {
     return await _httpApiService.uploadFile(file);
   }
+
+  Future<Map<String, dynamic>> generatePaymentQR({
+    required String campaignId,
+    required String upiId,
+    required double amount,
+  }) async {
+    return await _httpApiService.generatePaymentQR(
+      campaignId: campaignId,
+      upiId: upiId,
+      amount: amount,
+    );
+  }
 }

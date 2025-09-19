@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:share_plus/share_plus.dart';
+// import 'package:share_plus/share_plus.dart'; // Temporarily disabled for web
 import '../models/campaign.dart';
 
 class CampaignQRWidget extends StatelessWidget {
@@ -106,9 +106,9 @@ class CampaignQRWidget extends StatelessWidget {
   }
 
   void _shareLink(String url) {
-    Share.share(
-      'Help ${campaign.hostName} reach their goal! Contribute to "${campaign.title}": $url',
-      subject: 'Contribute to ${campaign.title}',
+    // Temporarily disabled for web compatibility - Share functionality will be available in mobile app
+    print(
+      'Would share: Help ${campaign.hostName} reach their goal! Contribute to "${campaign.title}": $url',
     );
   }
 

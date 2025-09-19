@@ -1,15 +1,15 @@
-import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import '../models/campaign.dart';
 import '../services/http_api_service.dart';
+import '../services/appwrite_service.dart';
 
 class ContributionModal extends StatefulWidget {
   final String campaignId;
 
-  const ContributionModal({Key? key, required this.campaignId}) : super(key: key);
+  const ContributionModal({Key? key, required this.campaignId})
+    : super(key: key);
 
   @override
   State<ContributionModal> createState() => _ContributionModalState();
@@ -20,13 +20,17 @@ class _ContributionModalState extends State<ContributionModal> {
   final _amountController = TextEditingController();
   final _nameController = TextEditingController();
   final HttpApiService _httpApiService = HttpApiService();
-  
+  final AppwriteService _appwriteService = AppwriteService();
+  final ImagePicker _picker = ImagePicker();
+
   bool _isSubmitting = false;
   bool _isLoadingCampaign = true;
   Campaign? _campaign;
   XFile? _selectedImage;
   bool _paymentMade = false;
-  
+  bool _isVerifyingPayment = false;
+  Map<String, dynamic>? _paymentQrData;
+
   @override
   void initState() {
     super.initState();
@@ -45,9 +49,9 @@ class _ContributionModalState extends State<ContributionModal> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoadingCampaign = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading campaign: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading campaign: $e')));
       }
     }
   }
@@ -70,7 +74,9 @@ class _ContributionModalState extends State<ContributionModal> {
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
-                child: _paymentMade ? _buildPaymentVerificationForm() : _buildPaymentDetailsForm(),
+                child: _paymentMade
+                    ? _buildPaymentVerificationForm()
+                    : _buildPaymentDetailsForm(),
               ),
             ),
           ],
@@ -175,7 +181,9 @@ class _ContributionModalState extends State<ContributionModal> {
                   Text('UPI ID: ${_campaign!.upiId}'),
                   const SizedBox(height: 4),
                 ],
-                Text('Amount: ₹${_amountController.text.isNotEmpty ? _amountController.text : '_____'}'),
+                Text(
+                  'Amount: ₹${_amountController.text.isNotEmpty ? _amountController.text : '_____'}',
+                ),
                 const SizedBox(height: 8),
                 const Text(
                   '1. Make payment using any UPI app\n'
@@ -188,29 +196,48 @@ class _ContributionModalState extends State<ContributionModal> {
           ),
           const SizedBox(height: 24),
 
-          // QR Code (if available)
-          if (_campaign?.qrCodeUrl != null) ...[
+          // QR Code (Dynamic generation for UPI)
+          if (_campaign?.upiId != null &&
+              _amountController.text.isNotEmpty) ...[
             const Text(
               'Scan QR Code to Pay:',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Center(
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Image.network(
-                  _campaign!.qrCodeUrl!,
-                  width: 200,
-                  height: 200,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(Icons.qr_code, size: 200, color: Colors.grey);
-                  },
-                ),
-              ),
+            FutureBuilder<Map<String, dynamic>>(
+              future: _generatePaymentQR(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return Text('Error: ${snapshot.error}');
+                } else if (snapshot.hasData &&
+                    snapshot.data!['qrCodeUrl'] != null) {
+                  return Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Image.network(
+                        snapshot.data!['qrCodeUrl'],
+                        width: 200,
+                        height: 200,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(
+                            Icons.qr_code,
+                            size: 200,
+                            color: Colors.grey,
+                          );
+                        },
+                      ),
+                    ),
+                  );
+                } else {
+                  return const Text('Unable to generate QR code');
+                }
+              },
             ),
             const SizedBox(height: 24),
           ],
@@ -242,7 +269,7 @@ class _ContributionModalState extends State<ContributionModal> {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
-        
+
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -256,7 +283,10 @@ class _ContributionModalState extends State<ContributionModal> {
               const SizedBox(height: 8),
               const Text(
                 'Payment Initiated Successfully!',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
               ),
               const SizedBox(height: 4),
               Text('Amount: ₹${_amountController.text}'),
@@ -267,39 +297,60 @@ class _ContributionModalState extends State<ContributionModal> {
         const SizedBox(height: 24),
 
         // Image Selection
-        GestureDetector(
-          onTap: _selectImage,
-          child: Container(
-            width: double.infinity,
-            height: 200,
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
-              borderRadius: BorderRadius.circular(8),
-              color: Colors.grey.shade50,
+        Container(
+          width: double.infinity,
+          height: 200,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Colors.grey.shade300,
+              style: BorderStyle.solid,
             ),
-            child: _selectedImage != null
-                ? Column(
+            borderRadius: BorderRadius.circular(8),
+            color: Colors.grey.shade50,
+          ),
+          child: _selectedImage != null
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 48,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Screenshot Selected',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      _selectedImage!.name,
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: _pickImage,
+                      child: const Text('Change Screenshot'),
+                    ),
+                  ],
+                )
+              : InkWell(
+                  onTap: _pickImage,
+                  child: const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.image, size: 48, color: Colors.green),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Image Selected: ${_selectedImage!.name}',
-                        style: const TextStyle(color: Colors.green),
-                      ),
-                      const Text('Tap to change', style: TextStyle(color: Colors.grey)),
-                    ],
-                  )
-                : const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.cloud_upload, size: 48, color: Colors.grey),
+                      Icon(Icons.add_a_photo, size: 48, color: Colors.blue),
                       SizedBox(height: 8),
-                      Text('Tap to select payment screenshot'),
-                      Text('(JPG, PNG supported)', style: TextStyle(color: Colors.grey)),
+                      Text(
+                        'Tap to Upload Payment Screenshot',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        'Screenshot should show successful payment',
+                        style: TextStyle(color: Colors.grey),
+                      ),
                     ],
                   ),
-          ),
+                ),
         ),
         const SizedBox(height: 24),
 
@@ -307,14 +358,23 @@ class _ContributionModalState extends State<ContributionModal> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: (_selectedImage != null && !_isSubmitting) ? _submitPaymentScreenshot : null,
+            onPressed: _selectedImage != null && !_isVerifyingPayment
+                ? _submitForVerification
+                : null,
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
-              backgroundColor: Colors.green,
+              backgroundColor: _selectedImage != null
+                  ? Theme.of(context).primaryColor
+                  : Colors.grey,
             ),
-            child: _isSubmitting
+            child: _isVerifyingPayment
                 ? const CircularProgressIndicator(color: Colors.white)
-                : const Text('Submit for Verification', style: TextStyle(color: Colors.white)),
+                : Text(
+                    _selectedImage != null
+                        ? 'Submit for Verification'
+                        : 'Please Upload Screenshot First',
+                    style: const TextStyle(color: Colors.white),
+                  ),
           ),
         ),
         const SizedBox(height: 16),
@@ -323,7 +383,9 @@ class _ContributionModalState extends State<ContributionModal> {
         SizedBox(
           width: double.infinity,
           child: TextButton(
-            onPressed: _isSubmitting ? null : () => setState(() => _paymentMade = false),
+            onPressed: _isSubmitting
+                ? null
+                : () => setState(() => _paymentMade = false),
             child: const Text('Back to Payment Details'),
           ),
         ),
@@ -339,132 +401,107 @@ class _ContributionModalState extends State<ContributionModal> {
     });
   }
 
-  Future<void> _selectImage() async {
+  Future<Map<String, dynamic>> _generatePaymentQR() async {
+    if (_campaign?.upiId == null || _amountController.text.isEmpty) {
+      throw Exception('UPI ID or amount not available');
+    }
+
+    final amount = double.tryParse(_amountController.text);
+    if (amount == null || amount <= 0) {
+      throw Exception('Invalid amount');
+    }
+
     try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
+      return await _appwriteService.generatePaymentQR(
+        campaignId: widget.campaignId,
+        upiId: _campaign!.upiId!,
+        amount: amount,
+      );
+    } catch (e) {
+      throw Exception('Failed to generate payment QR: $e');
+    }
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 1920,
-        maxHeight: 1080,
-        imageQuality: 85,
+        imageQuality: 80,
       );
 
       if (image != null) {
         setState(() {
           _selectedImage = image;
         });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error selecting image: $e')),
+
+        Fluttertoast.showToast(
+          msg: "Screenshot selected successfully",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
         );
       }
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: "Failed to pick image: $e",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+      );
     }
   }
 
-  Future<void> _submitPaymentScreenshot() async {
-    if (_selectedImage == null || !_formKey.currentState!.validate()) return;
+  Future<void> _submitForVerification() async {
+    if (_selectedImage == null) {
+      Fluttertoast.showToast(
+        msg: "Please select a payment screenshot",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+      );
+      return;
+    }
 
-    setState(() => _isSubmitting = true);
+    setState(() {
+      _isVerifyingPayment = true;
+    });
 
     try {
-      // Read image as bytes
-      final Uint8List imageBytes = await _selectedImage!.readAsBytes();
-      final String base64Image = base64Encode(imageBytes);
+      // Upload the image first
+      final uploadResult = await _appwriteService.uploadFile(_selectedImage!);
 
-      // Submit to backend for OCR processing
-      final response = await _httpApiService.processPaymentScreenshot(
-        imageBase64: base64Image,
-        expectedAmount: double.parse(_amountController.text),
-        contributorName: _nameController.text.trim(),
-        campaignId: widget.campaignId,
+      // Create contribution with uploaded image
+      final contributionData = {
+        'campaignId': widget.campaignId,
+        'contributorName': _nameController.text.trim(),
+        'amount': double.parse(_amountController.text),
+        'paymentScreenshotUrl': uploadResult['url'],
+        'type': 'gift',
+        'utrNumber': 'PENDING_OCR_VERIFICATION',
+      };
+
+      final result = await _appwriteService.createContribution(
+        contributionData,
       );
 
       if (mounted) {
-        if (response['success']) {
-          final bool autoVerified = response['data']['autoVerified'] ?? false;
-          final double confidence = response['data']['paymentInfo']['ocrConfidence'] ?? 0;
-          
-          _showSuccessDialog(autoVerified, confidence);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: ${response['error']}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+        Fluttertoast.showToast(
+          msg: "Contribution submitted successfully! Verification in progress.",
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.BOTTOM,
+        );
+        Navigator.of(context).pop(true); // Return true to indicate success
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error processing payment: $e'),
-            backgroundColor: Colors.red,
-          ),
+        setState(() {
+          _isVerifyingPayment = false;
+        });
+
+        Fluttertoast.showToast(
+          msg: "Failed to submit contribution: $e",
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.BOTTOM,
         );
       }
-    } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-      }
     }
-  }
-
-  void _showSuccessDialog(bool autoVerified, double confidence) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              autoVerified ? Icons.check_circle : Icons.pending,
-              color: autoVerified ? Colors.green : Colors.orange,
-            ),
-            const SizedBox(width: 8),
-            Text(autoVerified ? 'Payment Verified!' : 'Payment Submitted'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              autoVerified
-                  ? 'Your payment has been automatically verified and processed!'
-                  : 'Your payment screenshot has been submitted for review.',
-            ),
-            const SizedBox(height: 8),
-            Text('Confidence Score: ${confidence.toStringAsFixed(1)}%'),
-            const SizedBox(height: 8),
-            if (!autoVerified)
-              const Text(
-                'Our team will review and verify your payment within 24 hours.',
-                style: TextStyle(color: Colors.grey),
-              ),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // Close dialog
-              Navigator.of(context).pop(); // Close modal
-              Get.snackbar(
-                'Success',
-                autoVerified
-                    ? 'Thank you for your contribution!'
-                    : 'Payment submitted for verification',
-                backgroundColor: autoVerified ? Colors.green : Colors.orange,
-                colorText: Colors.white,
-              );
-            },
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override

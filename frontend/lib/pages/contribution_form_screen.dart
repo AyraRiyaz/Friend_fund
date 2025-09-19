@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart';
+// import 'package:image_picker/image_picker.dart'; // Temporarily disabled for web
 import 'package:url_launcher/url_launcher.dart';
 import '../models/campaign.dart';
 import '../services/appwrite_service.dart';
@@ -25,7 +25,7 @@ class _ContributionFormScreenState extends State<ContributionFormScreen> {
   bool _isLoading = true;
   bool _isSubmitting = false;
   String _contributionType = 'gift';
-  XFile? _paymentScreenshot;
+  // XFile? _paymentScreenshot; // Temporarily disabled for web
   bool _paymentMade = false;
 
   @override
@@ -109,26 +109,6 @@ class _ContributionFormScreenState extends State<ContributionFormScreen> {
     }
   }
 
-  Future<void> _pickPaymentScreenshot() async {
-    try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 800,
-        maxHeight: 800,
-        imageQuality: 85,
-      );
-
-      if (image != null) {
-        setState(() => _paymentScreenshot = image);
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
-    }
-  }
-
   Future<void> _submitContribution() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -139,12 +119,15 @@ class _ContributionFormScreenState extends State<ContributionFormScreen> {
       return;
     }
 
+    // Temporarily disabled screenshot requirement for web
+    /*
     if (_paymentScreenshot == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please upload payment screenshot')),
       );
       return;
     }
+    */
 
     if (_utrController.text.isEmpty) {
       ScaffoldMessenger.of(
@@ -158,8 +141,9 @@ class _ContributionFormScreenState extends State<ContributionFormScreen> {
     try {
       final appwriteService = AppwriteService();
 
-      // Upload payment screenshot
+      // Upload payment screenshot - temporarily disabled
       String? screenshotUrl;
+      /*
       if (_paymentScreenshot != null) {
         final uploadResponse = await appwriteService.uploadFile(
           _paymentScreenshot!,
@@ -168,6 +152,7 @@ class _ContributionFormScreenState extends State<ContributionFormScreen> {
           screenshotUrl = uploadResponse['fileUrl'];
         }
       }
+      */
 
       // Create contribution
       final contributionData = {
@@ -454,33 +439,17 @@ class _ContributionFormScreenState extends State<ContributionFormScreen> {
                   ),
                   child: Column(
                     children: [
-                      if (_paymentScreenshot != null) ...[
-                        const Icon(
-                          Icons.check_circle,
-                          color: Colors.green,
-                          size: 32,
-                        ),
-                        const SizedBox(height: 8),
-                        const Text('Screenshot uploaded successfully'),
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: _pickPaymentScreenshot,
-                          child: const Text('Change Screenshot'),
-                        ),
-                      ] else ...[
-                        const Icon(
-                          Icons.camera_alt,
-                          size: 32,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(height: 8),
-                        const Text('Upload payment screenshot'),
-                        const SizedBox(height: 8),
-                        ElevatedButton(
-                          onPressed: _pickPaymentScreenshot,
-                          child: const Text('Choose Image'),
-                        ),
-                      ],
+                      // Temporarily disabled for web compatibility
+                      const Icon(Icons.info, color: Colors.blue, size: 32),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Screenshot upload temporarily disabled for web',
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: null, // Temporarily disabled
+                        child: const Text('Upload Screenshot (Coming Soon)'),
+                      ),
                     ],
                   ),
                 ),
