@@ -10,9 +10,16 @@ class CampaignQRWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Use the current domain for the QR code URL
+    final currentUri = Uri.base;
+    final port = currentUri.port != 80 && currentUri.port != 443
+        ? ':${currentUri.port}'
+        : '';
     final contributionUrl =
         campaign.shareableUrl ??
-        'https://your-app-domain.com/contribute/${campaign.id}';
+        '${currentUri.scheme}://${currentUri.host}$port/contribute/${campaign.id}';
+
+    print('QR Code URL: $contributionUrl'); // Debug print
 
     return Container(
       padding: const EdgeInsets.all(16),

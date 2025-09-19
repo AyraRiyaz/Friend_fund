@@ -7,6 +7,8 @@ import '../controllers/campaign_controller.dart';
 import '../theme/app_theme.dart';
 import '../models/campaign.dart';
 import '../widgets/edit_campaign_modal.dart';
+import '../widgets/campaign_qr_widget.dart';
+import '../widgets/contribution_modal.dart';
 
 class CampaignDetailsScreen extends StatefulWidget {
   final Campaign campaign;
@@ -829,12 +831,14 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
   }
 
   void _shareCampaign() {
-    // TODO: Implement share functionality
-    final shareText =
-        'Check out this campaign: ${_currentCampaign.title}\n\nTarget: ₹${_currentCampaign.targetAmount}\nRaised: ₹${_currentCampaign.collectedAmount}\n\nHelp me reach my goal!';
-    Clipboard.setData(ClipboardData(text: shareText));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Campaign details copied to clipboard!')),
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: CampaignQRWidget(campaign: _currentCampaign),
+        ),
+      ),
     );
   }
 
@@ -974,10 +978,8 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
   }
 
   void _showContributionDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => _ContributionDialog(campaign: _currentCampaign),
-    );
+    // Show the contribution modal
+    showContributionModal(context, _currentCampaign.id);
   }
 
   void _contributeQuickAmount(String amount) {

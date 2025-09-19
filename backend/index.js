@@ -15,6 +15,8 @@ import {
   Role,
 } from "node-appwrite";
 import QRCode from "qrcode";
+import Razorpay from "razorpay";
+import crypto from "crypto";
 
 /**
  * @class FriendFundAPI
@@ -44,6 +46,12 @@ class FriendFundAPI {
       process.env.CONTRIBUTIONS_COLLECTION_ID || "68b54a0700208ba7fdaa";
     this.screenshotsBucketId =
       process.env.SCREENSHOTS_BUCKET_ID || "68c66749001ad2d77cfa";
+
+    // Initialize Razorpay
+    this.razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID || "rzp_test_1DP5mmOlF5G5ag",
+      key_secret: process.env.RAZORPAY_KEY_SECRET || "YOUR_SECRET_KEY",
+    });
   }
 
   // Campaign Operations
@@ -365,6 +373,123 @@ class FriendFundAPI {
       return {
         success: false,
         error: error.message || "Failed to generate QR code",
+      };
+    }
+  }
+
+  // Razorpay Payment Operations
+  async createPaymentOrder(amount, currency = "INR", receipt = null) {
+    try {
+      const order = await this.razorpay.orders.create({
+        amount: Math.round(amount * 100), // Convert to paisa
+        currency: currency,
+        receipt: receipt || `order_${Date.now()}`,
+        partial_payment: false,
+      });
+
+      return {
+        success: true,
+        data: order,
+      };
+    } catch (error) {
+      console.error("Error creating Razorpay order:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to create payment order",
+      };
+    }
+  }
+
+  async verifyPayment(paymentId, orderId, signature) {
+    try {
+      const expectedSignature = crypto
+        .createHmac(
+          "sha256",
+          process.env.RAZORPAY_KEY_SECRET || "YOUR_SECRET_KEY"
+        )
+        .update(`${orderId}|${paymentId}`)
+        .digest("hex");
+
+      if (expectedSignature === signature) {
+        // Get payment details from Razorpay
+        const payment = await this.razorpay.payments.fetch(paymentId);
+
+        return {
+          success: true,
+          data: {
+            verified: true,
+            payment: payment,
+          },
+        };
+      } else {
+        return {
+          success: false,
+          error: "Payment signature verification failed",
+        };
+      }
+    } catch (error) {
+      console.error("Error verifying payment:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to verify payment",
+      };
+    }
+  }
+
+  async createContributionWithPayment(contributionData, paymentData) {
+    try {
+      // First verify the payment
+      const verificationResult = await this.verifyPayment(
+        paymentData.paymentId,
+        paymentData.orderId,
+        paymentData.signature
+      );
+
+      if (!verificationResult.success) {
+        throw new Error("Payment verification failed");
+      }
+
+      // Create contribution with verified payment status
+      const contribution = await this.databases.createDocument(
+        this.databaseId,
+        this.contributionsCollectionId,
+        ID.unique(),
+        {
+          ...contributionData,
+          paymentStatus: "verified",
+          razorpayPaymentId: paymentData.paymentId,
+          razorpayOrderId: paymentData.orderId,
+          date: new Date().toISOString(),
+        },
+        [Permission.read(Role.any())]
+      );
+
+      // Update campaign collected amount
+      const campaign = await this.databases.getDocument(
+        this.databaseId,
+        this.campaignsCollectionId,
+        contributionData.campaignId
+      );
+
+      await this.databases.updateDocument(
+        this.databaseId,
+        this.campaignsCollectionId,
+        contributionData.campaignId,
+        {
+          collectedAmount:
+            (campaign.collectedAmount || 0) + contributionData.amount,
+        }
+      );
+
+      return {
+        success: true,
+        data: contribution,
+      };
+    } catch (error) {
+      console.error("Error creating contribution with payment:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to create contribution",
       };
     }
   }
@@ -721,6 +846,43 @@ export default async ({ req, res, log, error: logError }) => {
           // GET /users/{id}
           result = await friendFundAPI.getUser(userId);
         }
+      } else {
+        result = { success: false, error: "Method not allowed" };
+        statusCode = 405;
+      }
+    } else if (path === "/payment/create-order") {
+      if (method === "POST") {
+        const { amount, currency, receipt } = parsedBody;
+        result = await friendFundAPI.createPaymentOrder(
+          amount,
+          currency,
+          receipt
+        );
+        statusCode = 201;
+      } else {
+        result = { success: false, error: "Method not allowed" };
+        statusCode = 405;
+      }
+    } else if (path === "/payment/verify") {
+      if (method === "POST") {
+        const { paymentId, orderId, signature } = parsedBody;
+        result = await friendFundAPI.verifyPayment(
+          paymentId,
+          orderId,
+          signature
+        );
+      } else {
+        result = { success: false, error: "Method not allowed" };
+        statusCode = 405;
+      }
+    } else if (path === "/contributions/with-payment") {
+      if (method === "POST") {
+        const { contributionData, paymentData } = parsedBody;
+        result = await friendFundAPI.createContributionWithPayment(
+          contributionData,
+          paymentData
+        );
+        statusCode = 201;
       } else {
         result = { success: false, error: "Method not allowed" };
         statusCode = 405;

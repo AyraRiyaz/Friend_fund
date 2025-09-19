@@ -120,6 +120,7 @@ class MyApp extends StatelessWidget {
             builder: (context) {
               final campaignId = Get.parameters['campaignId'];
               if (campaignId != null && campaignId.isNotEmpty) {
+                // Show the modal in a full screen scaffold for direct URL access
                 return ContributionFormScreen(campaignId: campaignId);
               }
               // If no campaign ID provided, redirect to home

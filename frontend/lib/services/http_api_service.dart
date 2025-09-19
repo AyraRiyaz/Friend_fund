@@ -727,6 +727,123 @@ class HttpApiService {
     }
   }
 
+  /// Create Razorpay payment order
+  Future<Map<String, dynamic>> createPaymentOrder({
+    required double amount,
+    String currency = 'INR',
+    String? receipt,
+  }) async {
+    try {
+      final uri = Uri.parse('${AppConfig.baseUrl}/payment/create-order');
+
+      AppConfig.debugPrint('POST Create Payment Order: $uri');
+
+      final response = await _client
+          .post(
+            uri,
+            headers: _headers,
+            body: json.encode({
+              'amount': amount,
+              'currency': currency,
+              'receipt': receipt,
+            }),
+          )
+          .timeout(AppConfig.connectTimeout);
+
+      final data = _handleResponse(response);
+      return data;
+    } on TimeoutException {
+      throw Exception(
+        'Connection timeout. Please check your internet connection.',
+      );
+    } on SocketException {
+      throw Exception('No internet connection. Please check your network.');
+    } catch (e) {
+      if (e.toString().contains('Exception:')) {
+        rethrow;
+      }
+      throw Exception(
+        'Failed to create payment order. Please try again later.',
+      );
+    }
+  }
+
+  /// Verify Razorpay payment
+  Future<Map<String, dynamic>> verifyPayment({
+    required String paymentId,
+    required String orderId,
+    required String signature,
+  }) async {
+    try {
+      final uri = Uri.parse('${AppConfig.baseUrl}/payment/verify');
+
+      AppConfig.debugPrint('POST Verify Payment: $uri');
+
+      final response = await _client
+          .post(
+            uri,
+            headers: _headers,
+            body: json.encode({
+              'paymentId': paymentId,
+              'orderId': orderId,
+              'signature': signature,
+            }),
+          )
+          .timeout(AppConfig.connectTimeout);
+
+      final data = _handleResponse(response);
+      return data;
+    } on TimeoutException {
+      throw Exception(
+        'Connection timeout. Please check your internet connection.',
+      );
+    } on SocketException {
+      throw Exception('No internet connection. Please check your network.');
+    } catch (e) {
+      if (e.toString().contains('Exception:')) {
+        rethrow;
+      }
+      throw Exception('Failed to verify payment. Please try again later.');
+    }
+  }
+
+  /// Create contribution with verified payment
+  Future<Map<String, dynamic>> createContributionWithPayment({
+    required Map<String, dynamic> contributionData,
+    required Map<String, dynamic> paymentData,
+  }) async {
+    try {
+      final uri = Uri.parse('${AppConfig.baseUrl}/contributions/with-payment');
+
+      AppConfig.debugPrint('POST Create Contribution with Payment: $uri');
+
+      final response = await _client
+          .post(
+            uri,
+            headers: _headers,
+            body: json.encode({
+              'contributionData': contributionData,
+              'paymentData': paymentData,
+            }),
+          )
+          .timeout(AppConfig.connectTimeout);
+
+      final data = _handleResponse(response);
+      return data;
+    } on TimeoutException {
+      throw Exception(
+        'Connection timeout. Please check your internet connection.',
+      );
+    } on SocketException {
+      throw Exception('No internet connection. Please check your network.');
+    } catch (e) {
+      if (e.toString().contains('Exception:')) {
+        rethrow;
+      }
+      throw Exception('Failed to create contribution. Please try again later.');
+    }
+  }
+
   /// Dispose resources
   void dispose() {
     _client.close();

@@ -207,6 +207,33 @@ class _AddCampaignModalState extends State<AddCampaignModal> {
                       ),
                       const SizedBox(height: 16),
 
+                      // UPI ID Field
+                      TextFormField(
+                        controller: _upiIdController,
+                        decoration: InputDecoration(
+                          labelText: 'UPI ID *',
+                          hintText: 'your-upi-id@bank (e.g., name@paytm)',
+                          prefixIcon: const Icon(Icons.payment),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          helperText:
+                              'People will use this UPI ID to contribute',
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter your UPI ID';
+                          }
+                          // Basic UPI ID validation - should contain @ symbol
+                          if (!value.contains('@')) {
+                            return 'Please enter a valid UPI ID (e.g., name@bank)';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
                       // Due Date Field
                       InkWell(
                         onTap: _selectDueDate,
