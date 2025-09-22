@@ -122,7 +122,7 @@ class Campaign {
 class Contribution {
   final String id;
   final String campaignId;
-  final String contributorId;
+  final String? contributorId; // Optional for anonymous contributions
   final String contributorName;
   final double amount;
   final String type; // 'gift', 'loan'
@@ -132,11 +132,12 @@ class Contribution {
   final String utr;
   final String? paymentScreenshotUrl; // Screenshot of payment confirmation
   final String? paymentStatus; // 'pending', 'verified', 'failed'
+  final bool isAnonymous; // True if contributor is not logged in
 
   Contribution({
     required this.id,
     required this.campaignId,
-    required this.contributorId,
+    this.contributorId, // Optional for anonymous contributions
     required this.contributorName,
     required this.amount,
     required this.type,
@@ -146,13 +147,15 @@ class Contribution {
     required this.utr,
     this.paymentScreenshotUrl,
     this.paymentStatus,
+    this.isAnonymous = false,
   });
 
   factory Contribution.fromJson(Map<String, dynamic> json) {
     return Contribution(
       id: json['id'] ?? json['\$id'] ?? '',
       campaignId: json['campaignId'] ?? '',
-      contributorId: json['contributorId'] ?? '',
+      contributorId:
+          json['contributorId'], // Can be null for anonymous contributions
       contributorName: json['contributorName'] ?? '',
       amount: (json['amount'] ?? 0).toDouble(),
       type: json['type'] ?? 'gift',
@@ -169,6 +172,7 @@ class Contribution {
           '', // Support both field names for backward compatibility
       paymentScreenshotUrl: json['paymentScreenshotUrl'],
       paymentStatus: json['paymentStatus'] ?? 'pending',
+      isAnonymous: json['isAnonymous'] ?? (json['contributorId'] == null),
     );
   }
 
@@ -176,7 +180,7 @@ class Contribution {
     return {
       'id': id,
       'campaignId': campaignId,
-      'contributorId': contributorId,
+      'contributorId': contributorId, // Can be null for anonymous contributions
       'contributorName': contributorName,
       'amount': amount,
       'type': type,
@@ -186,6 +190,7 @@ class Contribution {
       'utr': utr,
       'paymentScreenshotUrl': paymentScreenshotUrl,
       'paymentStatus': paymentStatus,
+      'isAnonymous': isAnonymous,
     };
   }
 }

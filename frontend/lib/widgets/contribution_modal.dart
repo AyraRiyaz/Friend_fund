@@ -3,15 +3,21 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:typed_data';
 import 'package:intl/intl.dart';
+import 'package:get/get.dart';
 import '../models/campaign.dart';
 import '../services/http_api_service.dart';
 import '../services/payment_verification_service.dart';
+import '../controllers/auth_controller.dart';
 
 class EnhancedContributionModal extends StatefulWidget {
   final String campaignId;
+  final bool isFromQrCode; // True if accessed via QR code
 
-  const EnhancedContributionModal({Key? key, required this.campaignId})
-    : super(key: key);
+  const EnhancedContributionModal({
+    Key? key,
+    required this.campaignId,
+    this.isFromQrCode = false,
+  }) : super(key: key);
 
   @override
   State<EnhancedContributionModal> createState() =>
@@ -38,10 +44,33 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
   DateTime? _selectedDueDate;
   String? _verificationError;
 
+  // Authentication state
+  bool _isUserLoggedIn = false;
+  String? _loggedInUserId;
+  String? _loggedInUserName;
+
   @override
   void initState() {
     super.initState();
+    _checkAuthenticationStatus();
     _loadCampaignDetails();
+  }
+
+  void _checkAuthenticationStatus() {
+    final authController = Get.find<AuthController>();
+    _isUserLoggedIn = authController.isAuthenticated;
+
+    if (_isUserLoggedIn) {
+      _loggedInUserId = authController.appwriteUser?.$id;
+      _loggedInUserName =
+          authController.appwriteUser?.name ?? authController.userProfile?.name;
+
+      // Pre-fill name if user is logged in
+      if (_loggedInUserName != null) {
+        _nameController.text = _loggedInUserName!;
+      }
+    }
+    // For QR code users, the authentication card will show appropriate messaging
   }
 
   Future<void> _loadCampaignDetails() async {
@@ -278,14 +307,20 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Authentication Status Card
+          if (widget.isFromQrCode) _buildAuthenticationStatusCard(),
+
           // Name Input
           TextFormField(
             controller: _nameController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Your Name *',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.person),
+              border: const OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.person),
               hintText: 'Enter your full name',
+              // Disable editing if user is logged in
+              enabled: !_isUserLoggedIn,
+              helperText: _isUserLoggedIn ? 'Using your account name' : null,
             ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
@@ -1168,7 +1203,7 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
         screenshotUrl = await _uploadScreenshot();
       }
 
-      // Create contribution data
+      // Create contribution data with proper contributor handling
       final contributionData = {
         'campaignId': widget.campaignId,
         'contributorName': _nameController.text.trim(),
@@ -1181,6 +1216,9 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
         'paymentScreenshotUrl': screenshotUrl,
         'paymentStatus': 'verified',
         'utr': 'UPI${DateTime.now().millisecondsSinceEpoch}', // Mock UTR
+        // Authentication-based contributor ID handling
+        'contributorId': _isUserLoggedIn ? _loggedInUserId : null,
+        'isAnonymous': !_isUserLoggedIn,
       };
 
       // Submit to backend
@@ -1191,7 +1229,9 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Contribution of ₹${_amountController.text} submitted successfully!',
+              _isUserLoggedIn
+                  ? 'Contribution of ₹${_amountController.text} submitted successfully!'
+                  : 'Anonymous contribution of ₹${_amountController.text} submitted successfully!',
             ),
             backgroundColor: Colors.green,
           ),
@@ -1247,6 +1287,78 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
     } catch (e) {
       return {'qrCodeUrl': null};
     }
+  }
+
+  Widget _buildAuthenticationStatusCard() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: _isUserLoggedIn ? Colors.green : Colors.orange,
+          width: 2,
+        ),
+        borderRadius: BorderRadius.circular(8),
+        color: _isUserLoggedIn
+            ? Colors.green.withOpacity(0.1)
+            : Colors.orange.withOpacity(0.1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                _isUserLoggedIn
+                    ? Icons.account_circle
+                    : Icons.account_circle_outlined,
+                color: _isUserLoggedIn ? Colors.green : Colors.orange,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _isUserLoggedIn
+                      ? 'Signed in as ${_loggedInUserName ?? "User"}'
+                      : 'Contributing as Guest',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: _isUserLoggedIn
+                        ? Colors.green[700]
+                        : Colors.orange[700],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _isUserLoggedIn
+                ? 'Your contribution will be linked to your account for easy tracking.'
+                : 'You\'re contributing anonymously. Sign in to track your contributions and access additional features.',
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          ),
+          if (!_isUserLoggedIn) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  // Navigate to login page
+                  Navigator.of(context).pop();
+                  Get.toNamed('/login');
+                },
+                icon: const Icon(Icons.login),
+                label: const Text('Sign In'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.blue,
+                  side: const BorderSide(color: Colors.blue),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   @override

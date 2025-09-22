@@ -624,6 +624,8 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
   Widget _buildContributionTile(Contribution contribution) {
     final isLoan = contribution.type == 'loan';
     final isPendingLoan = isLoan && contribution.repaymentStatus == 'pending';
+    final isAnonymous =
+        contribution.isAnonymous || contribution.contributorId == null;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -637,7 +639,27 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
             color: isLoan ? Colors.orange : AppTheme.success,
           ),
         ),
-        title: Text(contribution.contributorName),
+        title: Row(
+          children: [
+            Expanded(child: Text(contribution.contributorName)),
+            if (isAnonymous)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'Guest',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+          ],
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -672,9 +694,8 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
   }
 
   Widget _buildPublicContributions() {
-    final publicContributions = _currentCampaign.contributions
-        .where((c) => !c.contributorName.contains('Anonymous'))
-        .toList();
+    // Show all contributions, but display anonymous ones differently
+    final allContributions = _currentCampaign.contributions.toList();
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -691,30 +712,57 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              if (publicContributions.isEmpty)
+              if (allContributions.isEmpty)
                 const Center(
                   child: Padding(
                     padding: EdgeInsets.all(20),
-                    child: Text('No public contributions yet'),
+                    child: Text('No contributions yet'),
                   ),
                 )
               else
                 Column(
-                  children: publicContributions.take(5).map((contribution) {
+                  children: allContributions.take(5).map((contribution) {
+                    final isAnonymous =
+                        contribution.isAnonymous ||
+                        contribution.contributorId == null;
+                    final displayName = isAnonymous
+                        ? 'Anonymous Supporter'
+                        : contribution.contributorName;
+
                     return ListTile(
                       leading: CircleAvatar(
                         backgroundColor: AppTheme.primaryBlue.withValues(
                           alpha: 0.2,
                         ),
-                        child: Text(
-                          contribution.contributorName[0].toUpperCase(),
-                          style: const TextStyle(
-                            color: AppTheme.primaryBlue,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        child: Icon(
+                          isAnonymous ? Icons.person_outline : Icons.person,
+                          color: AppTheme.primaryBlue,
                         ),
                       ),
-                      title: Text(contribution.contributorName),
+                      title: Row(
+                        children: [
+                          Expanded(child: Text(displayName)),
+                          if (isAnonymous)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'Guest',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                       subtitle: Text(
                         '${contribution.type == 'gift' ? 'Gifted' : 'Loaned'} ₹${contribution.amount.toStringAsFixed(0)}',
                       ),
@@ -954,12 +1002,14 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
     );
   }
 
-  void _showContributionDialog() {
+  void _showContributionDialog({bool isFromQrCode = false}) {
     // Show the contribution modal
     showDialog(
       context: context,
-      builder: (context) =>
-          EnhancedContributionModal(campaignId: _currentCampaign.id),
+      builder: (context) => EnhancedContributionModal(
+        campaignId: _currentCampaign.id,
+        isFromQrCode: isFromQrCode,
+      ),
     );
   }
 

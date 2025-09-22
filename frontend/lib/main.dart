@@ -124,7 +124,10 @@ class MyApp extends StatelessWidget {
                 return Scaffold(
                   backgroundColor: Colors.black.withValues(alpha: 0.5),
                   body: Center(
-                    child: EnhancedContributionModal(campaignId: campaignId),
+                    child: EnhancedContributionModal(
+                      campaignId: campaignId,
+                      isFromQrCode: true, // This is accessed via QR code
+                    ),
                   ),
                 );
               }
