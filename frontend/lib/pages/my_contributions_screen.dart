@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../widgets/responsive_layout.dart';
 import '../theme/app_theme.dart';
 import '../models/campaign.dart';
+import '../controllers/contribution_controller.dart';
+import '../controllers/auth_controller.dart';
 
 class MyContributionsScreen extends StatefulWidget {
   const MyContributionsScreen({super.key});
@@ -13,19 +16,102 @@ class MyContributionsScreen extends StatefulWidget {
 class _MyContributionsScreenState extends State<MyContributionsScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
+  final ContributionController _contributionController =
+      Get.find<ContributionController>();
+  final AuthController _authController = Get.find<AuthController>();
+
+  List<Contribution> _allContributions = [];
+  List<Contribution> _loansToRepay = [];
+  bool _isLoading = true;
+  String _errorMessage = '';
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _loadContributions();
+  }
+
+  Future<void> _loadContributions() async {
+    if (!_authController.isAuthenticated) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Please log in to view your contributions';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+
+    try {
+      await _contributionController.loadUserContributions();
+      final loansToRepay = await _contributionController.loadLoansToRepay();
+      setState(() {
+        _allContributions = _contributionController.userContributions;
+        _loansToRepay = loansToRepay;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to load contributions: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _refreshContributions() async {
+    await _loadContributions();
   }
 
   @override
   Widget build(BuildContext context) {
-    // TODO: Replace with real API calls when contributions endpoint is implemented
-    final gifts = <Contribution>[];
-    final loansGiven = <Contribution>[];
-    final loansToRepay = <Contribution>[];
+    if (_isLoading) {
+      return ResponsiveLayout(
+        title: 'My Contributions',
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_errorMessage.isNotEmpty) {
+      return ResponsiveLayout(
+        title: 'My Contributions',
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: AppTheme.textSecondary,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _errorMessage,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: AppTheme.textSecondary),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _refreshContributions,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Filter contributions by type
+    final gifts = _allContributions.where((c) => c.type == 'gift').toList();
+    final loansGiven = _allContributions
+        .where((c) => c.type == 'loan')
+        .toList();
+    final loansToRepay = _loansToRepay;
 
     // Calculate summary stats
     final totalGifted = gifts.fold<double>(0, (sum, c) => sum + c.amount);
@@ -37,6 +123,13 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
 
     return ResponsiveLayout(
       title: 'My Contributions',
+      appBarActions: [
+        IconButton(
+          onPressed: _refreshContributions,
+          icon: const Icon(Icons.refresh),
+          tooltip: 'Refresh',
+        ),
+      ],
       child: Column(
         children: [
           _buildSummarySection(context, totalGifted, totalLoaned, totalToRepay),
@@ -115,7 +208,7 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
               controller: _tabController,
               children: [
                 _buildContributionsList(gifts, 'No gifts made yet'),
-                _buildContributionsList(loansGiven, 'No loans given yet'),
+                _buildLoansGivenList(loansGiven),
                 _buildLoansToRepayList(loansToRepay),
               ],
             ),
@@ -160,32 +253,32 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
           Row(
             children: [
               Expanded(
-                child: _buildSummaryStat(
+                child: _buildSummaryItem(
                   context,
                   'Total Gifted',
-                  '₹${_formatAmount(totalGifted)}',
+                  '₹${totalGifted.toStringAsFixed(0)}',
+                  Icons.card_giftcard_outlined,
                   AppTheme.success,
-                  Icons.card_giftcard,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Expanded(
-                child: _buildSummaryStat(
+                child: _buildSummaryItem(
                   context,
                   'Total Loaned',
-                  '₹${_formatAmount(totalLoaned)}',
-                  Colors.orange,
-                  Icons.handshake,
+                  '₹${totalLoaned.toStringAsFixed(0)}',
+                  Icons.handshake_outlined,
+                  AppTheme.primaryBlue,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Expanded(
-                child: _buildSummaryStat(
+                child: _buildSummaryItem(
                   context,
                   'To Repay',
-                  '₹${_formatAmount(totalToRepay)}',
-                  totalToRepay > 0 ? Colors.red : AppTheme.textSecondary,
+                  '₹${totalToRepay.toStringAsFixed(0)}',
                   Icons.schedule,
+                  totalToRepay > 0 ? Colors.orange : AppTheme.textSecondary,
                 ),
               ),
             ],
@@ -195,33 +288,41 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
     );
   }
 
-  Widget _buildSummaryStat(
+  Widget _buildSummaryItem(
     BuildContext context,
     String label,
     String value,
-    Color color,
     IconData icon,
+    Color color,
   ) {
-    return Column(
-      children: [
-        Icon(icon, color: color, size: 24),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: color,
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
-          textAlign: TextAlign.center,
-        ),
-      ],
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 
@@ -234,186 +335,232 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
     }
 
     return RefreshIndicator(
-      onRefresh: () async {
-        await Future.delayed(const Duration(seconds: 1));
-      },
+      onRefresh: _refreshContributions,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: contributions.length,
         itemBuilder: (context, index) {
           final contribution = contributions[index];
-          // TODO: Get campaign details from API
-          final campaign = Campaign(
-            id: contribution.campaignId,
-            title: 'Campaign Title',
-            description: 'Campaign Description',
-            targetAmount: 0,
-            collectedAmount: 0,
-            hostId: '',
-            hostName: '',
-            purpose: '',
-            status: 'active',
-            createdAt: DateTime.now(),
-            contributions: [],
-          );
-
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _buildEnhancedContributionCard(contribution, campaign),
-          );
+          return _buildEnhancedContributionCard(contribution);
         },
       ),
     );
   }
 
-  Widget _buildEnhancedContributionCard(
-    Contribution contribution,
-    Campaign campaign,
-  ) {
-    final isLoan = contribution.type == 'loan';
-    final isOverdue =
-        isLoan &&
-        contribution.repaymentDueDate != null &&
-        contribution.repaymentDueDate!.isBefore(DateTime.now()) &&
-        contribution.repaymentStatus == 'pending';
+  Widget _buildLoansGivenList(List<Contribution> loansGiven) {
+    if (loansGiven.isEmpty) {
+      return _buildEmptyState('No loans given yet');
+    }
+
+    return RefreshIndicator(
+      onRefresh: _refreshContributions,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: loansGiven.length,
+        itemBuilder: (context, index) {
+          final loan = loansGiven[index];
+          return _buildLoanGivenCard(loan);
+        },
+      ),
+    );
+  }
+
+  Widget _buildLoanGivenCard(Contribution loan) {
+    final bool isPending = loan.repaymentStatus == 'pending';
+    final bool isOverdue =
+        loan.repaymentDueDate != null &&
+        loan.repaymentDueDate!.isBefore(DateTime.now()) &&
+        isPending;
 
     return Card(
-      elevation: 2,
-      child: InkWell(
-        onTap: () => Navigator.pushNamed(
-          context,
-          '/campaign-details',
-          arguments: campaign,
-        ),
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: isLoan
-                        ? Colors.orange.withValues(alpha: 0.2)
-                        : AppTheme.success.withValues(alpha: 0.2),
-                    child: Icon(
-                      isLoan ? Icons.handshake : Icons.card_giftcard,
-                      color: isLoan ? Colors.orange : AppTheme.success,
-                      size: 20,
-                    ),
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryBlue.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          campaign.title,
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'To: ${campaign.hostName}',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: AppTheme.textSecondary),
-                        ),
-                      ],
-                    ),
+                  child: Icon(
+                    Icons.handshake_outlined,
+                    color: AppTheme.primaryBlue,
+                    size: 20,
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isLoan
-                          ? Colors.orange.withValues(alpha: 0.1)
-                          : AppTheme.success.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '₹${contribution.amount.toStringAsFixed(0)}',
-                      style: TextStyle(
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Loan Given',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        'Campaign ID: ${loan.campaignId}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '₹${loan.amount.toStringAsFixed(0)}',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: isLoan ? Colors.orange : AppTheme.success,
+                        color: AppTheme.primaryBlue,
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(
-                    isLoan ? Icons.handshake : Icons.card_giftcard,
-                    size: 16,
-                    color: AppTheme.textSecondary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    isLoan ? 'Loan' : 'Gift',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Icon(Icons.schedule, size: 16, color: AppTheme.textSecondary),
-                  const SizedBox(width: 8),
-                  Text(
-                    _formatDate(contribution.date),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                  if (isLoan && contribution.repaymentDueDate != null) ...[
-                    const Spacer(),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: isOverdue
-                            ? Colors.red.withValues(alpha: 0.1)
-                            : Colors.blue.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        color: isPending
+                            ? (isOverdue ? Colors.red : Colors.orange)
+                            : AppTheme.success,
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        isOverdue
-                            ? 'OVERDUE'
-                            : 'Due: ${_formatDate(contribution.repaymentDueDate!)}',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: isOverdue ? Colors.red : Colors.blue,
+                        isPending
+                            ? (isOverdue ? 'Overdue' : 'Pending')
+                            : 'Repaid',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
                   ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Date: ${_formatDate(loan.date)}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      if (loan.repaymentDueDate != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Due: ${_formatDueDate(loan.repaymentDueDate!)}',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: isOverdue
+                                    ? Colors.red
+                                    : AppTheme.textSecondary,
+                              ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (isPending) ...[
+                  ElevatedButton(
+                    onPressed: () => _markLoanAsRepaid(loan),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.success,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                    ),
+                    child: const Text(
+                      'Mark Repaid',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ),
                 ],
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
 
+  Future<void> _markLoanAsRepaid(Contribution loan) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Mark Loan as Repaid'),
+        content: Text(
+          'Confirm that you have received repayment of ₹${loan.amount.toStringAsFixed(0)} for this loan?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.success,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        final success = await _contributionController.updateContributionStatus(
+          loan.id,
+          {'repaymentStatus': 'repaid'},
+        );
+
+        if (success) {
+          await _refreshContributions();
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Loan marked as repaid successfully!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to mark loan as repaid: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   Widget _buildLoansToRepayList(List<Contribution> loansToRepay) {
     if (loansToRepay.isEmpty) {
-      return _buildEmptyState(
-        'No loans to repay',
-        subtitle: 'Great! You have no pending loan repayments.',
-        icon: Icons.check_circle_outline,
-        iconColor: AppTheme.success,
-      );
+      return _buildLoansToRepayEmptyState();
     }
 
-    // Sort by due date (overdue first)
     loansToRepay.sort((a, b) {
       if (a.repaymentDueDate == null && b.repaymentDueDate == null) return 0;
       if (a.repaymentDueDate == null) return 1;
@@ -425,58 +572,40 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
 
       if (aOverdue && !bOverdue) return -1;
       if (!aOverdue && bOverdue) return 1;
+
       return a.repaymentDueDate!.compareTo(b.repaymentDueDate!);
     });
 
     return RefreshIndicator(
-      onRefresh: () async {
-        await Future.delayed(const Duration(seconds: 1));
-      },
+      onRefresh: _refreshContributions,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: loansToRepay.length,
         itemBuilder: (context, index) {
           final loan = loansToRepay[index];
-          // TODO: Get campaign details from API
-          final campaign = Campaign(
-            id: loan.campaignId,
-            title: 'Campaign Title',
-            description: 'Campaign Description',
-            targetAmount: 0,
-            collectedAmount: 0,
-            hostId: '',
-            hostName: '',
-            purpose: '',
-            status: 'active',
-            createdAt: DateTime.now(),
-            contributions: [],
-          );
-
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _buildLoanRepaymentCard(loan, campaign),
-          );
+          return _buildLoanRepaymentCard(loan);
         },
       ),
     );
   }
 
-  Widget _buildLoanRepaymentCard(Contribution loan, Campaign campaign) {
-    final isOverdue =
-        loan.repaymentDueDate != null &&
-        loan.repaymentDueDate!.isBefore(DateTime.now());
+  Widget _buildLoanRepaymentCard(Contribution loan) {
     final daysUntilDue = loan.repaymentDueDate != null
         ? loan.repaymentDueDate!.difference(DateTime.now()).inDays
         : null;
+    final isOverdue = daysUntilDue != null && daysUntilDue < 0;
+    final isNearDue =
+        daysUntilDue != null && daysUntilDue <= 7 && daysUntilDue >= 0;
 
     return Card(
+      margin: const EdgeInsets.only(bottom: 12),
       elevation: isOverdue ? 4 : 2,
       child: Container(
         decoration: isOverdue
             ? BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Colors.red.withValues(alpha: 0.5),
+                  color: Colors.red.withValues(alpha: 0.3),
                   width: 2,
                 ),
               )
@@ -486,134 +615,250 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header with icon and amount
               Row(
                 children: [
-                  CircleAvatar(
-                    backgroundColor: isOverdue
-                        ? Colors.red.withValues(alpha: 0.2)
-                        : Colors.orange.withValues(alpha: 0.2),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isOverdue
+                          ? Colors.red.withValues(alpha: 0.1)
+                          : AppTheme.primaryBlue.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     child: Icon(
-                      Icons.schedule,
-                      color: isOverdue ? Colors.red : Colors.orange,
-                      size: 20,
+                      Icons.account_balance_wallet_outlined,
+                      color: isOverdue ? Colors.red : AppTheme.primaryBlue,
+                      size: 24,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Loan from ${loan.contributorName}',
+                          'Amount to Repay',
                           style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.bold),
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: isOverdue
+                                    ? Colors.red
+                                    : AppTheme.primaryBlue,
+                              ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
                         Text(
-                          'For: ${campaign.title}',
+                          'Loan received from ${loan.contributorName}',
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(color: AppTheme.textSecondary),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isOverdue
-                          ? Colors.red.withValues(alpha: 0.1)
-                          : Colors.orange.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '₹${loan.amount.toStringAsFixed(0)}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: isOverdue ? Colors.red : Colors.orange,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              if (loan.repaymentDueDate != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isOverdue
-                        ? Colors.red.withValues(alpha: 0.1)
-                        : daysUntilDue != null && daysUntilDue <= 3
-                        ? Colors.orange.withValues(alpha: 0.1)
-                        : Colors.blue.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Icon(
-                        isOverdue ? Icons.error_outline : Icons.schedule,
-                        size: 16,
-                        color: isOverdue
-                            ? Colors.red
-                            : daysUntilDue != null && daysUntilDue <= 3
-                            ? Colors.orange
-                            : Colors.blue,
+                      Text(
+                        '₹${loan.amount.toStringAsFixed(0)}',
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: isOverdue
+                                  ? Colors.red
+                                  : AppTheme.primaryBlue,
+                            ),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isOverdue
+                              ? Colors.red
+                              : isNearDue
+                              ? Colors.orange
+                              : AppTheme.success.withValues(alpha: 0.8),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         child: Text(
                           isOverdue
-                              ? 'Overdue by ${(-daysUntilDue!)} days'
-                              : daysUntilDue == 0
-                              ? 'Due today'
-                              : daysUntilDue == 1
-                              ? 'Due tomorrow'
-                              : 'Due in $daysUntilDue days (${_formatDate(loan.repaymentDueDate!)})',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            color: isOverdue
-                                ? Colors.red
-                                : daysUntilDue != null && daysUntilDue <= 3
-                                ? Colors.orange
-                                : Colors.blue,
+                              ? 'OVERDUE'
+                              : isNearDue
+                              ? 'DUE SOON'
+                              : 'PENDING',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 12),
-              ],
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _contactLender(loan),
-                      icon: const Icon(Icons.message, size: 16),
-                      label: const Text('Contact'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _markAsRepaid(loan),
-                      icon: const Icon(Icons.check, size: 16),
-                      label: const Text('Mark Repaid'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.success,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                    ),
-                  ),
                 ],
               ),
+
+              const SizedBox(height: 16),
+
+              // Loan details section
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryBlue.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: AppTheme.primaryBlue.withValues(alpha: 0.1),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: 18,
+                          color: AppTheme.primaryBlue,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Loan Details',
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.primaryBlue,
+                              ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDetailRow('Campaign ID:', loan.campaignId),
+                    const SizedBox(height: 8),
+                    _buildDetailRow(
+                      'Loan Amount:',
+                      '₹${loan.amount.toStringAsFixed(0)}',
+                    ),
+                    const SizedBox(height: 8),
+                    _buildDetailRow('Received Date:', _formatDate(loan.date)),
+                    if (loan.repaymentDueDate != null) ...[
+                      const SizedBox(height: 8),
+                      _buildDetailRow(
+                        'Due Date:',
+                        _formatDueDate(loan.repaymentDueDate!),
+                        isImportant: isOverdue || isNearDue,
+                      ),
+                      if (daysUntilDue != null) ...[
+                        const SizedBox(height: 8),
+                        _buildDetailRow(
+                          'Days Remaining:',
+                          isOverdue
+                              ? 'Overdue by ${(-daysUntilDue)} days'
+                              : '$daysUntilDue days',
+                          isImportant: isOverdue || isNearDue,
+                        ),
+                      ],
+                    ],
+                  ],
+                ),
+              ),
+
+              // Payment instructions or warning
+              if (isOverdue || isNearDue) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: isOverdue
+                        ? Colors.red.withValues(alpha: 0.1)
+                        : Colors.orange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isOverdue ? Colors.red : Colors.orange,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        isOverdue
+                            ? Icons.error_outline
+                            : Icons.warning_amber_outlined,
+                        color: isOverdue ? Colors.red : Colors.orange,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isOverdue
+                                  ? 'Payment Overdue!'
+                                  : 'Payment Due Soon!',
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(
+                                    color: isOverdue
+                                        ? Colors.red
+                                        : Colors.orange,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              isOverdue
+                                  ? 'This loan is overdue. Please contact ${loan.contributorName} immediately to arrange repayment.'
+                                  : 'This loan is due soon. Please prepare ₹${loan.amount.toStringAsFixed(0)} for repayment to ${loan.contributorName}.',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: isOverdue
+                                        ? Colors.red
+                                        : Colors.orange,
+                                    height: 1.3,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppTheme.success.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: AppTheme.success.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.schedule_outlined,
+                        color: AppTheme.success,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Remember to repay ₹${loan.amount.toStringAsFixed(0)} to ${loan.contributorName} by ${loan.repaymentDueDate != null ? _formatDueDate(loan.repaymentDueDate!) : 'the agreed date'}.',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: AppTheme.success,
+                                fontWeight: FontWeight.w500,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -621,12 +866,115 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
     );
   }
 
-  Widget _buildEmptyState(
-    String message, {
-    String? subtitle,
-    IconData? icon,
-    Color? iconColor,
+  Widget _buildDetailRow(
+    String label,
+    String value, {
+    bool isImportant = false,
   }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 100,
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppTheme.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: isImportant ? Colors.red : AppTheme.textPrimary,
+              fontWeight: isImportant ? FontWeight.bold : FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEnhancedContributionCard(Contribution contribution) {
+    final isLoan = contribution.type == 'loan';
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isLoan
+                        ? AppTheme.primaryBlue.withValues(alpha: 0.1)
+                        : AppTheme.success.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    isLoan
+                        ? Icons.handshake_outlined
+                        : Icons.card_giftcard_outlined,
+                    color: isLoan ? AppTheme.primaryBlue : AppTheme.success,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isLoan ? 'Loan' : 'Gift',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        'Campaign ID: ${contribution.campaignId}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  '₹${contribution.amount.toStringAsFixed(0)}',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: isLoan ? AppTheme.primaryBlue : AppTheme.success,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Date: ${_formatDate(contribution.date)}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            if (isLoan && contribution.repaymentDueDate != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Repayment Due: ${_formatDueDate(contribution.repaymentDueDate!)}',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(String message) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -634,33 +982,27 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              icon ?? Icons.inbox_outlined,
-              size: 80,
-              color: iconColor ?? AppTheme.textSecondary,
+              Icons.inbox_outlined,
+              size: 64,
+              color: AppTheme.textSecondary.withValues(alpha: 0.5),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             Text(
               message,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: AppTheme.textSecondary),
               textAlign: TextAlign.center,
             ),
-            if (subtitle != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                subtitle,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyLarge?.copyWith(color: AppTheme.textSecondary),
-                textAlign: TextAlign.center,
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => Get.toNamed('/home'),
+              icon: const Icon(Icons.add_circle_outline),
+              label: const Text('Start Contributing'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryBlue,
+                foregroundColor: Colors.white,
               ),
-            ],
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () => Navigator.pushNamed(context, '/home'),
-              child: const Text('Explore Campaigns'),
             ),
           ],
         ),
@@ -668,80 +1010,126 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
     );
   }
 
-  void _contactLender(Contribution loan) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Contact Lender'),
-        content: Text(
-          'Contact ${loan.contributorName} regarding the loan repayment?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+  Widget _buildLoansToRepayEmptyState() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppTheme.success.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(50),
+            ),
+            child: Icon(
+              Icons.check_circle_outline,
+              size: 64,
+              color: AppTheme.success,
+            ),
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: Implement contact functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Contact feature coming soon!')),
-              );
-            },
-            child: const Text('Contact'),
+          const SizedBox(height: 24),
+          Text(
+            'No Loans to Repay! 🎉',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppTheme.success,
+            ),
+            textAlign: TextAlign.center,
           ),
-        ],
-      ),
-    );
-  }
-
-  void _markAsRepaid(Contribution loan) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Mark as Repaid'),
-        content: Text(
-          'Confirm that you have repaid ₹${loan.amount.toStringAsFixed(0)} to ${loan.contributorName}?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+          const SizedBox(height: 12),
+          Text(
+            'You currently have no outstanding loans to repay.\n\nLoans appear here when contributors give loans to your campaigns that need to be repaid.',
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: AppTheme.textSecondary,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() {
-                // In a real app, this would update via API
-                // For demo, we'll just show a success message
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Marked as repaid successfully!'),
-                  behavior: SnackBarBehavior.floating,
+          const SizedBox(height: 32),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryBlue.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppTheme.primaryBlue.withValues(alpha: 0.2),
+              ),
+            ),
+            child: Column(
+              children: [
+                Icon(Icons.info_outline, color: AppTheme.primaryBlue, size: 24),
+                const SizedBox(height: 8),
+                Text(
+                  'How Loans Work',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: AppTheme.primaryBlue,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              );
-            },
-            child: const Text('Confirm'),
+                const SizedBox(height: 8),
+                Text(
+                  'When someone contributes to your campaigns as a "loan" instead of a "gift", those amounts will appear here as loans you need to repay to the contributor.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppTheme.primaryBlue,
+                    height: 1.4,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () => Get.toNamed('/home'),
+            icon: const Icon(Icons.campaign_outlined),
+            label: const Text('View My Campaigns'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryBlue,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
           ),
         ],
       ),
     );
-  }
-
-  String _formatAmount(double amount) {
-    if (amount >= 100000) {
-      return '${(amount / 100000).toStringAsFixed(1)}L';
-    } else if (amount >= 1000) {
-      return '${(amount / 1000).toStringAsFixed(1)}K';
-    } else {
-      return amount.toStringAsFixed(0);
-    }
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays == 0) {
+      return 'Today';
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} days ago';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
+  }
+
+  String _formatDueDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = date.difference(now);
+
+    if (difference.inDays == 0) {
+      return 'Today';
+    } else if (difference.inDays == 1) {
+      return 'Tomorrow';
+    } else if (difference.inDays > 0 && difference.inDays <= 7) {
+      return 'In ${difference.inDays} days';
+    } else if (difference.inDays < 0) {
+      final overdueDays = (-difference.inDays);
+      if (overdueDays == 1) {
+        return 'Overdue by 1 day';
+      } else {
+        return 'Overdue by $overdueDays days';
+      }
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
   }
 
   @override

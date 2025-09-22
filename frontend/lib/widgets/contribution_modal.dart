@@ -8,6 +8,7 @@ import '../models/campaign.dart';
 import '../services/http_api_service.dart';
 import '../services/payment_verification_service.dart';
 import '../controllers/auth_controller.dart';
+import '../controllers/contribution_controller.dart';
 
 class EnhancedContributionModal extends StatefulWidget {
   final String campaignId;
@@ -1221,11 +1222,14 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
         'isAnonymous': !_isUserLoggedIn,
       };
 
-      // Submit to backend
-      await _httpApiService.createContribution(contributionData);
+      // Submit using ContributionController
+      final contributionController = Get.find<ContributionController>();
+      final contribution = await contributionController.createContribution(
+        contributionData,
+      );
 
-      if (mounted) {
-        Navigator.of(context).pop();
+      if (mounted && contribution != null) {
+        Navigator.of(context).pop(true); // Return true to indicate success
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(

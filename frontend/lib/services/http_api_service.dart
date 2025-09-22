@@ -365,6 +365,96 @@ class HttpApiService {
     }
   }
 
+  /// Get loans that a user needs to repay (loans received on their campaigns)
+  Future<List<Contribution>> getLoansToRepay(String hostId) async {
+    try {
+      final uri = Uri.parse(
+        '${AppConfig.baseUrl}${AppConfig.usersEndpoint}/$hostId/dashboard',
+      );
+
+      AppConfig.debugPrint('GET User Dashboard for Loans to Repay: $uri');
+      AppConfig.debugPrint('Host ID: $hostId');
+
+      final response = await _client
+          .get(uri, headers: _headers)
+          .timeout(AppConfig.connectTimeout);
+
+      final data = _handleResponse(response);
+      AppConfig.debugPrint('Full API Response: $data');
+
+      if (data['data'] != null) {
+        final userData = data['data'];
+        AppConfig.debugPrint('User data keys: ${userData.keys}');
+
+        // Check campaigns
+        if (userData['campaigns'] != null) {
+          AppConfig.debugPrint(
+            'User has ${userData['campaigns'].length} campaigns',
+          );
+          for (var campaign in userData['campaigns']) {
+            AppConfig.debugPrint(
+              'Campaign: ${campaign['title']} (ID: ${campaign['\$id']})',
+            );
+          }
+        }
+
+        // Check loans to repay
+        if (userData['loansToRepay'] != null) {
+          final loansData = userData['loansToRepay'];
+          AppConfig.debugPrint('Loans to repay raw data: $loansData');
+
+          if (loansData is List) {
+            AppConfig.debugPrint('Found ${loansData.length} loans to repay');
+            for (var loan in loansData) {
+              AppConfig.debugPrint(
+                'Loan details: campaignId=${loan['campaignId']}, type=${loan['type']}, status=${loan['repaymentStatus']}, amount=${loan['amount']}',
+              );
+            }
+            return loansData
+                .map((json) => Contribution.fromJson(json))
+                .toList();
+          } else {
+            AppConfig.debugPrint(
+              'LoansToRepay is not a list: ${loansData.runtimeType}',
+            );
+            throw Exception(
+              'LoansToRepay field is not a list: ${loansData.runtimeType}',
+            );
+          }
+        } else {
+          AppConfig.debugPrint('loansToRepay field is null or missing');
+          // Let's also check if there are any contributions in general
+          if (userData['contributions'] != null) {
+            final contributions = userData['contributions'] as List;
+            AppConfig.debugPrint(
+              'User has ${contributions.length} total contributions:',
+            );
+            for (var contrib in contributions) {
+              AppConfig.debugPrint(
+                'Contribution: type=${contrib['type']}, campaignId=${contrib['campaignId']}, status=${contrib['repaymentStatus']}',
+              );
+            }
+          }
+          return [];
+        }
+      } else {
+        throw Exception('Response data field is null');
+      }
+    } on TimeoutException {
+      throw Exception(
+        'Connection timeout. Please check your internet connection.',
+      );
+    } on SocketException {
+      throw Exception('No internet connection. Please check your network.');
+    } catch (e) {
+      AppConfig.debugPrint('Error in getLoansToRepay: $e');
+      if (e.toString().contains('Exception:')) {
+        rethrow;
+      }
+      throw Exception('Failed to load loans to repay. Please try again later.');
+    }
+  }
+
   /// Create a new contribution
   Future<Contribution> createContribution(
     Map<String, dynamic> contributionData, {
@@ -849,6 +939,49 @@ class HttpApiService {
         rethrow;
       }
       throw Exception('Failed to upload screenshot. Please try again later.');
+    }
+  }
+
+  /// Update a contribution (e.g., mark loan as repaid)
+  Future<Contribution> updateContribution(
+    String contributionId,
+    Map<String, dynamic> updates, {
+    String? userId,
+  }) async {
+    try {
+      final uri = Uri.parse(
+        '${AppConfig.baseUrl}${AppConfig.contributionsEndpoint}/$contributionId',
+      );
+
+      AppConfig.debugPrint('PATCH Update Contribution: $uri');
+      AppConfig.debugPrint('Update Data: ${jsonEncode(updates)}');
+
+      final response = await _client
+          .patch(
+            uri,
+            headers: _headersWithAuth(userId),
+            body: jsonEncode(updates),
+          )
+          .timeout(AppConfig.connectTimeout);
+
+      final data = _handleResponse(response);
+
+      if (data['data'] != null) {
+        return Contribution.fromJson(data['data']);
+      } else {
+        throw Exception('Failed to update contribution');
+      }
+    } on TimeoutException {
+      throw Exception(
+        'Connection timeout. Please check your internet connection.',
+      );
+    } on SocketException {
+      throw Exception('No internet connection. Please check your network.');
+    } catch (e) {
+      if (e.toString().contains('Exception:')) {
+        rethrow;
+      }
+      throw Exception('Failed to update contribution. Please try again later.');
     }
   }
 

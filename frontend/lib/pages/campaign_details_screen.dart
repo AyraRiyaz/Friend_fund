@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../widgets/responsive_layout.dart';
 import '../controllers/auth_controller.dart';
 import '../controllers/campaign_controller.dart';
+import '../controllers/contribution_controller.dart';
 import '../theme/app_theme.dart';
 import '../models/campaign.dart';
 import '../widgets/edit_campaign_modal.dart';
@@ -21,12 +22,45 @@ class CampaignDetailsScreen extends StatefulWidget {
 
 class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
   final CampaignController _campaignController = Get.find<CampaignController>();
+  final ContributionController _contributionController =
+      Get.find<ContributionController>();
   late Campaign _currentCampaign;
+  List<Contribution> _contributions = [];
+  bool _isLoadingContributions = false;
 
   @override
   void initState() {
     super.initState();
     _currentCampaign = widget.campaign;
+    _loadContributions();
+  }
+
+  Future<void> _loadContributions() async {
+    setState(() {
+      _isLoadingContributions = true;
+    });
+
+    try {
+      final contributions = await _contributionController
+          .loadCampaignContributions(_currentCampaign.id);
+      setState(() {
+        _contributions = contributions;
+        // Update the campaign with the latest contributions
+        _currentCampaign = _currentCampaign.copyWith(
+          contributions: contributions,
+        );
+      });
+    } catch (e) {
+      print('Error loading contributions: $e');
+    } finally {
+      setState(() {
+        _isLoadingContributions = false;
+      });
+    }
+  }
+
+  Future<void> _refreshCampaignData() async {
+    await _loadContributions();
   }
 
   bool get isMyOwnCampaign {
@@ -523,6 +557,31 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
   }
 
   Widget _buildContributionsManagement() {
+    if (_isLoadingContributions) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Text(
+                  'Contributions Overview',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                const Center(child: CircularProgressIndicator()),
+                const SizedBox(height: 16),
+                const Text('Loading contributions...'),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final gifts = _currentCampaign.contributions
         .where((c) => c.type == 'gift')
         .toList();
@@ -541,11 +600,21 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Contributions Overview',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Contributions Overview',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: _refreshCampaignData,
+                    icon: const Icon(Icons.refresh),
+                    tooltip: 'Refresh contributions',
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               Row(
@@ -1010,7 +1079,12 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
         campaignId: _currentCampaign.id,
         isFromQrCode: isFromQrCode,
       ),
-    );
+    ).then((result) {
+      // Refresh contributions after modal closes
+      if (result == true) {
+        _refreshCampaignData();
+      }
+    });
   }
 
   void _markLoanRepaid(Contribution loan) {
