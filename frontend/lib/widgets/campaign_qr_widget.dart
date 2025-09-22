@@ -1,23 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:flutter/rendering.dart';
 // import 'package:share_plus/share_plus.dart'; // Temporarily disabled for web
 import '../models/campaign.dart';
+import 'contribution_modal.dart';
 
-class CampaignQRWidget extends StatelessWidget {
+class CampaignQRWidget extends StatefulWidget {
   final Campaign campaign;
 
-  const CampaignQRWidget({Key? key, required this.campaign}) : super(key: key);
+  const CampaignQRWidget({super.key, required this.campaign});
 
   @override
+  State<CampaignQRWidget> createState() => _CampaignQRWidgetState();
+}
+
+class _CampaignQRWidgetState extends State<CampaignQRWidget> {
+  @override
   Widget build(BuildContext context) {
-    // Use the current domain for the QR code URL
+    // For development mode, use a URL that will open the contribution modal
+    // In production, this should be your actual domain
     final currentUri = Uri.base;
     final port = currentUri.port != 80 && currentUri.port != 443
         ? ':${currentUri.port}'
         : '';
+
+    // Generate a URL that points to the contribution modal
+    // This will work when the QR code is scanned by opening the contribution modal
     final contributionUrl =
-        campaign.shareableUrl ??
-        '${currentUri.scheme}://${currentUri.host}$port/contribute/${campaign.id}';
+        widget.campaign.shareableUrl ??
+        '${currentUri.scheme}://${currentUri.host}$port/modal/contribute/${widget.campaign.id}';
 
     print('QR Code URL: $contributionUrl'); // Debug print
 
@@ -100,6 +111,19 @@ class CampaignQRWidget extends StatelessWidget {
               label: const Text('Copy Link'),
             ),
           ),
+
+          const SizedBox(height: 8),
+
+          // Test button for development
+          SizedBox(
+            width: double.infinity,
+            child: TextButton.icon(
+              onPressed: () => _testQRCode(context),
+              icon: const Icon(Icons.open_in_new),
+              label: const Text('Test QR Code (Dev)'),
+              style: TextButton.styleFrom(foregroundColor: Colors.orange),
+            ),
+          ),
         ],
       ),
     );
@@ -108,7 +132,7 @@ class CampaignQRWidget extends StatelessWidget {
   void _shareLink(String url) {
     // Temporarily disabled for web compatibility - Share functionality will be available in mobile app
     print(
-      'Would share: Help ${campaign.hostName} reach their goal! Contribute to "${campaign.title}": $url',
+      'Would share: Help ${widget.campaign.hostName} reach their goal! Contribute to "${widget.campaign.title}": $url',
     );
   }
 
@@ -124,6 +148,15 @@ class CampaignQRWidget extends StatelessWidget {
           onPressed: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
         ),
       ),
+    );
+  }
+
+  void _testQRCode(BuildContext context) {
+    // Open the contribution modal to test QR code functionality
+    showDialog(
+      context: context,
+      builder: (context) =>
+          EnhancedContributionModal(campaignId: widget.campaign.id),
     );
   }
 }

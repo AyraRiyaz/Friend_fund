@@ -18,7 +18,7 @@ import 'pages/my_contributions_screen.dart';
 import 'pages/profile_page.dart';
 import 'pages/help_page.dart';
 import 'pages/about_page.dart';
-import 'pages/contribution_form_screen.dart';
+import 'widgets/contribution_modal.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -113,15 +113,20 @@ class MyApp extends StatelessWidget {
           page: () => const AuthProtectedPage(child: HelpPage()),
         ),
 
-        // Public contribution form route (no authentication required)
+        // Public contribution modal route (no authentication required)
         GetPage(
-          name: '/contribute/:campaignId',
+          name: '/modal/contribute/:campaignId',
           page: () => Builder(
             builder: (context) {
               final campaignId = Get.parameters['campaignId'];
               if (campaignId != null && campaignId.isNotEmpty) {
-                // Show the modal in a full screen scaffold for direct URL access
-                return ContributionFormScreen(campaignId: campaignId);
+                // Show the modal in a scaffold for direct URL access
+                return Scaffold(
+                  backgroundColor: Colors.black.withValues(alpha: 0.5),
+                  body: Center(
+                    child: EnhancedContributionModal(campaignId: campaignId),
+                  ),
+                );
               }
               // If no campaign ID provided, redirect to home
               WidgetsBinding.instance.addPostFrameCallback((_) {

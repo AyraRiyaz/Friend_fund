@@ -771,7 +771,6 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              _buildInfoRow('Campaign ID', _currentCampaign.id),
               _buildInfoRow('Created', _formatDate(_currentCampaign.createdAt)),
               if (_currentCampaign.dueDate != null)
                 _buildInfoRow(
@@ -980,7 +979,8 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
     // Show the contribution modal
     showDialog(
       context: context,
-      builder: (context) => ContributionModal(campaignId: _currentCampaign.id),
+      builder: (context) =>
+          EnhancedContributionModal(campaignId: _currentCampaign.id),
     );
   }
 

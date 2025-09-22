@@ -75,7 +75,9 @@ class AppwriteService {
       contributorId: contributionData['contributorId'] ?? 'anonymous',
       contributorName: contributionData['contributorName'],
       amount: contributionData['amount'],
-      utr: contributionData['utrNumber'],
+      utr:
+          contributionData['utr'] ??
+          contributionData['utrNumber'], // Support both field names
       type: contributionData['type'] ?? 'gift',
       additionalData: {
         'paymentScreenshotUrl': contributionData['paymentScreenshotUrl'],

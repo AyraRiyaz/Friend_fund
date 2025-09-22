@@ -129,7 +129,7 @@ class Contribution {
   final DateTime date;
   final String? repaymentStatus; // 'pending', 'repaid' (for loans only)
   final DateTime? repaymentDueDate;
-  final String utrNumber;
+  final String utr;
   final String? paymentScreenshotUrl; // Screenshot of payment confirmation
   final String? paymentStatus; // 'pending', 'verified', 'failed'
 
@@ -143,7 +143,7 @@ class Contribution {
     required this.date,
     this.repaymentStatus,
     this.repaymentDueDate,
-    required this.utrNumber,
+    required this.utr,
     this.paymentScreenshotUrl,
     this.paymentStatus,
   });
@@ -163,7 +163,10 @@ class Contribution {
       repaymentDueDate: json['repaymentDueDate'] != null
           ? DateTime.parse(json['repaymentDueDate'])
           : null,
-      utrNumber: json['utrNumber'] ?? '',
+      utr:
+          json['utr'] ??
+          json['utrNumber'] ??
+          '', // Support both field names for backward compatibility
       paymentScreenshotUrl: json['paymentScreenshotUrl'],
       paymentStatus: json['paymentStatus'] ?? 'pending',
     );
@@ -180,7 +183,7 @@ class Contribution {
       'date': date.toIso8601String(),
       'repaymentStatus': repaymentStatus,
       'repaymentDueDate': repaymentDueDate?.toIso8601String(),
-      'utrNumber': utrNumber,
+      'utr': utr,
       'paymentScreenshotUrl': paymentScreenshotUrl,
       'paymentStatus': paymentStatus,
     };
