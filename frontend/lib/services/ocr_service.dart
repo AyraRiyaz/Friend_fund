@@ -420,7 +420,7 @@ class OCRService {
       }
     }
 
-    // 4. DATE VALIDATION - Check if payment is recent (within 7 days)
+    // 4. DATE VALIDATION - Check if payment is recent (within 2 days)
     final datePatterns = [
       RegExp(
         r'(\d{1,2}(?:st|nd|rd|th)?\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d{2,4})',
@@ -431,20 +431,49 @@ class OCRService {
 
     var dateValid = false;
     final now = DateTime.now();
+    final twoDaysAgo = now.subtract(const Duration(days: 2));
 
     for (final pattern in datePatterns) {
       final dateMatches = pattern.allMatches(extractedText);
       for (final match in dateMatches) {
         final dateStr = match.group(1) ?? '';
 
-        // Check if date contains today's date components
+        // Check if date is today or within last 2 days
+        // Today's date
         if (dateStr.toLowerCase().contains('${now.day}') &&
             (dateStr.toLowerCase().contains(
                   _getMonthAbbr(now.month).toLowerCase(),
                 ) ||
                 dateStr.contains('${now.month.toString().padLeft(2, '0')}'))) {
           dateValid = true;
-          confidence += 0.1; // 10% for valid date
+          confidence += 0.1;
+          break;
+        }
+
+        // Yesterday's date
+        final yesterday = now.subtract(const Duration(days: 1));
+        if (dateStr.toLowerCase().contains('${yesterday.day}') &&
+            (dateStr.toLowerCase().contains(
+                  _getMonthAbbr(yesterday.month).toLowerCase(),
+                ) ||
+                dateStr.contains(
+                  '${yesterday.month.toString().padLeft(2, '0')}',
+                ))) {
+          dateValid = true;
+          confidence += 0.1;
+          break;
+        }
+
+        // Day before yesterday
+        if (dateStr.toLowerCase().contains('${twoDaysAgo.day}') &&
+            (dateStr.toLowerCase().contains(
+                  _getMonthAbbr(twoDaysAgo.month).toLowerCase(),
+                ) ||
+                dateStr.contains(
+                  '${twoDaysAgo.month.toString().padLeft(2, '0')}',
+                ))) {
+          dateValid = true;
+          confidence += 0.1;
           break;
         }
       }
@@ -452,7 +481,7 @@ class OCRService {
     }
 
     if (!dateValid) {
-      validationErrors.add('Payment must be made within the last 7 days.');
+      validationErrors.add('Payment must be made within the last 2 days.');
       isValid = false;
     }
 

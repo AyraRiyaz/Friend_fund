@@ -514,32 +514,11 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildQuickAmount('₹100'),
-                    _buildQuickAmount('₹500'),
-                    _buildQuickAmount('₹1000'),
-                    _buildQuickAmount('₹2000'),
-                  ],
-                ),
               ],
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildQuickAmount(String amount) {
-    final isActive = _currentCampaign.status.toLowerCase() == 'active';
-    return OutlinedButton(
-      onPressed: isActive ? () => _contributeQuickAmount(amount) : null,
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      ),
-      child: Text(amount),
     );
   }
 
@@ -982,11 +961,6 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
       builder: (context) =>
           EnhancedContributionModal(campaignId: _currentCampaign.id),
     );
-  }
-
-  void _contributeQuickAmount(String amount) {
-    _showContributionDialog();
-    // TODO: Pre-fill the contribution dialog with this amount
   }
 
   void _markLoanRepaid(Contribution loan) {
