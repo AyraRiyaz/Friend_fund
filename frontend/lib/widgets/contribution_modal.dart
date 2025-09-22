@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'dart:convert';
 import '../models/campaign.dart';
 import '../services/http_api_service.dart';
 import '../services/appwrite_service.dart';
@@ -29,7 +30,7 @@ class _ContributionModalState extends State<ContributionModal> {
   XFile? _selectedImage;
   bool _paymentMade = false;
   bool _isVerifyingPayment = false;
-  Map<String, dynamic>? _paymentQrData;
+  bool _isPaymentVerified = false;
 
   @override
   void initState() {
@@ -368,11 +369,21 @@ class _ContributionModalState extends State<ContributionModal> {
                   : Colors.grey,
             ),
             child: _isVerifyingPayment
-                ? const CircularProgressIndicator(color: Colors.white)
+                ? const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(color: Colors.white),
+                      SizedBox(width: 8),
+                      Text(
+                        'Verifying Payment...',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ],
+                  )
                 : Text(
                     _selectedImage != null
-                        ? 'Submit for Verification'
-                        : 'Please Upload Screenshot First',
+                        ? 'Verify Payment & Submit Contribution'
+                        : 'Please Upload Payment Screenshot First',
                     style: const TextStyle(color: Colors.white),
                   ),
           ),
@@ -464,30 +475,47 @@ class _ContributionModalState extends State<ContributionModal> {
     });
 
     try {
-      // Upload the image first
-      final uploadResult = await _appwriteService.uploadFile(_selectedImage!);
+      // Step 1: Convert image to base64
+      final imageBytes = await _selectedImage!.readAsBytes();
+      final imageBase64 = base64Encode(imageBytes);
 
-      // Create contribution with uploaded image
-      final contributionData = {
-        'campaignId': widget.campaignId,
-        'contributorName': _nameController.text.trim(),
-        'amount': _amountController.text.trim(), // Send as string, not double
-        'paymentScreenshotUrl': uploadResult['url'],
-        'type': 'gift',
-        'utrNumber': 'PENDING_OCR_VERIFICATION',
-      };
-
-      final result = await _appwriteService.createContribution(
-        contributionData,
+      // Step 2: Send to OCR for verification
+      final expectedAmount = double.parse(_amountController.text.trim());
+      final ocrResult = await _httpApiService.processPaymentScreenshot(
+        imageBase64: imageBase64,
+        expectedAmount: expectedAmount,
+        contributorName: _nameController.text.trim(),
+        campaignId: widget.campaignId,
       );
 
-      if (mounted) {
-        Fluttertoast.showToast(
-          msg: "Contribution submitted successfully! Verification in progress.",
-          toastLength: Toast.LENGTH_LONG,
-          gravity: ToastGravity.BOTTOM,
-        );
-        Navigator.of(context).pop(true); // Return true to indicate success
+      setState(() {
+        _isPaymentVerified = ocrResult['data']?['autoVerified'] == true;
+      });
+
+      if (_isPaymentVerified) {
+        // Step 3: If verified, show success and submit contribution
+        if (mounted) {
+          Fluttertoast.showToast(
+            msg: "Payment verified successfully! Contribution recorded.",
+            toastLength: Toast.LENGTH_LONG,
+            gravity: ToastGravity.BOTTOM,
+          );
+          Navigator.of(context).pop(true); // Return true to indicate success
+        }
+      } else {
+        // Step 4: If not verified, show failure message but don't submit
+        final confidence =
+            ocrResult['data']?['paymentInfo']?['confidence'] ?? 0;
+        final extractedAmount =
+            ocrResult['data']?['paymentInfo']?['extractedAmount'] ?? 'N/A';
+
+        if (mounted) {
+          _showVerificationFailureDialog(
+            confidence,
+            extractedAmount,
+            expectedAmount,
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -496,12 +524,83 @@ class _ContributionModalState extends State<ContributionModal> {
         });
 
         Fluttertoast.showToast(
-          msg: "Failed to submit contribution: $e",
+          msg: "Verification failed: $e",
           toastLength: Toast.LENGTH_LONG,
           gravity: ToastGravity.BOTTOM,
         );
       }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isVerifyingPayment = false;
+        });
+      }
     }
+  }
+
+  void _showVerificationFailureDialog(
+    double confidence,
+    String extractedAmount,
+    double expectedAmount,
+  ) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.error, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Payment Verification Failed'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'We could not verify your payment from the screenshot. Please check:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              Text('• Expected Amount: ₹${expectedAmount.toStringAsFixed(2)}'),
+              Text('• Detected Amount: ₹$extractedAmount'),
+              Text(
+                '• Confidence Score: ${(confidence * 100).toStringAsFixed(1)}%',
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Common issues:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const Text('• Screenshot is blurry or unclear'),
+              const Text('• Amount doesn\'t match exactly'),
+              const Text('• Transaction was unsuccessful'),
+              const Text('• Wrong payment recipient'),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  border: Border.all(color: Colors.orange.shade200),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  '⚠️ Your contribution has NOT been recorded. Please try again with a clear screenshot of a successful payment.',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Try Again'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override

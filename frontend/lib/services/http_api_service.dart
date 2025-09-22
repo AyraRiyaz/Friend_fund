@@ -709,7 +709,7 @@ class HttpApiService {
         'campaignId': campaignId,
         'contributorId': contributorId,
         'contributorName': isAnonymous ? 'Anonymous' : contributorName,
-        'amount': amount,
+        'amount': amount.toString(), // Convert to string for backend
         'utr': utr,
         'type': type,
         'repaymentStatus':
