@@ -45,33 +45,12 @@ class PaymentVerificationService {
     required String contributorName,
   }) async {
     try {
-      // Check if image looks like a valid screenshot
-      final imageAnalysis = await _analyzeImageProperties(imageBytes);
-
-      if (!imageAnalysis['isValidScreenshot']) {
-        return PaymentVerificationResult(
-          isValid: false,
-          confidence: 0.0,
-          errors: <String>[
-            'Image does not appear to be a valid payment screenshot',
-          ],
-          extractedAmount: null,
-          extractedUpiId: null,
-          extractedDate: null,
-          verificationMethod: 'Image validation',
-        );
-      }
-
-      // Use OCR to extract and verify payment information
-      final result = await _performOCRVerification(
+      return await _performOCRVerification(
         imageBytes: imageBytes,
         expectedAmount: expectedAmount,
         expectedUpiId: expectedUpiId,
         contributorName: contributorName,
       );
-
-      print('OCR Verification Result: ${result.toJson()}');
-      return result;
     } catch (e) {
       print('Web verification error: $e');
       return PaymentVerificationResult(
@@ -84,55 +63,6 @@ class PaymentVerificationService {
         verificationMethod: 'Error handling',
       );
     }
-  }
-
-  /// Analyze basic image properties to validate screenshot
-  Future<Map<String, dynamic>> _analyzeImageProperties(
-    Uint8List imageBytes,
-  ) async {
-    try {
-      // Basic checks for valid image - make these more lenient
-      final hasValidSize =
-          imageBytes.length > 1024 &&
-          imageBytes.length < 10 * 1024 * 1024; // 1KB to 10MB
-      final hasImageHeader = _hasValidImageHeader(imageBytes);
-
-      // For basic validation, we only check if it's a valid image file
-      // The actual payment verification will be done by OCR
-      return {
-        'isValidScreenshot': hasValidSize && hasImageHeader,
-        'fileSize': imageBytes.length,
-        'hasValidHeader': hasImageHeader,
-        'screenshotScore': 1.0, // Accept all valid images
-      };
-    } catch (e) {
-      return {'isValidScreenshot': false, 'error': e.toString()};
-    }
-  }
-
-  /// Check if bytes have valid image header
-  bool _hasValidImageHeader(Uint8List bytes) {
-    if (bytes.length < 4) return false;
-
-    // Check for common image format headers
-    // JPEG: FF D8 FF
-    if (bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) return true;
-
-    // PNG: 89 50 4E 47
-    if (bytes[0] == 0x89 &&
-        bytes[1] == 0x50 &&
-        bytes[2] == 0x4E &&
-        bytes[3] == 0x47)
-      return true;
-
-    // WebP: 52 49 46 46 (RIFF)
-    if (bytes[0] == 0x52 &&
-        bytes[1] == 0x49 &&
-        bytes[2] == 0x46 &&
-        bytes[3] == 0x46)
-      return true;
-
-    return false;
   }
 
   /// Perform OCR-based verification of payment screenshot with STRICT validation

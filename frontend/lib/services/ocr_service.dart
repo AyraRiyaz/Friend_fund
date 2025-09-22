@@ -11,33 +11,26 @@ class OCRService {
 
   /// Extract text from image using web-compatible OCR
   Future<OCRResult> extractTextFromImage(Uint8List imageBytes) async {
-    if (kIsWeb) {
-      return await _extractTextWeb(imageBytes);
-    } else {
-      // For mobile, could use Google ML Kit or other mobile OCR
-      return await _extractTextMobile(imageBytes);
-    }
+    return await _extractTextWeb(imageBytes);
   }
 
-  /// Web-compatible OCR using online service with fallback options
+  /// Web-compatible OCR using online service
   Future<OCRResult> _extractTextWeb(Uint8List imageBytes) async {
-    // Try primary OCR service first
     try {
       final result = await _tryOCRSpaceAPI(imageBytes);
       if (result.success) {
         return result;
       }
     } catch (e) {
-      print('Primary OCR service failed: $e');
+      print('OCR service failed: $e');
     }
 
-    // If primary fails, return error with helpful message
     return OCRResult(
       success: false,
       extractedText: '',
       confidence: 0.0,
       error:
-          'Unable to extract text from image. Please ensure the screenshot is clear, well-lit, and shows all payment details including amount, UPI ID, and date.',
+          'Unable to extract text from image. Please ensure the screenshot is clear and shows all payment details.',
     );
   }
 
@@ -122,18 +115,6 @@ class OCRService {
             'OCR extraction failed: $e. Please try uploading a clearer screenshot.',
       );
     }
-  }
-
-  /// Mobile OCR implementation (placeholder)
-  Future<OCRResult> _extractTextMobile(Uint8List imageBytes) async {
-    // For mobile platforms, you could use Google ML Kit or other mobile OCR
-    // For now, returning a placeholder result
-    return OCRResult(
-      success: false,
-      extractedText: '',
-      confidence: 0.0,
-      error: 'Mobile OCR not implemented',
-    );
   }
 
   /// Analyze extracted text for payment information with strict validation
@@ -348,13 +329,6 @@ class OCRService {
     print('  Final extracted UPI IDs: $extractedUpiIds');
     print('  Expected UPI ID: $expectedUpiId');
 
-    // Extract transaction IDs (12 digit numbers)
-    final transactionIdPattern = RegExp(r'(\d{12})', caseSensitive: false);
-    final transactionMatches = transactionIdPattern.allMatches(extractedText);
-    final transactionIds = transactionMatches
-        .map((m) => m.group(1) ?? '')
-        .toList();
-
     // STRICT VALIDATION - ALL conditions must be met
     final validationErrors = <String>[];
     var isValid = true;
@@ -457,7 +431,6 @@ class OCRService {
 
     var dateValid = false;
     final now = DateTime.now();
-    final sevenDaysAgo = now.subtract(const Duration(days: 7));
 
     for (final pattern in datePatterns) {
       final dateMatches = pattern.allMatches(extractedText);
