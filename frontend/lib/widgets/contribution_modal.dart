@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:intl/intl.dart';
 import '../models/campaign.dart';
 import '../services/http_api_service.dart';
+import '../services/payment_verification_service.dart';
 
 class EnhancedContributionModal extends StatefulWidget {
   final String campaignId;
@@ -235,14 +236,22 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
         // Payment instructions step - no validation needed
         return true;
       case 2:
-        // Payment proof step - validate screenshot
+        // Payment proof step - validate screenshot and verify payment
         if (_selectedImage == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Please upload payment screenshot')),
           );
           return false;
         }
-        return true;
+
+        // If payment is already verified, allow advancement
+        if (_isPaymentVerified) {
+          return true;
+        }
+
+        // If not verified, trigger verification
+        _verifyPayment();
+        return false; // Don't advance immediately, let verification complete
       case 3:
         // Verification step - check if payment is verified
         return _isPaymentVerified;
@@ -727,6 +736,67 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
               ],
             ),
           ),
+
+          // Show verification error if any
+          if (_verificationError != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.error, color: Colors.red.shade600, size: 20),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Verification Failed',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Please check your screenshot and try again. Make sure:\n'
+                    '• The payment amount matches your contribution\n'
+                    '• Payment was made to the correct UPI ID\n'
+                    '• The screenshot is clear and readable\n'
+                    '• Payment was made recently (within 7 days)',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: _verifyPayment,
+                        icon: const Icon(Icons.refresh, size: 16),
+                        label: const Text('Try Again'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton.icon(
+                        onPressed: _pickImage,
+                        icon: const Icon(Icons.upload, size: 16),
+                        label: const Text('Upload New Screenshot'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ],
     );
@@ -760,10 +830,40 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'We will automatically verify your payment screenshot to check:\n'
-                  '• Payment amount matches your contribution\n'
-                  '• Payment was made to the correct UPI ID\n'
-                  '• Payment date and time are recent',
+                  'We will verify your payment screenshot by analyzing:\n'
+                  '• Image quality and format validation\n'
+                  '• Payment amount verification\n'
+                  '• UPI ID confirmation\n'
+                  '• Transaction authenticity check',
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.orange.shade200),
+                  ),
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '💡 Tips for better verification:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '• Use a clear, high-quality screenshot\n'
+                        '• Ensure all text is readable\n'
+                        '• Include the full payment confirmation screen\n'
+                        '• Avoid cropping important details',
+                        style: TextStyle(fontSize: 11),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 16),
                 SizedBox(
@@ -784,12 +884,12 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
                 CircularProgressIndicator(),
                 SizedBox(height: 16),
                 Text(
-                  'Verifying your payment...',
+                  'Extracting text from screenshot...',
                   style: TextStyle(fontSize: 16),
                 ),
                 SizedBox(height: 8),
                 Text(
-                  'This may take a few seconds',
+                  'Using OCR to verify payment details',
                   style: TextStyle(fontSize: 12, color: Colors.grey),
                 ),
               ],
@@ -919,62 +1019,132 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
   }
 
   Future<void> _verifyPayment() async {
-    if (_selectedImage == null) return;
+    if (_selectedImage == null || _selectedImageBytes == null) return;
 
     setState(() {
       _isVerifyingPayment = true;
-      _verificationError = null;
+      _verificationError = null; // Clear previous error
     });
 
     try {
-      // Mock verification logic - in real implementation, this would use OCR/AI
-      // to extract text from the image and verify payment details
-      await Future.delayed(const Duration(seconds: 3)); // Simulate processing
+      // Show progress to user - OCR can take a few seconds
+      await Future.delayed(const Duration(milliseconds: 500));
 
-      final mockVerificationResult = await _performPaymentVerification();
+      final verificationResult = await _performPaymentVerification();
 
       setState(() {
         _isVerifyingPayment = false;
-        if (mockVerificationResult['success']) {
+        if (verificationResult['success']) {
           _isPaymentVerified = true;
           _isVerificationComplete = true;
+
+          // Show success message with extracted details
+          final extractedAmount = verificationResult['extractedAmount'];
+          final confidence = verificationResult['confidence'];
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                extractedAmount != null
+                    ? 'Payment verified! Amount: ₹${extractedAmount.toStringAsFixed(2)} (${(confidence * 100).toStringAsFixed(1)}% confidence)'
+                    : 'Payment verified successfully!',
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+
+          // Automatically advance to the next step after successful verification
+          Future.delayed(const Duration(milliseconds: 1500), () {
+            if (mounted) {
+              setState(() {
+                _currentStep = 3; // Move to final submission step
+              });
+            }
+          });
         } else {
-          _verificationError = mockVerificationResult['error'];
+          _verificationError = verificationResult['error'];
+
+          // Stay on upload step (step 2) instead of advancing to verification step
+          _currentStep = 2;
+
+          // Show user-friendly error message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Payment verification failed. Please check your screenshot and try again.',
+              ),
+              backgroundColor: Colors.red,
+              action: SnackBarAction(
+                label: 'Try Again',
+                textColor: Colors.white,
+                onPressed: _verifyPayment,
+              ),
+            ),
+          );
         }
       });
     } catch (e) {
       setState(() {
         _isVerifyingPayment = false;
-        _verificationError = 'Verification failed: $e';
+        _verificationError =
+            'Verification failed due to a technical error. Please try again with a clear screenshot.';
+        _currentStep = 2; // Stay on upload step
       });
+
+      // Show user-friendly error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Unable to verify payment. Please try again.'),
+          backgroundColor: Colors.red,
+          action: SnackBarAction(
+            label: 'Try Again',
+            textColor: Colors.white,
+            onPressed: _verifyPayment,
+          ),
+        ),
+      );
     }
   }
 
   Future<Map<String, dynamic>> _performPaymentVerification() async {
-    // Mock verification - in real implementation, this would:
-    // 1. Upload image to backend
-    // 2. Use OCR to extract text from screenshot
-    // 3. Parse amount, UPI ID, date/time
-    // 4. Verify against expected values
-
-    // For now, we'll simulate a successful verification
-    final expectedAmount = double.parse(_amountController.text);
-    final expectedUpiId = _campaign?.upiId ?? '';
-
-    // Random success/failure for demo
-    final isSuccess = DateTime.now().millisecond % 3 != 0; // 66% success rate
-
-    if (isSuccess) {
-      return {'success': true};
-    } else {
+    if (_selectedImageBytes == null) {
       return {
         'success': false,
-        'error':
-            'Could not verify payment details from screenshot. Please ensure:\n'
-            '• Screenshot shows payment confirmation\n'
-            '• Amount is ₹${expectedAmount.toStringAsFixed(2)}\n'
-            '• Payment made to $expectedUpiId\n'
-            '• Screenshot is clear and readable',
+        'error': 'No payment screenshot available for verification',
+      };
+    }
+
+    try {
+      final verificationService = PaymentVerificationService();
+
+      final result = await verificationService.verifyPaymentScreenshot(
+        imageBytes: _selectedImageBytes!,
+        expectedAmount: double.parse(_amountController.text),
+        expectedUpiId: _campaign?.upiId ?? '',
+        contributorName: _nameController.text.trim(),
+      );
+
+      if (result.isValid) {
+        return {
+          'success': true,
+          'confidence': result.confidence,
+          'extractedAmount': result.extractedAmount,
+          'extractedUpiId': result.extractedUpiId,
+          'extractedDate': result.extractedDate,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Payment verification failed:\n${result.errors.join('\n')}',
+          'confidence': result.confidence,
+          'extractedAmount': result.extractedAmount,
+          'extractedUpiId': result.extractedUpiId,
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Verification failed due to technical error: $e',
       };
     }
   }
