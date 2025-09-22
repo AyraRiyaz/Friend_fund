@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import '../widgets/app_bar_with_menu.dart';
+import '../widgets/responsive_layout.dart';
 
 class HelpPage extends StatelessWidget {
   const HelpPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const AppBarWithMenu(title: 'Help & Support'),
-      drawer: const AppDrawer(),
-      body: SingleChildScrollView(
+    return ResponsiveLayout(
+      title: 'Help & Support',
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

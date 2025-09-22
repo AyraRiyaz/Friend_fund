@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../widgets/app_bar_with_menu.dart';
+import '../widgets/responsive_layout.dart';
 import '../widgets/campaign_card.dart';
 import '../controllers/campaign_controller.dart';
 import '../controllers/auth_controller.dart';
@@ -21,15 +21,14 @@ class MyCampaignsScreen extends StatelessWidget {
             .where((c) => c.hostId == currentUserId)
             .toList();
 
-        return Scaffold(
-          appBar: const AppBarWithMenu(title: 'My Campaigns'),
-          drawer: const AppDrawer(),
+        return ResponsiveLayout(
+          title: 'My Campaigns',
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () => showAddCampaignModal(context),
             icon: const Icon(Icons.add),
             label: const Text('New Campaign'),
           ),
-          body: myCampaigns.isEmpty
+          child: myCampaigns.isEmpty
               ? _buildEmptyState(context)
               : RefreshIndicator(
                   onRefresh: () async {

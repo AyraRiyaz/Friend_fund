@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../widgets/app_bar_with_menu.dart';
+import '../widgets/responsive_layout.dart';
 import '../controllers/campaign_controller.dart';
 import '../controllers/auth_controller.dart';
 import '../theme/app_theme.dart';
@@ -41,9 +41,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ? activeCampaigns
             : activeCampaigns.take(6).toList();
 
-        return Scaffold(
-          appBar: const AppBarWithMenu(title: 'FriendFund'),
-          drawer: const AppDrawer(),
+        return ResponsiveLayout(
+          title: 'FriendFund',
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () => showAddCampaignModal(context),
             icon: const Icon(Icons.add),
@@ -51,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
             tooltip: 'Create New Campaign',
             backgroundColor: AppTheme.primaryBlue,
           ),
-          body: RefreshIndicator(
+          child: RefreshIndicator(
             onRefresh: () async {
               await campaignController.loadCampaigns();
             },

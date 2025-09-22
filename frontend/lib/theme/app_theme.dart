@@ -2,9 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  static const Color primaryBlue = Color(0xFF2196F3);
-  static const Color secondaryBlue = Color(0xFF42A5F5);
-  static const Color accentBlue = Color(0xFF1976D2);
+  // Professional corporate blue palette - sophisticated and trustworthy
+  static const Color primaryBlue = Color(
+    0xFF2563EB,
+  ); // Corporate blue - main brand color
+  static const Color secondaryBlue = Color(
+    0xFF3B82F6,
+  ); // Lighter blue - gradients/accents
+  static const Color accentBlue = Color(
+    0xFF1D4ED8,
+  ); // Deeper blue - buttons/emphasis
   static const Color backgroundLight = Color(0xFFF8FAFC);
   static const Color surfaceWhite = Color(0xFFFFFFFF);
   static const Color textPrimary = Color(0xFF1E293B);

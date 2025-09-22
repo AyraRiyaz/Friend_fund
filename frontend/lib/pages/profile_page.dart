@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../widgets/app_bar_with_menu.dart';
+import '../widgets/responsive_layout.dart';
 import '../controllers/auth_controller.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -62,10 +62,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const AppBarWithMenu(title: 'Profile & Settings'),
-      drawer: const AppDrawer(),
-      body: Obx(() {
+    return ResponsiveLayout(
+      title: 'Profile & Settings',
+      child: Obx(() {
         final user = _authController.userProfile;
         final appwriteUser = _authController.appwriteUser;
 
