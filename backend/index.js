@@ -43,6 +43,8 @@ class FriendFundAPI {
       process.env.CAMPAIGNS_COLLECTION_ID || "68b54652001a8a757571";
     this.contributionsCollectionId =
       process.env.CONTRIBUTIONS_COLLECTION_ID || "68b54a0700208ba7fdaa";
+    this.loanRepaymentsCollectionId =
+      process.env.LOAN_REPAYMENTS_COLLECTION_ID || "68d2c85b000062e1be7b";
     this.screenshotsBucketId =
       process.env.SCREENSHOTS_BUCKET_ID || "68c66749001ad2d77cfa";
   }
@@ -815,6 +817,144 @@ class FriendFundAPI {
     }
   }
 
+  // Loan Repayment Methods
+  async createLoanRepayment(repaymentData) {
+    try {
+      const repayment = await this.databases.createDocument(
+        this.databaseId,
+        this.loanRepaymentsCollectionId,
+        ID.unique(),
+        {
+          loanContributionId: repaymentData.loanContributionId,
+          repayerId: repaymentData.repayerId,
+          amount: repaymentData.amount,
+          utr: repaymentData.utr,
+          paymentScreenshotUrl: repaymentData.paymentScreenshotUrl,
+          status: repaymentData.status || "pending",
+        }
+      );
+
+      return {
+        success: true,
+        data: repayment,
+        message: "Loan repayment created successfully",
+      };
+    } catch (error) {
+      console.error("Error creating loan repayment:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to create loan repayment",
+      };
+    }
+  }
+
+  async getUserLoanRepayments(userId) {
+    try {
+      const repayments = await this.databases.listDocuments(
+        this.databaseId,
+        this.loanRepaymentsCollectionId,
+        [Query.equal("repayerId", userId), Query.orderDesc("$createdAt")]
+      );
+
+      return {
+        success: true,
+        data: repayments.documents,
+        message: "User loan repayments retrieved successfully",
+      };
+    } catch (error) {
+      console.error("Error getting user loan repayments:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to get user loan repayments",
+      };
+    }
+  }
+
+  async getReceivedLoanRepayments(userId) {
+    try {
+      // Get all contributions where user is the contributor (they gave loans)
+      const contributions = await this.databases.listDocuments(
+        this.databaseId,
+        this.contributionsCollectionId,
+        [Query.equal("contributorId", userId), Query.equal("isLoan", true)]
+      );
+
+      // Get repayments for these contributions
+      const contributionIds = contributions.documents.map((doc) => doc.$id);
+
+      if (contributionIds.length === 0) {
+        return {
+          success: true,
+          data: [],
+          message: "No received loan repayments found",
+        };
+      }
+
+      const repayments = await this.databases.listDocuments(
+        this.databaseId,
+        this.loanRepaymentsCollectionId,
+        [
+          Query.equal("loanContributionId", contributionIds),
+          Query.orderDesc("$createdAt"),
+        ]
+      );
+
+      return {
+        success: true,
+        data: repayments.documents,
+        message: "Received loan repayments retrieved successfully",
+      };
+    } catch (error) {
+      console.error("Error getting received loan repayments:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to get received loan repayments",
+      };
+    }
+  }
+
+  async verifyLoanRepayment(repaymentId, verificationData) {
+    try {
+      const repayment = await this.databases.updateDocument(
+        this.databaseId,
+        this.loanRepaymentsCollectionId,
+        repaymentId,
+        {
+          status: verificationData.status, // "verified" or "rejected"
+          verifiedAt:
+            verificationData.status === "verified"
+              ? new Date().toISOString()
+              : null,
+        }
+      );
+
+      // If verified, update the original contribution status
+      if (verificationData.status === "verified") {
+        await this.databases.updateDocument(
+          this.databaseId,
+          this.contributionsCollectionId,
+          repayment.loanContributionId,
+          {
+            repaymentStatus: "repaid",
+            repaidAt: new Date().toISOString(),
+          }
+        );
+      }
+
+      return {
+        success: true,
+        data: repayment,
+        message: `Loan repayment ${verificationData.status} successfully`,
+      };
+    } catch (error) {
+      console.error("Error verifying loan repayment:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to verify loan repayment",
+      };
+    }
+  }
+
   async getOverdueLoans(userId) {
     try {
       // Get all user's campaigns
@@ -1079,6 +1219,40 @@ export default async ({ req, res, log, error: logError }) => {
         result = { success: false, error: "Invalid loan endpoint" };
         statusCode = 400;
       }
+    } else if (path.startsWith("/loan-repayments/")) {
+      const pathParts = path.split("/").filter((p) => p);
+
+      if (pathParts[1] === "user" && pathParts[2]) {
+        // GET /loan-repayments/user/{userId}
+        const userId = pathParts[2];
+        result = await friendFundAPI.getUserLoanRepayments(userId);
+      } else if (pathParts[1] === "received" && pathParts[2]) {
+        // GET /loan-repayments/received/{userId}
+        const userId = pathParts[2];
+        result = await friendFundAPI.getReceivedLoanRepayments(userId);
+      } else if (
+        pathParts[1] &&
+        pathParts[2] === "verify" &&
+        method === "POST"
+      ) {
+        // POST /loan-repayments/{id}/verify
+        const repaymentId = pathParts[1];
+        result = await friendFundAPI.verifyLoanRepayment(
+          repaymentId,
+          parsedBody
+        );
+      } else {
+        result = { success: false, error: "Invalid loan repayment endpoint" };
+        statusCode = 400;
+      }
+    } else if (path === "/loan-repayments") {
+      if (method === "POST") {
+        result = await friendFundAPI.createLoanRepayment(parsedBody);
+        statusCode = 201;
+      } else {
+        result = { success: false, error: "Method not allowed" };
+        statusCode = 405;
+      }
     } else {
       result = {
         success: false,
@@ -1099,6 +1273,10 @@ export default async ({ req, res, log, error: logError }) => {
           "GET /users/{id}/overdue-loans - Get user's overdue loans",
           "GET /summary - Get platform summary statistics",
           "PATCH /loans/{id}/repaid - Mark loan as repaid",
+          "POST /loan-repayments - Create loan repayment",
+          "GET /loan-repayments/user/{userId} - Get user's loan repayments",
+          "GET /loan-repayments/received/{userId} - Get received loan repayments",
+          "POST /loan-repayments/{id}/verify - Verify loan repayment",
         ],
       };
       statusCode = 404;
