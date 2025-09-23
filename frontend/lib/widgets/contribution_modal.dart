@@ -44,6 +44,7 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
   String _contributionType = 'gift'; // 'gift' or 'loan'
   DateTime? _selectedDueDate;
   String? _verificationError;
+  String? _extractedUTR; // Store extracted UTR from payment verification
 
   // Authentication state
   bool _isUserLoggedIn = false;
@@ -1073,6 +1074,7 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
         if (verificationResult['success']) {
           _isPaymentVerified = true;
           _isVerificationComplete = true;
+          _extractedUTR = verificationResult['extractedUTR']; // Store extracted UTR
 
           // Show success message with extracted details
           final extractedAmount = verificationResult['extractedAmount'];
@@ -1167,6 +1169,7 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
           'extractedAmount': result.extractedAmount,
           'extractedUpiId': result.extractedUpiId,
           'extractedDate': result.extractedDate,
+          'extractedUTR': result.extractedUTR,
         };
       } else {
         return {
@@ -1175,6 +1178,7 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
           'confidence': result.confidence,
           'extractedAmount': result.extractedAmount,
           'extractedUpiId': result.extractedUpiId,
+          'extractedUTR': result.extractedUTR,
         };
       }
     } catch (e) {
@@ -1216,7 +1220,7 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
             : null,
         'paymentScreenshotUrl': screenshotUrl,
         'paymentStatus': 'verified',
-        'utr': 'UPI${DateTime.now().millisecondsSinceEpoch}', // Mock UTR
+        'utr': _extractedUTR ?? 'MANUAL_${DateTime.now().millisecondsSinceEpoch}', // Use extracted UTR or fallback
         // Authentication-based contributor ID handling
         'contributorId': _isUserLoggedIn ? _loggedInUserId : null,
         'isAnonymous': !_isUserLoggedIn,
@@ -1243,12 +1247,41 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error submitting contribution: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        // Check if this is a duplicate UTR error
+        String errorMessage = e.toString();
+        if (errorMessage.contains('Duplicate payment detected') || 
+            errorMessage.contains('already been used')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'This payment screenshot has already been used. Please use a different payment screenshot or upload a new payment receipt.',
+              ),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 5),
+              action: SnackBarAction(
+                label: 'Try Again',
+                textColor: Colors.white,
+                onPressed: () {
+                  setState(() {
+                    _currentStep = 2; // Go back to screenshot upload step
+                    _selectedImage = null;
+                    _selectedImageBytes = null;
+                    _isPaymentVerified = false;
+                    _isVerificationComplete = false;
+                    _extractedUTR = null;
+                  });
+                },
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error submitting contribution: $errorMessage'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } finally {
       if (mounted) {

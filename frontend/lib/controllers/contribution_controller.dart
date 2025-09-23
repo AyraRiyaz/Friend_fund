@@ -62,9 +62,18 @@ class ContributionController extends GetxController {
       return contribution;
     } catch (e) {
       _errorMessage.value = e.toString();
+      
+      // Check for specific error types to provide better user feedback
+      String errorMessage = e.toString();
+      if (errorMessage.contains('Duplicate payment detected') || 
+          errorMessage.contains('already been used')) {
+        // Re-throw with specific error for duplicate UTR
+        throw Exception('Duplicate payment detected: This payment screenshot has already been used. Please use a different payment screenshot.');
+      }
+      
       Get.snackbar(
         'Error',
-        'Failed to create contribution: $e',
+        'Failed to create contribution: $errorMessage',
         snackPosition: SnackPosition.BOTTOM,
       );
       return null;
