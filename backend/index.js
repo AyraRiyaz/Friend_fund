@@ -13,6 +13,7 @@ import {
   Query,
   Permission,
   Role,
+  InputFile,
 } from "node-appwrite";
 import QRCode from "qrcode";
 import { createWorker } from "tesseract.js";
@@ -614,32 +615,33 @@ class FriendFundAPI {
 
   async uploadPaymentScreenshot(fileBuffer, fileName, contributionId) {
     try {
+      // Use InputFile.fromBuffer for proper file upload
+      const inputFile = InputFile.fromBuffer(fileBuffer, fileName);
+
       const file = await this.storage.createFile(
         this.screenshotsBucketId,
         ID.unique(),
-        fileBuffer,
+        inputFile,
         [Permission.read(Role.any())]
       );
 
-      // Update contribution with screenshot URL
-      await this.databases.updateDocument(
-        this.databaseId,
-        this.contributionsCollectionId,
-        contributionId,
-        {
-          paymentScreenshotUrl: file.$id,
-        }
-      );
+      // Get file URL for frontend use
+      const fileUrl = `${process.env.APPWRITE_FUNCTION_ENDPOINT}/storage/buckets/${this.screenshotsBucketId}/files/${file.$id}/view?project=${process.env.APPWRITE_FUNCTION_PROJECT_ID}`;
+
+      // For loan repayments, we don't need to update the contribution document
+      // The loan repayment will have its own paymentScreenshotUrl field
 
       return {
         success: true,
         data: {
           fileId: file.$id,
           fileName: fileName,
+          fileUrl: fileUrl,
         },
       };
     } catch (error) {
       console.error("Error uploading payment screenshot:", error);
+      console.error("Error details:", JSON.stringify(error, null, 2));
       return {
         success: false,
         error: error.message || "Failed to upload screenshot",
