@@ -346,6 +346,36 @@ class FriendFundAPI {
     }
   }
 
+  // UTR Duplication Check
+  async checkUtrDuplication(utrNumber, campaignId) {
+    try {
+      // Query contributions with the same UTR number in the same campaign
+      const existingContributions = await this.databases.listDocuments(
+        this.databaseId,
+        this.contributionsCollectionId,
+        [Query.equal("campaignId", campaignId), Query.equal("utr", utrNumber)]
+      );
+
+      const isDuplicate = existingContributions.total > 0;
+
+      return {
+        success: true,
+        data: {
+          isDuplicate: isDuplicate,
+          utrNumber: utrNumber,
+          campaignId: campaignId,
+          existingContributionsCount: existingContributions.total,
+        },
+      };
+    } catch (error) {
+      console.error("Error checking UTR duplication:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to check UTR duplication",
+      };
+    }
+  }
+
   // QR Code Generation for UPI Payment
   async generatePaymentQRCode(campaignId, upiId, amount = null) {
     try {
@@ -930,6 +960,16 @@ export default async ({ req, res, log, error: logError }) => {
           contributionId,
           parsedBody
         );
+      } else if (
+        pathParts[1] === "check-utr" &&
+        pathParts[2] &&
+        pathParts[3] &&
+        method === "GET"
+      ) {
+        // GET /contributions/check-utr/{campaignId}/{utrNumber}
+        const campaignId = pathParts[2];
+        const utrNumber = pathParts[3];
+        result = await friendFundAPI.checkUtrDuplication(utrNumber, campaignId);
       } else {
         result = { success: false, error: "Invalid contributions endpoint" };
         statusCode = 400;
