@@ -276,16 +276,6 @@ class FriendFundAPI {
 
   async createContribution(contributionData) {
     try {
-      // Check for duplicate UTR if provided
-      if (contributionData.utr || contributionData.utrNumber) {
-        const utrToCheck = contributionData.utr || contributionData.utrNumber;
-        const duplicateCheck = await this.checkDuplicateUTR(utrToCheck);
-
-        if (!duplicateCheck.success) {
-          return duplicateCheck; // Return the error response
-        }
-      }
-
       // Create contribution record
       const contribution = await this.databases.createDocument(
         this.databaseId,
@@ -297,7 +287,6 @@ class FriendFundAPI {
           type: contributionData.type || "donation",
           isAnonymous: contributionData.isAnonymous || false,
           paymentStatus: contributionData.paymentStatus || "pending",
-          utr: contributionData.utr || contributionData.utrNumber || "", // Ensure UTR is stored
         },
         [Permission.read(Role.any())]
       );
@@ -331,61 +320,6 @@ class FriendFundAPI {
       return {
         success: false,
         error: error.message || "Failed to create contribution",
-      };
-    }
-  }
-
-  // Check for duplicate UTR number in existing contributions
-  async checkDuplicateUTR(utrNumber) {
-    try {
-      if (!utrNumber || utrNumber.trim() === "") {
-        return {
-          success: true,
-          message: "No UTR provided, skipping duplicate check",
-        };
-      }
-
-      console.log(`Checking for duplicate UTR: ${utrNumber}`);
-
-      // Query for existing contributions with the same UTR
-      const existingContributions = await this.databases.listDocuments(
-        this.databaseId,
-        this.contributionsCollectionId,
-        [
-          Query.equal("utr", utrNumber.trim()),
-          Query.limit(1), // We only need to know if one exists
-        ]
-      );
-
-      if (existingContributions.documents.length > 0) {
-        const existingContribution = existingContributions.documents[0];
-        console.log(
-          `Duplicate UTR found: ${utrNumber} in contribution ${existingContribution.$id}`
-        );
-
-        return {
-          success: false,
-          error: "Duplicate payment detected",
-          message: `This payment screenshot has already been used. UTR number ${utrNumber} was already submitted on ${new Date(
-            existingContribution.$createdAt
-          ).toLocaleDateString()}. Please use a different payment screenshot.`,
-          duplicateContributionId: existingContribution.$id,
-          duplicateUTR: utrNumber,
-        };
-      }
-
-      console.log(`No duplicate UTR found for: ${utrNumber}`);
-      return {
-        success: true,
-        message: "UTR is unique, safe to proceed",
-      };
-    } catch (error) {
-      console.error("Error checking duplicate UTR:", error);
-      // Don't block contribution creation if UTR check fails
-      return {
-        success: true,
-        message: "UTR duplicate check failed, proceeding anyway",
-        warning: error.message,
       };
     }
   }
@@ -510,22 +444,6 @@ class FriendFundAPI {
       // Extract payment information from text
       const paymentInfo = this.extractPaymentInfo(text, expectedAmount);
 
-      // Check for duplicate UTR if one was extracted
-      if (paymentInfo.utrNumber) {
-        const duplicateCheck = await this.checkDuplicateUTR(
-          paymentInfo.utrNumber
-        );
-        if (!duplicateCheck.success) {
-          return {
-            success: false,
-            error: duplicateCheck.error,
-            message: duplicateCheck.message,
-            duplicateDetected: true,
-            duplicateUTR: paymentInfo.utrNumber,
-          };
-        }
-      }
-
       // Create contribution with OCR extracted data
       const contribution = await this.databases.createDocument(
         this.databaseId,
@@ -539,7 +457,6 @@ class FriendFundAPI {
           extractedText: text,
           extractedAmount: paymentInfo.extractedAmount,
           transactionId: paymentInfo.transactionId,
-          utr: paymentInfo.utrNumber || "", // Store the extracted UTR
           ocrConfidence: paymentInfo.confidence,
         },
         [Permission.read(Role.any())]
@@ -571,8 +488,6 @@ class FriendFundAPI {
           contribution: contribution,
           paymentInfo: paymentInfo,
           autoVerified: paymentInfo.isValid,
-          utrExtracted: !!paymentInfo.utrNumber,
-          extractedUTR: paymentInfo.utrNumber,
         },
       };
     } catch (error) {
@@ -593,17 +508,11 @@ class FriendFundAPI {
       /Amount.*?(\d+(?:,\d+)*(?:\.\d{2})?)/gi,
     ];
 
-    // Enhanced UTR/Transaction ID patterns
-    const utrPatterns = [
-      /UTR\s*(?:NO|NUMBER|#)?\s*:?\s*(\d{12})/gi,
-      /(?:Transaction|Txn|Trans)\s*(?:ID|No|Number|Ref)?\s*:?\s*([A-Z0-9]{8,20})/gi,
-      /UPI\s*(?:Transaction|Txn|Ref|Reference)?\s*(?:ID|No|Number)?\s*:?\s*([A-Z0-9]{8,20})/gi,
-      /(?:Ref|Reference)\s*(?:No|Number)?\s*:?\s*([A-Z0-9]{8,20})/gi,
-      /([0-9]{12})/g, // 12-digit UTR
-      /([A-Z]{2,4}[0-9]{10,16})/g, // Bank code + numbers
-      /(?:TXN|TRN|TR)\s*:?\s*([A-Z0-9]{8,20})/gi,
-      /Payment\s*(?:ID|Reference)\s*:?\s*([A-Z0-9]{8,20})/gi,
-      /\b([A-Z]{3,6}[0-9]{8,14})\b/g,
+    // Transaction ID patterns
+    const transactionPatterns = [
+      /(?:Transaction|Txn|Trans|UPI|ID|Ref)\s*(?:ID|No|Number)?\s*:?\s*([A-Z0-9]+)/gi,
+      /([0-9]{12,16})/g, // Common transaction ID length
+      /([A-Z]{2,4}\d{10,14})/g, // Bank specific patterns
     ];
 
     // Success indicators
@@ -617,7 +526,7 @@ class FriendFundAPI {
     ];
 
     let extractedAmount = null;
-    let utrNumber = null;
+    let transactionId = null;
     let hasSuccessIndicator = false;
 
     // Extract amount
@@ -633,33 +542,16 @@ class FriendFundAPI {
       if (extractedAmount) break;
     }
 
-    // Extract UTR number with improved validation
-    for (const pattern of utrPatterns) {
+    // Extract transaction ID
+    for (const pattern of transactionPatterns) {
       const matches = text.matchAll(pattern);
       for (const match of matches) {
         if (match[1] && match[1].length >= 8) {
-          const candidate = match[1].trim();
-
-          // Filter out false positives
-          if (!this.isLikelyFalsePositiveUTR(candidate, text)) {
-            utrNumber = candidate;
-            break;
-          }
-        }
-      }
-      if (utrNumber) break;
-    }
-
-    // If no specific UTR found, look for any 12-digit number (common UTR format)
-    if (!utrNumber) {
-      const twelveDigitMatches = text.matchAll(/\b(\d{12})\b/g);
-      for (const match of twelveDigitMatches) {
-        const candidate = match[1];
-        if (!this.isLikelyFalsePositiveUTR(candidate, text)) {
-          utrNumber = candidate;
+          transactionId = match[1];
           break;
         }
       }
+      if (transactionId) break;
     }
 
     // Check for success indicators
@@ -670,49 +562,22 @@ class FriendFundAPI {
     // Calculate confidence and validity
     let confidence = 0;
     if (extractedAmount) confidence += 40;
-    if (utrNumber) confidence += 30;
+    if (transactionId) confidence += 30;
     if (hasSuccessIndicator) confidence += 30;
 
     const amountMatches =
       extractedAmount && Math.abs(extractedAmount - expectedAmount) <= 1; // Allow ₹1 difference for fees
 
-    const isValid =
-      confidence >= 70 && amountMatches && hasSuccessIndicator && utrNumber;
+    const isValid = confidence >= 70 && amountMatches && hasSuccessIndicator;
 
     return {
       extractedAmount,
-      transactionId: utrNumber, // Keep for backward compatibility
-      utrNumber, // Add explicit UTR field
+      transactionId,
       hasSuccessIndicator,
       confidence,
       isValid,
       amountMatches,
     };
-  }
-
-  // Helper method to filter out false positive UTR numbers
-  isLikelyFalsePositiveUTR(candidate, fullText) {
-    // Filter out phone numbers (starting with common Indian prefixes)
-    if (candidate.startsWith("91") && candidate.length === 12) return true;
-    if (candidate.length === 10 && ["9", "8", "7", "6"].includes(candidate[0]))
-      return true;
-
-    // Filter out timestamps (milliseconds since epoch - usually 13 digits)
-    if (candidate.length === 13 && candidate.startsWith("1")) return true;
-
-    // Filter out account numbers (usually appear with context)
-    const context = fullText.toLowerCase();
-    if (context.includes("account") && context.includes(candidate)) return true;
-    if (context.includes("••••") && context.includes(candidate)) return true;
-
-    // Filter out card numbers (usually masked)
-    if (candidate.length === 16 && context.includes("card")) return true;
-
-    // Filter out amounts that got picked up
-    const amount = parseFloat(candidate);
-    if (amount && amount < 100000 && candidate.length <= 6) return true;
-
-    return false;
   }
 
   async uploadPaymentScreenshot(fileBuffer, fileName, contributionId) {
