@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../config/app_config.dart';
 // import './ocr_service.dart';
 
 // Temporary OCR classes for testing
@@ -25,11 +26,13 @@ class PaymentTextAnalysis {
   final List<String> foundKeywords;
   final List<double> extractedAmounts;
   final List<String> extractedUpiIds;
+  final List<String> extractedUtrNumbers;
   final String rawText;
   final List<String> validationErrors;
   final bool amountValid;
   final bool upiValid;
   final bool dateValid;
+  final bool utrValid;
   final double evidenceScore;
   final String intelligentAnalysis;
 
@@ -39,11 +42,13 @@ class PaymentTextAnalysis {
     required this.foundKeywords,
     required this.extractedAmounts,
     required this.extractedUpiIds,
+    required this.extractedUtrNumbers,
     required this.rawText,
     this.validationErrors = const [],
     this.amountValid = false,
     this.upiValid = false,
     this.dateValid = false,
+    this.utrValid = false,
     this.evidenceScore = 0.0,
     this.intelligentAnalysis = '',
   });
@@ -55,11 +60,13 @@ class PaymentTextAnalysis {
       'foundKeywords': foundKeywords,
       'extractedAmounts': extractedAmounts,
       'extractedUpiIds': extractedUpiIds,
+      'extractedUtrNumbers': extractedUtrNumbers,
       'rawText': rawText,
       'validationErrors': validationErrors,
       'amountValid': amountValid,
       'upiValid': upiValid,
       'dateValid': dateValid,
+      'utrValid': utrValid,
       'evidenceScore': evidenceScore,
       'intelligentAnalysis': intelligentAnalysis,
     };
@@ -159,14 +166,17 @@ class OCRService {
     final amounts = _extractAmounts(extractedText);
     final upiIds = _extractUpiIds(extractedText);
     final dates = _extractDates(extractedText);
+    final utrNumbers = _extractUtrNumbers(extractedText);
 
     print('Found amounts: $amounts');
     print('Found UPI IDs: $upiIds');
     print('Found dates: $dates');
+    print('Found UTR numbers: $utrNumbers');
 
     // STRICT validation - all must match exactly
     bool amountValid = amounts.contains(expectedAmount);
     bool upiValid = _validateUpiId(extractedText, upiIds, expectedUpiId);
+    bool utrValid = utrNumbers.isNotEmpty; // At least one UTR must be found
 
     // Date must be today
     final today = DateTime.now();
@@ -178,7 +188,7 @@ class OCRService {
     );
 
     // All conditions must be met
-    bool isValid = amountValid && upiValid && dateValid;
+    bool isValid = amountValid && upiValid && dateValid && utrValid;
 
     List<String> issues = [];
     if (!amountValid)
@@ -193,11 +203,16 @@ class OCRService {
       issues.add(
         'Date is not today. Expected: ${today.day}/${today.month}/${today.year}, Found: $dates',
       );
+    if (!utrValid)
+      issues.add(
+        'No valid UTR/Transaction ID found in the screenshot. Found: $utrNumbers',
+      );
 
     print('VALIDATION RESULTS:');
     print('- Amount Match: ${amountValid ? "✅" : "❌"}');
     print('- UPI Match: ${upiValid ? "✅" : "❌"}');
     print('- Date Match: ${dateValid ? "✅" : "❌"}');
+    print('- UTR Found: ${utrValid ? "✅" : "❌"}');
     print('FINAL RESULT: ${isValid ? "ACCEPTED" : "REJECTED"}');
 
     if (issues.isNotEmpty) {
@@ -210,11 +225,13 @@ class OCRService {
       foundKeywords: _findPaymentKeywords(extractedText),
       extractedAmounts: amounts,
       extractedUpiIds: upiIds,
+      extractedUtrNumbers: utrNumbers,
       rawText: extractedText,
       validationErrors: issues,
       amountValid: amountValid,
       upiValid: upiValid,
       dateValid: dateValid,
+      utrValid: utrValid,
       evidenceScore: isValid ? 100.0 : 0.0,
       intelligentAnalysis: isValid
           ? 'All criteria matched exactly'
@@ -498,6 +515,60 @@ class OCRService {
     return dates.toSet().toList();
   }
 
+  List<String> _extractUtrNumbers(String text) {
+    final utrNumbers = <String>[];
+
+    // UTR/Transaction ID patterns
+    final utrPatterns = [
+      // Standard 12-digit UTR number
+      RegExp(r'\b(\d{12})\b'),
+
+      // UPI transaction ID patterns
+      RegExp(
+        r'(?:utr|transaction\s+id|txn\s+id|ref\s+no|reference)\s*[:\-]?\s*([a-z0-9]{10,})',
+        caseSensitive: false,
+      ),
+
+      // Common UPI formats like UPI12345678901234
+      RegExp(r'\b(UPI\d{12,})\b', caseSensitive: false),
+
+      // PhonePe, GPay, Paytm transaction ID patterns
+      RegExp(r'\b([A-Z0-9]{10,20})\b'),
+
+      // IMPS/NEFT reference numbers
+      RegExp(r'\b([A-Z]{4}\d{8,12})\b'),
+    ];
+
+    for (final pattern in utrPatterns) {
+      for (final match in pattern.allMatches(text)) {
+        final utr = match.group(1);
+        if (utr != null && utr.length >= 10) {
+          // Validate that it's not a timestamp, phone number, or other common false positive
+          if (!_isLikelyNotUtr(utr)) {
+            utrNumbers.add(utr.toUpperCase());
+          }
+        }
+      }
+    }
+
+    return utrNumbers.toSet().toList();
+  }
+
+  /// Helper method to filter out strings that are likely not UTR numbers
+  bool _isLikelyNotUtr(String value) {
+    // Filter out timestamps (13 digits starting with 1)
+    if (value.length == 13 && value.startsWith('1')) return true;
+
+    // Filter out phone numbers (10 digits starting with 6,7,8,9)
+    if (value.length == 10 && RegExp(r'^[6-9]').hasMatch(value)) return true;
+
+    // Filter out amounts (pure numbers under a certain threshold)
+    final numValue = int.tryParse(value);
+    if (numValue != null && numValue < 1000000) return true;
+
+    return false;
+  }
+
   List<String> _findPaymentKeywords(String text) {
     final keywords = <String>[];
     final paymentWords = [
@@ -535,12 +606,53 @@ class PaymentVerificationService {
 
   final OCRService _ocrService = OCRService();
 
+  /// Check if a UTR number already exists in the database
+  Future<bool> checkUtrDuplication(String utrNumber, String campaignId) async {
+    try {
+      // Make API call to check UTR duplication
+      final url =
+          '${AppConfig.baseUrl}/contributions/check-utr/$campaignId/$utrNumber';
+      final uri = Uri.parse(url);
+
+      final response = await http
+          .get(uri)
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw Exception('UTR check timeout');
+            },
+          );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          final isDuplicate = data['data']['isDuplicate'] ?? false;
+          print(
+            'UTR duplication check result: $isDuplicate for UTR: $utrNumber',
+          );
+          return isDuplicate;
+        } else {
+          print('UTR check API error: ${data['error']}');
+          return false; // Allow transaction on API error
+        }
+      } else {
+        print('UTR check HTTP error: ${response.statusCode}');
+        return false; // Allow transaction on HTTP error
+      }
+    } catch (e) {
+      print('Error checking UTR duplication: $e');
+      // On error, we'll allow the transaction to proceed
+      return false;
+    }
+  }
+
   /// Verify payment screenshot using OCR with STRICT validation
   Future<PaymentVerificationResult> verifyPaymentScreenshot({
     required Uint8List imageBytes,
     required double expectedAmount,
     required String expectedUpiId,
     required String contributorName,
+    String? campaignId, // Add campaignId for UTR duplication check
   }) async {
     if (kIsWeb) {
       // For web, use OCR-based verification
@@ -549,6 +661,7 @@ class PaymentVerificationService {
         expectedAmount: expectedAmount,
         expectedUpiId: expectedUpiId,
         contributorName: contributorName,
+        campaignId: campaignId,
       );
     } else {
       // For mobile, use the same web approach for consistency
@@ -557,6 +670,7 @@ class PaymentVerificationService {
         expectedAmount: expectedAmount,
         expectedUpiId: expectedUpiId,
         contributorName: contributorName,
+        campaignId: campaignId,
       );
     }
   }
@@ -567,6 +681,7 @@ class PaymentVerificationService {
     required double expectedAmount,
     required String expectedUpiId,
     required String contributorName,
+    String? campaignId,
   }) async {
     try {
       return await _performOCRVerification(
@@ -574,6 +689,7 @@ class PaymentVerificationService {
         expectedAmount: expectedAmount,
         expectedUpiId: expectedUpiId,
         contributorName: contributorName,
+        campaignId: campaignId,
       );
     } catch (e) {
       print('Web verification error: $e');
@@ -583,6 +699,7 @@ class PaymentVerificationService {
         errors: <String>['Unable to verify payment. Please try again.'],
         extractedAmount: null,
         extractedUpiId: null,
+        extractedUtrNumber: null,
         extractedDate: null,
         verificationMethod: 'Error handling',
       );
@@ -595,6 +712,7 @@ class PaymentVerificationService {
     required double expectedAmount,
     required String expectedUpiId,
     required String contributorName,
+    String? campaignId,
   }) async {
     try {
       // Extract text from image using OCR
@@ -610,6 +728,7 @@ class PaymentVerificationService {
           ],
           extractedAmount: null,
           extractedUpiId: null,
+          extractedUtrNumber: null,
           extractedDate: null,
           verificationMethod: 'OCR-based verification',
         );
@@ -623,6 +742,31 @@ class PaymentVerificationService {
       );
       print('Payment Analysis: ${paymentAnalysis.toJson()}');
 
+      // Check for UTR duplication if campaignId is provided and UTR is found
+      if (campaignId != null &&
+          paymentAnalysis.extractedUtrNumbers.isNotEmpty) {
+        final extractedUtr = paymentAnalysis.extractedUtrNumbers.first;
+        final isUtrDuplicate = await checkUtrDuplication(
+          extractedUtr,
+          campaignId,
+        );
+
+        if (isUtrDuplicate) {
+          return PaymentVerificationResult(
+            isValid: false,
+            confidence: 0.0,
+            errors: <String>[
+              'This payment screenshot has already been used. UTR: $extractedUtr already exists for this campaign.',
+            ],
+            extractedAmount: expectedAmount,
+            extractedUpiId: expectedUpiId,
+            extractedUtrNumber: extractedUtr,
+            extractedDate: DateTime.now(),
+            verificationMethod: 'OCR-based verification',
+          );
+        }
+      }
+
       if (!paymentAnalysis.isPaymentRelated) {
         return PaymentVerificationResult(
           isValid: false,
@@ -632,6 +776,9 @@ class PaymentVerificationService {
               expectedAmount, // Show expected amount, not wrong extracted amount
           extractedUpiId:
               expectedUpiId, // Show expected UPI, not wrong extracted UPI
+          extractedUtrNumber: paymentAnalysis.extractedUtrNumbers.isNotEmpty
+              ? paymentAnalysis.extractedUtrNumbers.first
+              : null,
           extractedDate: DateTime.now(),
           verificationMethod: 'OCR-based verification',
         );
@@ -646,6 +793,9 @@ class PaymentVerificationService {
             expectedAmount, // Show expected amount since validation passed
         extractedUpiId:
             expectedUpiId, // Show expected UPI since validation passed
+        extractedUtrNumber: paymentAnalysis.extractedUtrNumbers.isNotEmpty
+            ? paymentAnalysis.extractedUtrNumbers.first
+            : null,
         extractedDate: DateTime.now(),
         verificationMethod: 'OCR-based verification',
       );
@@ -657,6 +807,7 @@ class PaymentVerificationService {
         errors: <String>['Unable to verify payment. Please try again.'],
         extractedAmount: null,
         extractedUpiId: null,
+        extractedUtrNumber: null,
         extractedDate: null,
         verificationMethod: 'OCR-based verification',
       );
@@ -671,6 +822,7 @@ class PaymentVerificationResult {
   final List<String> errors;
   final double? extractedAmount;
   final String? extractedUpiId;
+  final String? extractedUtrNumber;
   final DateTime? extractedDate;
   final String? verificationMethod;
 
@@ -680,6 +832,7 @@ class PaymentVerificationResult {
     required this.errors,
     this.extractedAmount,
     this.extractedUpiId,
+    this.extractedUtrNumber,
     this.extractedDate,
     this.verificationMethod,
   });
@@ -691,6 +844,7 @@ class PaymentVerificationResult {
       'errors': errors,
       'extractedAmount': extractedAmount,
       'extractedUpiId': extractedUpiId,
+      'extractedUtrNumber': extractedUtrNumber,
       'extractedDate': extractedDate?.toIso8601String(),
       'verificationMethod': verificationMethod,
     };

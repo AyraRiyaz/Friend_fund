@@ -44,6 +44,7 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
   String _contributionType = 'gift'; // 'gift' or 'loan'
   DateTime? _selectedDueDate;
   String? _verificationError;
+  String? _extractedUtrNumber; // Store extracted UTR from payment verification
 
   // Authentication state
   bool _isUserLoggedIn = false;
@@ -1045,6 +1046,8 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
           _selectedImageBytes = imageBytes;
           _verificationError = null;
           _isPaymentVerified = false;
+          _extractedUtrNumber =
+              null; // Reset extracted UTR when new image is selected
         });
       }
     } catch (e) {
@@ -1073,6 +1076,9 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
         if (verificationResult['success']) {
           _isPaymentVerified = true;
           _isVerificationComplete = true;
+
+          // Store extracted UTR number for later use
+          _extractedUtrNumber = verificationResult['extractedUtrNumber'];
 
           // Show success message with extracted details
           final extractedAmount = verificationResult['extractedAmount'];
@@ -1158,6 +1164,8 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
         expectedAmount: double.parse(_amountController.text),
         expectedUpiId: _campaign?.upiId ?? '',
         contributorName: _nameController.text.trim(),
+        campaignId:
+            widget.campaignId, // Pass campaign ID for UTR duplication check
       );
 
       if (result.isValid) {
@@ -1166,6 +1174,7 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
           'confidence': result.confidence,
           'extractedAmount': result.extractedAmount,
           'extractedUpiId': result.extractedUpiId,
+          'extractedUtrNumber': result.extractedUtrNumber,
           'extractedDate': result.extractedDate,
         };
       } else {
@@ -1175,6 +1184,7 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
           'confidence': result.confidence,
           'extractedAmount': result.extractedAmount,
           'extractedUpiId': result.extractedUpiId,
+          'extractedUtrNumber': result.extractedUtrNumber,
         };
       }
     } catch (e) {
@@ -1216,7 +1226,9 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
             : null,
         'paymentScreenshotUrl': screenshotUrl,
         'paymentStatus': 'verified',
-        'utr': 'UPI${DateTime.now().millisecondsSinceEpoch}', // Mock UTR
+        'utr':
+            _extractedUtrNumber ??
+            'UPI${DateTime.now().millisecondsSinceEpoch}', // Use extracted UTR or fallback
         // Authentication-based contributor ID handling
         'contributorId': _isUserLoggedIn ? _loggedInUserId : null,
         'isAnonymous': !_isUserLoggedIn,
