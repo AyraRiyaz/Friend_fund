@@ -627,7 +627,7 @@ class FriendFundAPI {
         this.loanRepaymentsCollectionId, // Use loan repayments collection for screenshots
         ID.unique(),
         {
-          type: "payment_screenshot",
+          status: "payment_screenshot",
           loanContributionId: contributionId,
           fileName: fileName,
           fileData: fileBuffer.toString("base64"), // Store as base64 string
