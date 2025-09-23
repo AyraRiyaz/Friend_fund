@@ -624,11 +624,11 @@ class FriendFundAPI {
       // Let's try saving the base64 as a document instead of using storage
       const screenshotDocument = await this.databases.createDocument(
         this.databaseId,
-        this.contributionsCollectionId, // We'll store it as a special document
+        this.loanRepaymentsCollectionId, // Use loan repayments collection for screenshots
         ID.unique(),
         {
           type: "payment_screenshot",
-          contributionId: contributionId,
+          loanContributionId: contributionId,
           fileName: fileName,
           fileData: fileBuffer.toString("base64"), // Store as base64 string
           uploadDate: new Date().toISOString(),
