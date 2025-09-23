@@ -617,29 +617,36 @@ class FriendFundAPI {
       console.log("Starting file upload:", {
         fileName,
         bufferSize: fileBuffer.length,
+        contributionId,
       });
 
-      // Try using the buffer as a Blob-like object
-      const blob = new Blob([fileBuffer], { type: "image/jpeg" });
-
-      console.log("Created blob:", { size: blob.size, type: blob.type });
-
-      const file = await this.storage.createFile(
-        this.screenshotsBucketId,
+      // For Appwrite Functions, we might need to use a different approach
+      // Let's try saving the base64 as a document instead of using storage
+      const screenshotDocument = await this.databases.createDocument(
+        this.databaseId,
+        this.contributionsCollectionId, // We'll store it as a special document
         ID.unique(),
-        blob,
+        {
+          type: "payment_screenshot",
+          contributionId: contributionId,
+          fileName: fileName,
+          fileData: fileBuffer.toString("base64"), // Store as base64 string
+          uploadDate: new Date().toISOString(),
+        },
         [Permission.read(Role.any())]
       );
 
-      // Get file URL for frontend use
-      const fileUrl = `${process.env.APPWRITE_FUNCTION_ENDPOINT}/storage/buckets/${this.screenshotsBucketId}/files/${file.$id}/view?project=${process.env.APPWRITE_FUNCTION_PROJECT_ID}`;
+      // Create a pseudo file URL
+      const fileUrl = `data:image/jpeg;base64,${fileBuffer.toString("base64")}`;
 
-      console.log("File uploaded successfully:", { fileId: file.$id, fileUrl });
+      console.log("Screenshot saved as document:", {
+        documentId: screenshotDocument.$id,
+      });
 
       return {
         success: true,
         data: {
-          fileId: file.$id,
+          fileId: screenshotDocument.$id,
           fileName: fileName,
           fileUrl: fileUrl,
         },
@@ -654,7 +661,9 @@ class FriendFundAPI {
     }
   }
 
-  // User Operations (for getting user info)
+  /**
+   * Get user information
+   */
   async getUser(userId) {
     try {
       const user = await this.users.get(userId);
