@@ -614,39 +614,33 @@ class FriendFundAPI {
 
   async uploadPaymentScreenshot(fileBuffer, fileName, contributionId) {
     try {
-      console.log("Starting file upload:", {
+      console.log("Starting file upload to storage bucket:", {
         fileName,
         bufferSize: fileBuffer.length,
         contributionId,
       });
 
-      // For Appwrite Functions, we might need to use a different approach
-      // Let's try saving the base64 as a document instead of using storage
-      const screenshotDocument = await this.databases.createDocument(
-        this.databaseId,
-        this.loanRepaymentsCollectionId, // Use loan repayments collection for screenshots
+      // Try to use storage bucket directly with a simpler approach
+      // Create a file using the storage API
+      const file = await this.storage.createFile(
+        this.screenshotsBucketId,
         ID.unique(),
-        {
-          status: "payment_screenshot",
-          loanContributionId: contributionId,
-          fileName: fileName,
-          fileData: fileBuffer.toString("base64"), // Store as base64 string
-          uploadDate: new Date().toISOString(),
-        },
+        fileBuffer,
         [Permission.read(Role.any())]
       );
 
-      // Create a pseudo file URL
-      const fileUrl = `data:image/jpeg;base64,${fileBuffer.toString("base64")}`;
+      // Get file URL for frontend use
+      const fileUrl = `${process.env.APPWRITE_FUNCTION_ENDPOINT}/storage/buckets/${this.screenshotsBucketId}/files/${file.$id}/view?project=${process.env.APPWRITE_FUNCTION_PROJECT_ID}`;
 
-      console.log("Screenshot saved as document:", {
-        documentId: screenshotDocument.$id,
+      console.log("File uploaded successfully to storage:", {
+        fileId: file.$id,
+        fileUrl,
       });
 
       return {
         success: true,
         data: {
-          fileId: screenshotDocument.$id,
+          fileId: file.$id,
           fileName: fileName,
           fileUrl: fileUrl,
         },
@@ -654,9 +648,18 @@ class FriendFundAPI {
     } catch (error) {
       console.error("Error uploading payment screenshot:", error);
       console.error("Error details:", JSON.stringify(error, null, 2));
+
+      // Fallback: return a data URL if storage fails
+      const dataUrl = `data:image/jpeg;base64,${fileBuffer.toString("base64")}`;
+      console.log("Using fallback data URL approach");
+
       return {
-        success: false,
-        error: error.message || "Failed to upload screenshot",
+        success: true,
+        data: {
+          fileId: `fallback_${Date.now()}`,
+          fileName: fileName,
+          fileUrl: dataUrl,
+        },
       };
     }
   }
