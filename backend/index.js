@@ -13,7 +13,6 @@ import {
   Query,
   Permission,
   Role,
-  InputFile,
 } from "node-appwrite";
 import QRCode from "qrcode";
 import { createWorker } from "tesseract.js";
@@ -615,13 +614,11 @@ class FriendFundAPI {
 
   async uploadPaymentScreenshot(fileBuffer, fileName, contributionId) {
     try {
-      // Use InputFile.fromBuffer for proper file upload
-      const inputFile = InputFile.fromBuffer(fileBuffer, fileName);
-
+      // Create file directly from buffer using the available API
       const file = await this.storage.createFile(
         this.screenshotsBucketId,
         ID.unique(),
-        inputFile,
+        fileBuffer,
         [Permission.read(Role.any())]
       );
 
