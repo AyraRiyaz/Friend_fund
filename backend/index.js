@@ -614,19 +614,27 @@ class FriendFundAPI {
 
   async uploadPaymentScreenshot(fileBuffer, fileName, contributionId) {
     try {
-      // Create file directly from buffer using the available API
+      console.log("Starting file upload:", {
+        fileName,
+        bufferSize: fileBuffer.length,
+      });
+
+      // Try using the buffer as a Blob-like object
+      const blob = new Blob([fileBuffer], { type: "image/jpeg" });
+
+      console.log("Created blob:", { size: blob.size, type: blob.type });
+
       const file = await this.storage.createFile(
         this.screenshotsBucketId,
         ID.unique(),
-        fileBuffer,
+        blob,
         [Permission.read(Role.any())]
       );
 
       // Get file URL for frontend use
       const fileUrl = `${process.env.APPWRITE_FUNCTION_ENDPOINT}/storage/buckets/${this.screenshotsBucketId}/files/${file.$id}/view?project=${process.env.APPWRITE_FUNCTION_PROJECT_ID}`;
 
-      // For loan repayments, we don't need to update the contribution document
-      // The loan repayment will have its own paymentScreenshotUrl field
+      console.log("File uploaded successfully:", { fileId: file.$id, fileUrl });
 
       return {
         success: true,
