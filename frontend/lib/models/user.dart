@@ -22,17 +22,28 @@ class User {
       id: json['id'] ?? json['\$id'] ?? '',
       name: json['name'] ?? '',
       phoneNumber:
+          json['phone'] ??
           json['mobileNumber'] ??
           json['phoneNumber'] ??
-          '', // Support both field names
+          '', // Support multiple field names, prioritizing 'phone' from API
       email: json['email'] ?? '',
-      upiId: json['upiId'],
-      profileImage: json['profileImage'],
+      upiId:
+          json['upiId'] ??
+          (json['prefs'] != null
+              ? json['prefs']['upiId']
+              : null), // Check prefs for upiId
+      profileImage:
+          json['profileImage'] ??
+          (json['prefs'] != null
+              ? json['prefs']['profileImage']
+              : null), // Check prefs for profileImage
       joinedAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
           : (json['joinedAt'] != null
                 ? DateTime.parse(json['joinedAt'])
-                : DateTime.now()), // Default to now if no timestamp available
+                : (json['prefs'] != null && json['prefs']['joinedAt'] != null
+                      ? DateTime.parse(json['prefs']['joinedAt'])
+                      : DateTime.now())), // Check multiple timestamp sources
     );
   }
 

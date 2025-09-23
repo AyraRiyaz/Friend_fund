@@ -6,6 +6,7 @@ import 'package:url_strategy/url_strategy.dart';
 import 'controllers/auth_controller.dart';
 import 'controllers/campaign_controller.dart';
 import 'controllers/contribution_controller.dart';
+import 'controllers/loan_repayment_controller.dart';
 import 'services/appwrite_auth_service.dart';
 import 'services/http_api_service.dart';
 import 'theme/app_theme.dart';
@@ -43,6 +44,7 @@ void main() async {
   Get.put(AuthController());
   Get.put(CampaignController());
   Get.put(ContributionController());
+  Get.put(LoanRepaymentController());
 
   runApp(const MyApp());
 }

@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../models/campaign.dart';
+import '../models/loan_repayment.dart';
 import '../models/user.dart' as app_user;
 
 /// HTTP API service for FriendFund backend integration
@@ -982,6 +983,208 @@ class HttpApiService {
         rethrow;
       }
       throw Exception('Failed to update contribution. Please try again later.');
+    }
+  }
+
+  // Loan Repayment Operations
+
+  /// Create a new loan repayment
+  Future<LoanRepayment> createLoanRepayment(
+    Map<String, dynamic> repaymentData,
+  ) async {
+    try {
+      final uri = Uri.parse('${AppConfig.baseUrl}/loan-repayments');
+
+      AppConfig.debugPrint('POST Create Loan Repayment: $uri');
+      AppConfig.debugPrint('Repayment Data: ${jsonEncode(repaymentData)}');
+
+      final response = await _client
+          .post(uri, headers: _headers, body: jsonEncode(repaymentData))
+          .timeout(AppConfig.connectTimeout);
+
+      final data = _handleResponse(response);
+
+      if (data['data'] != null) {
+        return LoanRepayment.fromJson(data['data']);
+      } else {
+        throw Exception('Failed to create loan repayment');
+      }
+    } on TimeoutException {
+      throw Exception(
+        'Connection timeout. Please check your internet connection.',
+      );
+    } on SocketException {
+      throw Exception('No internet connection. Please check your network.');
+    } catch (e) {
+      if (e.toString().contains('Exception:')) {
+        rethrow;
+      }
+      throw Exception(
+        'Failed to create loan repayment. Please try again later.',
+      );
+    }
+  }
+
+  /// Get user's loan repayments
+  Future<List<LoanRepayment>> getUserLoanRepayments(String userId) async {
+    try {
+      final uri = Uri.parse(
+        '${AppConfig.baseUrl}/loan-repayments/user/$userId',
+      );
+
+      AppConfig.debugPrint('GET User Loan Repayments: $uri');
+
+      final response = await _client
+          .get(uri, headers: _headers)
+          .timeout(AppConfig.connectTimeout);
+
+      final data = _handleResponse(response);
+
+      if (data['data'] is List) {
+        final repaymentsData = data['data'] as List;
+        return repaymentsData
+            .map((json) => LoanRepayment.fromJson(json))
+            .toList();
+      } else {
+        throw Exception('Invalid loan repayments data format');
+      }
+    } on TimeoutException {
+      throw Exception(
+        'Connection timeout. Please check your internet connection.',
+      );
+    } on SocketException {
+      throw Exception('No internet connection. Please check your network.');
+    } catch (e) {
+      if (e.toString().contains('Exception:')) {
+        rethrow;
+      }
+      throw Exception(
+        'Failed to load user loan repayments. Please try again later.',
+      );
+    }
+  }
+
+  /// Get loan repayments received by a user (loans repaid to them)
+  Future<List<LoanRepayment>> getReceivedLoanRepayments(String userId) async {
+    try {
+      final uri = Uri.parse(
+        '${AppConfig.baseUrl}/loan-repayments/received/$userId',
+      );
+
+      AppConfig.debugPrint('GET Received Loan Repayments: $uri');
+
+      final response = await _client
+          .get(uri, headers: _headers)
+          .timeout(AppConfig.connectTimeout);
+
+      final data = _handleResponse(response);
+
+      if (data['data'] is List) {
+        final repaymentsData = data['data'] as List;
+        return repaymentsData
+            .map((json) => LoanRepayment.fromJson(json))
+            .toList();
+      } else {
+        throw Exception('Invalid received loan repayments data format');
+      }
+    } on TimeoutException {
+      throw Exception(
+        'Connection timeout. Please check your internet connection.',
+      );
+    } on SocketException {
+      throw Exception('No internet connection. Please check your network.');
+    } catch (e) {
+      if (e.toString().contains('Exception:')) {
+        rethrow;
+      }
+      throw Exception(
+        'Failed to load received loan repayments. Please try again later.',
+      );
+    }
+  }
+
+  /// Get loan repayments for a specific loan contribution
+  Future<List<LoanRepayment>> getLoanRepaymentsByLoanId(
+    String loanContributionId,
+  ) async {
+    try {
+      final uri = Uri.parse(
+        '${AppConfig.baseUrl}/loan-repayments/loan/$loanContributionId',
+      );
+
+      AppConfig.debugPrint('GET Loan Repayments by Loan ID: $uri');
+
+      final response = await _client
+          .get(uri, headers: _headers)
+          .timeout(AppConfig.connectTimeout);
+
+      final data = _handleResponse(response);
+
+      if (data['data'] is List) {
+        final repaymentsData = data['data'] as List;
+        return repaymentsData
+            .map((json) => LoanRepayment.fromJson(json))
+            .toList();
+      } else {
+        throw Exception('Invalid loan repayments data format');
+      }
+    } on TimeoutException {
+      throw Exception(
+        'Connection timeout. Please check your internet connection.',
+      );
+    } on SocketException {
+      throw Exception('No internet connection. Please check your network.');
+    } catch (e) {
+      if (e.toString().contains('Exception:')) {
+        rethrow;
+      }
+      throw Exception(
+        'Failed to load loan repayments. Please try again later.',
+      );
+    }
+  }
+
+  /// Verify a loan repayment (admin function)
+  Future<LoanRepayment> verifyLoanRepayment(
+    String repaymentId,
+    bool isApproved,
+  ) async {
+    try {
+      final uri = Uri.parse(
+        '${AppConfig.baseUrl}/loan-repayments/$repaymentId/verify',
+      );
+
+      AppConfig.debugPrint('POST Verify Loan Repayment: $uri');
+
+      final requestData = {
+        'isApproved': isApproved,
+        'status': isApproved ? 'verified' : 'rejected',
+      };
+
+      final response = await _client
+          .post(uri, headers: _headers, body: jsonEncode(requestData))
+          .timeout(AppConfig.connectTimeout);
+
+      final data = _handleResponse(response);
+
+      if (data['data'] != null) {
+        return LoanRepayment.fromJson(data['data']);
+      } else {
+        throw Exception('Failed to verify loan repayment');
+      }
+    } on TimeoutException {
+      throw Exception(
+        'Connection timeout. Please check your internet connection.',
+      );
+    } on SocketException {
+      throw Exception('No internet connection. Please check your network.');
+    } catch (e) {
+      if (e.toString().contains('Exception:')) {
+        rethrow;
+      }
+      throw Exception(
+        'Failed to verify loan repayment. Please try again later.',
+      );
     }
   }
 

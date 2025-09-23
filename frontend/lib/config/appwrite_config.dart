@@ -8,6 +8,7 @@ class AppwriteConfig {
   static const String usersCollectionId = '68b5437f000585a01be6';
   static const String campaignsCollectionId = '68b54652001a8a757571';
   static const String contributionsCollectionId = '68b54a0700208ba7fdaa';
+  static const String loanRepaymentsCollectionId = '68d2c85b000062e1be7b';
 
   // Storage
   static const String screenshotsBucketId = '68c66749001ad2d77cfa';

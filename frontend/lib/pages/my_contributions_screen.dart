@@ -5,6 +5,7 @@ import '../theme/app_theme.dart';
 import '../models/campaign.dart';
 import '../controllers/contribution_controller.dart';
 import '../controllers/auth_controller.dart';
+import '../widgets/loan_repayment_modal.dart';
 
 class MyContributionsScreen extends StatefulWidget {
   const MyContributionsScreen({super.key});
@@ -556,6 +557,29 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
     }
   }
 
+  Future<void> _repayLoan(Contribution loan) async {
+    try {
+      final result = await showDialog<bool>(
+        context: context,
+        builder: (context) => LoanRepaymentModal(loanContribution: loan),
+      );
+
+      if (result == true) {
+        // Refresh the contributions to reflect the updated status
+        await _refreshContributions();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening repayment modal: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildLoansToRepayList(List<Contribution> loansToRepay) {
     if (loansToRepay.isEmpty) {
       return _buildLoansToRepayEmptyState();
@@ -810,7 +834,7 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
                             const SizedBox(height: 4),
                             Text(
                               isOverdue
-                                  ? 'This loan is overdue. Please contact ${loan.contributorName} immediately to arrange repayment.'
+                                  ? 'This loan is overdue. Please repay ₹${loan.amount.toStringAsFixed(0)} to ${loan.contributorName} immediately.'
                                   : 'This loan is due soon. Please prepare ₹${loan.amount.toStringAsFixed(0)} for repayment to ${loan.contributorName}.',
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
@@ -859,6 +883,32 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
                   ),
                 ),
               ],
+
+              // Repay Loan Button
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _repayLoan(loan),
+                  icon: const Icon(Icons.payment),
+                  label: Text(
+                    'Repay ₹${loan.amount.toStringAsFixed(0)}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isOverdue
+                        ? Colors.red
+                        : isNearDue
+                        ? Colors.orange
+                        : AppTheme.primaryBlue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),

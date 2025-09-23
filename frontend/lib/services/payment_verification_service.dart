@@ -523,6 +523,12 @@ class OCRService {
       // Standard 12-digit UTR number
       RegExp(r'\b(\d{12})\b'),
 
+      // UPI reference number with potential spaces (like "6911067 71966")
+      RegExp(
+        r'(?:upi\s+ref\.?\s+no\.?|reference\s+no\.?|ref\.?\s+no\.?)\s*[:\-]?\s*(\d+\s*\d+)',
+        caseSensitive: false,
+      ),
+
       // UPI transaction ID patterns
       RegExp(
         r'(?:utr|transaction\s+id|txn\s+id|ref\s+no|reference)\s*[:\-]?\s*([a-z0-9]{10,})',
@@ -537,15 +543,26 @@ class OCRService {
 
       // IMPS/NEFT reference numbers
       RegExp(r'\b([A-Z]{4}\d{8,12})\b'),
+
+      // Generic number patterns after payment keywords (backup)
+      RegExp(
+        r'(?:txn|transaction|reference|ref)\s*(?:no\.?|id|number)?\s*[:\-]?\s*(\d+(?:\s+\d+)*)',
+        caseSensitive: false,
+      ),
     ];
 
     for (final pattern in utrPatterns) {
       for (final match in pattern.allMatches(text)) {
         final utr = match.group(1);
-        if (utr != null && utr.length >= 10) {
-          // Validate that it's not a timestamp, phone number, or other common false positive
-          if (!_isLikelyNotUtr(utr)) {
-            utrNumbers.add(utr.toUpperCase());
+        if (utr != null) {
+          // Clean up the UTR (remove spaces, convert to uppercase)
+          final cleanUtr = utr.replaceAll(RegExp(r'\s+'), '');
+          if (cleanUtr.length >= 6) {
+            // Lowered minimum length for UTR acceptance
+            // Validate that it's not a timestamp, phone number, or other common false positive
+            if (!_isLikelyNotUtr(cleanUtr)) {
+              utrNumbers.add(cleanUtr.toUpperCase());
+            }
           }
         }
       }
@@ -564,7 +581,11 @@ class OCRService {
 
     // Filter out amounts (pure numbers under a certain threshold)
     final numValue = int.tryParse(value);
-    if (numValue != null && numValue < 1000000) return true;
+    if (numValue != null && numValue < 1000000 && value.length < 8)
+      return true; // Only filter small amounts with short length
+
+    // Filter out very short numbers (likely not UTR)
+    if (value.length < 6) return true;
 
     return false;
   }

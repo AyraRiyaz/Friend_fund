@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:typed_data';
+import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:get/get.dart';
 import '../models/campaign.dart';
@@ -1273,11 +1274,33 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
     if (_selectedImage == null) return null;
 
     try {
-      // In real implementation, upload to your file storage service
-      // For now, return a mock URL
-      return 'https://example.com/screenshots/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      // Read image bytes
+      final imageBytes = await _selectedImage!.readAsBytes();
+
+      // Convert to base64
+      final base64Image = base64Encode(imageBytes);
+
+      // Upload to Appwrite storage via backend
+      final uploadResult = await HttpApiService().uploadPaymentScreenshot(
+        fileBase64: base64Image,
+        fileName: 'contribution_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        contributionId:
+            widget.campaignId, // Use campaignId as contributionId for now
+      );
+
+      if (uploadResult['success'] == true) {
+        return uploadResult['data']?['fileUrl'] ?? uploadResult['fileUrl'];
+      } else {
+        throw Exception(uploadResult['error'] ?? 'Upload failed');
+      }
     } catch (e) {
       print('Error uploading screenshot: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error uploading screenshot: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
       return null;
     }
   }
