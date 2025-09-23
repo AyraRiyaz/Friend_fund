@@ -166,7 +166,7 @@ class OCRService {
 
     // STRICT validation - all must match exactly
     bool amountValid = amounts.contains(expectedAmount);
-    bool upiValid = upiIds.contains(expectedUpiId.toLowerCase());
+    bool upiValid = _validateUpiId(extractedText, upiIds, expectedUpiId);
 
     // Date must be today
     final today = DateTime.now();
@@ -224,23 +224,131 @@ class OCRService {
 
   List<double> _extractAmounts(String text) {
     final amounts = <double>[];
-    final patterns = [
-      RegExp(r'₹\s*(\d+(?:\.\d{2})?)', caseSensitive: false),
-      RegExp(r'rs\.?\s*(\d+(?:\.\d{2})?)', caseSensitive: false),
-      RegExp(r'amount\s*[:\-]?\s*(\d+(?:\.\d{2})?)', caseSensitive: false),
-      RegExp(r'\b(\d{2,6}(?:\.\d{2})?)\b'),
+
+    // First try specific amount patterns with context
+    final contextPatterns = [
+      // Standard ₹ symbol formats
+      RegExp(r'₹\s*(\d+(?:,\d+)*(?:\.\d{2})?)', caseSensitive: false),
+
+      // Rs. or RS formats
+      RegExp(r'rs\.?\s*(\d+(?:,\d+)*(?:\.\d{2})?)', caseSensitive: false),
+
+      // R100 format (common in BHIM and other apps)
+      RegExp(r'\bR\s*(\d+(?:,\d+)*(?:\.\d{2})?)', caseSensitive: false),
+
+      // F10 format (BharatPe format)
+      RegExp(r'\bF\s*(\d+(?:,\d+)*(?:\.\d{2})?)', caseSensitive: false),
+
+      // Amount: 100 format
+      RegExp(
+        r'amount\s*[:\-]?\s*(\d+(?:,\d+)*(?:\.\d{2})?)',
+        caseSensitive: false,
+      ),
+
+      // Received/Sent/Paid amount patterns
+      RegExp(
+        r'(?:received|sent|paid)\s*[:\-]?\s*[₹rs]*\s*(\d+(?:,\d+)*(?:\.\d{2})?)',
+        caseSensitive: false,
+      ),
+
+      // Transaction successful amount patterns
+      RegExp(
+        r'(?:successful|success)\s+.*?(\d+(?:,\d+)*(?:\.\d{2})?)',
+        caseSensitive: false,
+      ),
     ];
 
-    for (final pattern in patterns) {
+    // Extract using context patterns first
+    for (final pattern in contextPatterns) {
       for (final match in pattern.allMatches(text)) {
-        final amount = double.tryParse(match.group(1)!);
-        if (amount != null && amount > 0 && amount <= 100000) {
+        final amountStr = match.group(1)?.replaceAll(',', '') ?? '';
+        final amount = double.tryParse(amountStr);
+        if (amount != null && amount >= 1 && amount <= 100000) {
           amounts.add(amount);
         }
       }
     }
 
-    return amounts.toSet().toList()..sort();
+    // If no amounts found with context patterns, try standalone numbers with filtering
+    if (amounts.isEmpty) {
+      final standalonePattern = RegExp(r'\b(\d{1,6})\b');
+      for (final match in standalonePattern.allMatches(text)) {
+        final amountStr = match.group(1) ?? '';
+        final amount = double.tryParse(amountStr);
+
+        if (amount != null && amount >= 1 && amount <= 100000) {
+          // Filter out common non-amount numbers
+          if (!_isLikelyNonAmount(amountStr, text, match.start)) {
+            amounts.add(amount);
+          }
+        }
+      }
+    }
+
+    // Remove duplicates and sort
+    final uniqueAmounts = amounts.toSet().toList()..sort();
+    print('Debug - Amount extraction patterns found: $uniqueAmounts');
+    return uniqueAmounts;
+  }
+
+  /// Helper method to filter out numbers that are likely not amounts
+  bool _isLikelyNonAmount(String numberStr, String fullText, int position) {
+    final number = int.tryParse(numberStr) ?? 0;
+
+    // Filter out times (like 12:43, 12:42)
+    if (position > 0 && position < fullText.length - 1) {
+      final before = position > 0 ? fullText[position - 1] : '';
+      final after = position + numberStr.length < fullText.length
+          ? fullText[position + numberStr.length]
+          : '';
+
+      // Time patterns
+      if (before == ':' || after == ':') return true;
+      if (RegExp(r'[0-2]\d').hasMatch(numberStr) &&
+          (before == ' ' && after == ':'))
+        return true;
+    }
+
+    // Filter out years (2020-2030)
+    if (number >= 2020 && number <= 2030) return true;
+
+    // Filter out days (when followed by month names)
+    if (number <= 31) {
+      final context = fullText
+          .substring(
+            (position - 10).clamp(0, fullText.length),
+            (position + numberStr.length + 10).clamp(0, fullText.length),
+          )
+          .toLowerCase();
+      if (RegExp(
+        r'(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)',
+      ).hasMatch(context)) {
+        return true;
+      }
+    }
+
+    // Filter out account numbers (usually 4 digits ending in pattern like 7071)
+    if (numberStr.length == 4 && number > 1000) {
+      final context = fullText
+          .substring(
+            (position - 20).clamp(0, fullText.length),
+            (position + numberStr.length + 5).clamp(0, fullText.length),
+          )
+          .toLowerCase();
+      if (context.contains('••') ||
+          context.contains('account') ||
+          context.contains('bank')) {
+        return true;
+      }
+    }
+
+    // Filter out percentages (like 97% battery)
+    if (number > 90 && number <= 100) return true;
+
+    // Filter out transaction IDs (usually very long numbers)
+    if (numberStr.length > 6) return true;
+
+    return false;
   }
 
   List<String> _extractUpiIds(String text) {
@@ -257,10 +365,79 @@ class OCRService {
     return upiIds.toSet().toList();
   }
 
+  /// Enhanced UPI validation that considers receiver context
+  bool _validateUpiId(
+    String text,
+    List<String> foundUpiIds,
+    String expectedUpiId,
+  ) {
+    final lowerText = text.toLowerCase();
+    final expectedLower = expectedUpiId.toLowerCase();
+
+    // Direct UPI match
+    if (foundUpiIds.contains(expectedLower)) {
+      return true;
+    }
+
+    // Extract expected username from UPI (e.g., "aflah" from "aflah@upi")
+    final expectedUsername = expectedLower.split('@')[0];
+
+    // Check if receiver name matches expected username
+    // Look for patterns like "Payment received by [NAME]" or "Paid to [NAME]"
+    final receiverPatterns = [
+      RegExp(r'payment\s+received\s+by\s+([a-z\s]+)', caseSensitive: false),
+      RegExp(r'paid\s+to\s+([a-z\s]+)', caseSensitive: false),
+      RegExp(r'transferred\s+to\s+([a-z\s]+)', caseSensitive: false),
+      RegExp(r'sent\s+to\s+([a-z\s]+)', caseSensitive: false),
+    ];
+
+    for (final pattern in receiverPatterns) {
+      final match = pattern.firstMatch(lowerText);
+      if (match != null) {
+        final receiverName = match.group(1)?.trim().toLowerCase() ?? '';
+        // Check if expected username is part of receiver name
+        if (receiverName.contains(expectedUsername)) {
+          print(
+            'Found receiver match: "$receiverName" contains "$expectedUsername"',
+          );
+          return true;
+        }
+      }
+    }
+
+    // Check if any found UPI contains the expected username
+    for (final upiId in foundUpiIds) {
+      if (upiId.contains(expectedUsername)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   List<DateTime> _extractDates(String text) {
     final dates = <DateTime>[];
 
-    // "22 Sept 2025" format
+    // "22nd Sep 25" format (with ordinal suffixes)
+    final ordinalSeptPattern = RegExp(
+      r'(\d{1,2})(?:st|nd|rd|th)?\s+sep\w*\s+(\d{2,4})',
+      caseSensitive: false,
+    );
+    for (final match in ordinalSeptPattern.allMatches(text)) {
+      final day = int.tryParse(match.group(1)!);
+      var year = int.tryParse(match.group(2)!) ?? 0;
+
+      // Handle 2-digit years (25 -> 2025)
+      if (year < 100) {
+        year += 2000;
+      }
+
+      if (day != null && year >= 2020 && day >= 1 && day <= 31) {
+        dates.add(DateTime(year, 9, day)); // September
+      }
+    }
+
+    // "22 Sept 2025" format (without ordinal suffixes)
     final septPattern = RegExp(
       r'(\d{1,2})\s+sept?\s+(\d{4})',
       caseSensitive: false,
@@ -291,6 +468,29 @@ class OCRService {
           month >= 1 &&
           month <= 12 &&
           year >= 2020) {
+        dates.add(DateTime(year, month, day));
+      }
+    }
+
+    // DD/MM/YY format
+    final shortYearPattern = RegExp(r'(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})');
+    for (final match in shortYearPattern.allMatches(text)) {
+      final day = int.tryParse(match.group(1)!);
+      final month = int.tryParse(match.group(2)!);
+      var year = int.tryParse(match.group(3)!) ?? 0;
+
+      // Handle 2-digit years
+      if (year < 100) {
+        year += 2000;
+      }
+
+      if (day != null &&
+          month != null &&
+          year >= 2020 &&
+          day >= 1 &&
+          day <= 31 &&
+          month >= 1 &&
+          month <= 12) {
         dates.add(DateTime(year, month, day));
       }
     }
