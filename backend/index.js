@@ -624,29 +624,56 @@ class FriendFundAPI {
       // Create a file using the Appwrite storage API
       const fileId = ID.unique();
 
-      // For now, store as base64 data URL since Appwrite file upload is problematic
-      // This is a temporary workaround until we resolve the Appwrite SDK file upload issue
-      const base64Data = fileBuffer.toString("base64");
-      const dataUrl = `data:image/jpeg;base64,${base64Data}`;
+      // Create a simulated File object that matches the Web File API
+      // This approach should work with Appwrite's storage API
+      const fileObject = {
+        name: fileName,
+        size: fileBuffer.length,
+        type: "image/jpeg",
+        lastModified: Date.now(),
 
-      console.log("Using base64 data URL as temporary solution:", {
-        fileId: fileId,
-        fileName: fileName,
-        dataLength: base64Data.length,
-      });
+        // Implement required File API methods
+        async arrayBuffer() {
+          return fileBuffer.buffer.slice(
+            fileBuffer.byteOffset,
+            fileBuffer.byteOffset + fileBuffer.byteLength
+          );
+        },
 
-      // Return the data URL as fileUrl for now
-      const file = {
-        $id: fileId,
+        async text() {
+          return fileBuffer.toString();
+        },
+
+        slice(start = 0, end = fileBuffer.length, contentType = "image/jpeg") {
+          const slicedBuffer = fileBuffer.slice(start, end);
+          return {
+            size: slicedBuffer.length,
+            type: contentType,
+            arrayBuffer: () => Promise.resolve(slicedBuffer.buffer),
+          };
+        },
+
+        // Add Symbol.toStringTag for proper type checking
+        [Symbol.toStringTag]: "File",
       };
 
-      // Use the data URL as the file URL (temporary solution)
-      const fileUrl = dataUrl;
+      // Upload to Appwrite storage
+      const file = await this.storage.createFile(
+        this.screenshotsBucketId,
+        fileId,
+        fileObject,
+        [Permission.read(Role.any())]
+      );
 
-      console.log("File processed successfully (using base64 data URL):", {
+      // Generate the public URL for the uploaded file
+      const fileUrl = this.storage
+        .getFileView(this.screenshotsBucketId, file.$id)
+        .toString();
+
+      console.log("File uploaded successfully to Appwrite storage:", {
         fileId: file.$id,
         fileName: fileName,
-        fileUrlLength: fileUrl.length,
+        fileUrl: fileUrl,
         bucketId: this.screenshotsBucketId,
       });
 
