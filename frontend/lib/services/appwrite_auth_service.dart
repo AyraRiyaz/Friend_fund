@@ -233,14 +233,25 @@ class AppwriteService {
     required String userId,
     String? name,
     String? phoneNumber,
+    String? email,
     String? upiId,
     String? profileImage,
-    String? password, // Password might be needed for phone updates
+    String? password, // Password might be needed for phone/email updates
   }) async {
     try {
       // Update name in account if provided
       if (name != null && name.isNotEmpty) {
         await _account.updateName(name: name);
+      }
+
+      // Update email if provided
+      if (email != null && email.isNotEmpty && password != null) {
+        try {
+          await _account.updateEmail(email: email, password: password);
+        } catch (emailError) {
+          // Note: Email update might fail if password is incorrect or email already exists
+          rethrow;
+        }
       }
 
       // Update phone number in auth phone field if provided
@@ -249,6 +260,7 @@ class AppwriteService {
           await _account.updatePhone(phone: phoneNumber, password: password);
         } catch (phoneError) {
           // Note: Phone update might fail if password is incorrect or other validation issues
+          rethrow;
         }
       }
 
@@ -272,6 +284,21 @@ class AppwriteService {
       } else {
         throw Exception('Failed to get updated user');
       }
+    } catch (e) {
+      throw _handleAppwriteException(e);
+    }
+  }
+
+  // Update Password
+  static Future<void> updatePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      await _account.updatePassword(
+        password: newPassword,
+        oldPassword: currentPassword,
+      );
     } catch (e) {
       throw _handleAppwriteException(e);
     }

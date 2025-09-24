@@ -279,8 +279,10 @@ class AuthController extends GetxController {
   Future<bool> updateProfile({
     String? name,
     String? phoneNumber,
+    String? email,
     String? upiId,
     String? profileImage,
+    String? currentPassword,
   }) async {
     if (_appwriteUser.value == null) return false;
 
@@ -292,11 +294,18 @@ class AuthController extends GetxController {
         userId: _appwriteUser.value!.$id,
         name: name,
         phoneNumber: phoneNumber,
+        email: email,
         upiId: upiId,
         profileImage: profileImage,
+        password: currentPassword,
       );
 
       _userProfile.value = updatedProfile;
+
+      // Refresh appwrite user data if email or other account data was updated
+      if (email != null || name != null) {
+        _appwriteUser.value = await AppwriteService.getCurrentUser();
+      }
 
       Get.snackbar(
         'Success',
@@ -309,6 +318,42 @@ class AuthController extends GetxController {
       _errorMessage.value = e.toString();
       Get.snackbar(
         'Update Failed',
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return false;
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  // Change Password
+  Future<bool> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      _isLoading.value = true;
+      _errorMessage.value = '';
+
+      await AppwriteService.updatePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+
+      Get.snackbar(
+        'Success',
+        'Password updated successfully!',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+
+      return true;
+    } catch (e) {
+      _errorMessage.value = e.toString();
+      Get.snackbar(
+        'Password Update Failed',
         e.toString(),
         snackPosition: SnackPosition.BOTTOM,
       );
