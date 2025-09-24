@@ -13,6 +13,7 @@ import {
   Query,
   Permission,
   Role,
+  InputFile,
 } from "node-appwrite";
 import QRCode from "qrcode";
 import { createWorker } from "tesseract.js";
@@ -623,10 +624,14 @@ class FriendFundAPI {
 
       // Create a file using the Appwrite storage API
       const fileId = ID.unique();
+
+      // Create InputFile from buffer for Appwrite Node.js SDK
+      const inputFile = InputFile.fromBuffer(fileBuffer, fileName);
+
       const file = await this.storage.createFile(
         this.screenshotsBucketId,
         fileId,
-        fileBuffer,
+        inputFile,
         [Permission.read(Role.any())]
       );
 
