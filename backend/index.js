@@ -16,6 +16,9 @@ import {
 } from "node-appwrite";
 import QRCode from "qrcode";
 import { createWorker } from "tesseract.js";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 /**
  * @class FriendFundAPI
@@ -624,20 +627,29 @@ class FriendFundAPI {
       // Create a file using the Appwrite storage API
       const fileId = ID.unique();
 
-      // Create a File object from buffer for Appwrite storage upload
-      // In Appwrite Functions environment, File constructor is available
-      const fileBlob = new Blob([fileBuffer], { type: "image/jpeg" });
-      const fileObject = new File([fileBlob], fileName, {
-        type: "image/jpeg",
-        lastModified: Date.now(),
-      });
+      // Create a temporary file for Appwrite storage upload
+      const tempDir = "/tmp";
+      const tempFilePath = path.join(tempDir, `${fileId}_${fileName}`);
+
+      // Write buffer to temporary file
+      fs.writeFileSync(tempFilePath, fileBuffer);
+
+      // Create file stream for upload
+      const fileStream = fs.createReadStream(tempFilePath);
 
       const file = await this.storage.createFile(
         this.screenshotsBucketId,
         fileId,
-        fileObject,
+        fileStream,
         [Permission.read(Role.any())]
       );
+
+      // Clean up temporary file
+      try {
+        fs.unlinkSync(tempFilePath);
+      } catch (cleanupError) {
+        console.warn("Failed to cleanup temp file:", cleanupError);
+      }
 
       // Generate file view URL using Appwrite storage API
       // The getFileView method returns a URL object, so we need to convert to string
