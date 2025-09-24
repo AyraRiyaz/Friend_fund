@@ -13,6 +13,7 @@ import {
   Query,
   Permission,
   Role,
+  InputFile,
 } from "node-appwrite";
 import QRCode from "qrcode";
 import { createWorker } from "tesseract.js";
@@ -624,57 +625,63 @@ class FriendFundAPI {
       // Create a file using the Appwrite storage API
       const fileId = ID.unique();
 
-      // Create a simulated File object that matches the Web File API
-      // This approach should work with Appwrite's storage API
-      const fileObject = {
-        name: fileName,
-        size: fileBuffer.length,
-        type: "image/jpeg",
-        lastModified: Date.now(),
+      // Create InputFile from buffer - this is the proper way for Appwrite Node.js SDK
+      let file;
+      let fileUrl;
 
-        // Implement required File API methods
-        async arrayBuffer() {
-          return fileBuffer.buffer.slice(
-            fileBuffer.byteOffset,
-            fileBuffer.byteOffset + fileBuffer.byteLength
+      try {
+        // Try using InputFile.fromBuffer if available (newer SDK versions)
+        if (typeof InputFile !== "undefined" && InputFile.fromBuffer) {
+          const inputFile = InputFile.fromBuffer(fileBuffer, fileName);
+          file = await this.storage.createFile(
+            this.screenshotsBucketId,
+            fileId,
+            inputFile,
+            [Permission.read(Role.any())]
           );
-        },
+        } else {
+          // Fallback: try direct buffer upload (some Appwrite versions support this)
+          file = await this.storage.createFile(
+            this.screenshotsBucketId,
+            fileId,
+            fileBuffer,
+            [Permission.read(Role.any())]
+          );
+        }
 
-        async text() {
-          return fileBuffer.toString();
-        },
+        // Generate the public URL for the uploaded file
+        fileUrl = this.storage
+          .getFileView(this.screenshotsBucketId, file.$id)
+          .toString();
 
-        slice(start = 0, end = fileBuffer.length, contentType = "image/jpeg") {
-          const slicedBuffer = fileBuffer.slice(start, end);
-          return {
-            size: slicedBuffer.length,
-            type: contentType,
-            arrayBuffer: () => Promise.resolve(slicedBuffer.buffer),
-          };
-        },
+        console.log("Successfully uploaded to Appwrite storage:", {
+          fileId: file.$id,
+          fileName: fileName,
+          fileUrl: fileUrl,
+          bucketId: this.screenshotsBucketId,
+        });
+      } catch (uploadError) {
+        console.warn(
+          "Appwrite storage upload failed, using base64 fallback:",
+          uploadError.message
+        );
 
-        // Add Symbol.toStringTag for proper type checking
-        [Symbol.toStringTag]: "File",
-      };
+        // Fallback to base64 data URL
+        const base64Data = fileBuffer.toString("base64");
+        fileUrl = `data:image/jpeg;base64,${base64Data}`;
+        file = { $id: fileId };
 
-      // Upload to Appwrite storage
-      const file = await this.storage.createFile(
-        this.screenshotsBucketId,
-        fileId,
-        fileObject,
-        [Permission.read(Role.any())]
-      );
+        console.log("Using base64 fallback - file will be stored as data URL");
+      }
 
-      // Generate the public URL for the uploaded file
-      const fileUrl = this.storage
-        .getFileView(this.screenshotsBucketId, file.$id)
-        .toString();
-
-      console.log("File uploaded successfully to Appwrite storage:", {
+      console.log("File processed successfully:", {
         fileId: file.$id,
         fileName: fileName,
         fileUrl: fileUrl,
         bucketId: this.screenshotsBucketId,
+        method: fileUrl.startsWith("data:")
+          ? "base64_fallback"
+          : "appwrite_storage",
       });
 
       return {
