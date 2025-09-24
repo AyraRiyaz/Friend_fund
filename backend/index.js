@@ -625,8 +625,26 @@ class FriendFundAPI {
       // Create a file using the proper Appwrite storage API method
       const fileId = ID.unique();
 
-      // Create InputFile from buffer - proper Appwrite Node.js SDK method
-      const inputFile = sdk.InputFile.fromBuffer(fileBuffer, fileName);
+      // Create temporary file since InputFile.fromBuffer is not available in this SDK version
+      const fs = await import("fs");
+      const path = await import("path");
+      const os = await import("os");
+
+      // Create temporary file path
+      const tempDir = os.tmpdir();
+      const tempFilePath = path.join(tempDir, `${fileId}_${fileName}`);
+
+      // Write buffer to temporary file
+      fs.writeFileSync(tempFilePath, fileBuffer);
+
+      // Create InputFile from file path (this should work with older SDK versions)
+      let inputFile;
+      if (sdk.InputFile && sdk.InputFile.fromPath) {
+        inputFile = sdk.InputFile.fromPath(tempFilePath, fileName);
+      } else {
+        // Fallback: create a readable stream
+        inputFile = fs.createReadStream(tempFilePath);
+      }
 
       // Upload to Appwrite storage using the correct method format from docs
       const file = await this.storage.createFile({
@@ -635,6 +653,13 @@ class FriendFundAPI {
         file: inputFile,
         permissions: [Permission.read(Role.any())],
       });
+
+      // Clean up temporary file
+      try {
+        fs.unlinkSync(tempFilePath);
+      } catch (cleanupError) {
+        console.warn("Failed to cleanup temporary file:", cleanupError.message);
+      }
 
       // Generate the public URL for the uploaded file
       const fileUrl = this.storage
