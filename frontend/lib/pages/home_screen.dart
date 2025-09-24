@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../widgets/responsive_layout.dart';
 import '../controllers/campaign_controller.dart';
 import '../controllers/auth_controller.dart';
+import '../controllers/contribution_controller.dart';
 import '../theme/app_theme.dart';
 import '../widgets/add_campaign_modal.dart';
 
@@ -19,11 +20,28 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Ensure campaigns are loaded when the screen is first displayed
+    // Ensure campaigns and contributions are loaded when the screen is first displayed
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final campaignController = Get.find<CampaignController>();
       if (campaignController.campaigns.isEmpty) {
         campaignController.loadCampaigns();
+      }
+
+      // Ensure contributions are loaded for dashboard summary
+      try {
+        if (Get.isRegistered<ContributionController>()) {
+          final contributionController = Get.find<ContributionController>();
+          // Force reload to ensure we have fresh data
+          contributionController.loadUserContributions();
+          print(
+            'ContributionController: Loading user contributions for home dashboard',
+          );
+        } else {
+          print('ContributionController: Not registered yet');
+        }
+      } catch (e) {
+        // ContributionController might not be initialized yet, that's ok
+        print('ContributionController not available: $e');
       }
     });
   }
@@ -53,6 +71,16 @@ class _HomeScreenState extends State<HomeScreen> {
           child: RefreshIndicator(
             onRefresh: () async {
               await campaignController.loadCampaigns();
+              // Also refresh contributions
+              try {
+                if (Get.isRegistered<ContributionController>()) {
+                  final contributionController =
+                      Get.find<ContributionController>();
+                  await contributionController.loadUserContributions();
+                }
+              } catch (e) {
+                print('Error refreshing contributions: $e');
+              }
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -134,19 +162,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(50),
-                ),
-                child: const Icon(
-                  Icons.account_balance_wallet,
-                  color: Colors.white,
-                  size: 32,
-                ),
-              ),
             ],
           ),
         ],
@@ -157,86 +172,55 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildDashboardSummary(BuildContext context) {
     return GetBuilder<CampaignController>(
       builder: (campaignController) {
-        final authController = Get.find<AuthController>();
-        final currentUserId = authController.appwriteUser?.$id;
+        return GetBuilder<ContributionController>(
+          builder: (contributionController) {
+            final authController = Get.find<AuthController>();
+            final currentUserId = authController.appwriteUser?.$id;
 
-        // Get user's campaigns
-        final myCampaigns = campaignController.campaigns
-            .where((c) => c.hostId == currentUserId)
-            .toList();
+            // Get user's campaigns
+            final myCampaigns = campaignController.campaigns
+                .where((c) => c.hostId == currentUserId)
+                .toList();
 
-        // Calculate totals (we'll need contribution data later)
-        final totalRaised = myCampaigns.fold<double>(
-          0,
-          (sum, campaign) => sum + campaign.collectedAmount,
-        );
-        final totalContributed = 0.0; // TODO: Get from contributions API
-        final activeCampaigns = campaignController.campaigns
-            .where((c) => c.status == 'active')
-            .length;
+            // Calculate totals by getting contributions from the contribution controller
+            final totalRaised = myCampaigns.fold<double>(
+              0,
+              (sum, campaign) => sum + campaign.collectedAmount,
+            );
 
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Your Summary',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  if (constraints.maxWidth > 600) {
-                    return Row(
-                      children: [
-                        Expanded(
-                          child: _buildSummaryCard(
-                            context,
-                            'Active Campaigns',
-                            activeCampaigns.toString(),
-                            Icons.campaign,
-                            AppTheme.primaryBlue,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildSummaryCard(
-                            context,
-                            'Total Raised',
-                            '₹${_formatAmount(totalRaised)}',
-                            Icons.trending_up,
-                            AppTheme.success,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildSummaryCard(
-                            context,
-                            'Contributions',
-                            '0', // TODO: Get from contributions API
-                            Icons.favorite,
-                            Colors.orange,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildSummaryCard(
-                            context,
-                            'Total Given',
-                            '₹${_formatAmount(totalContributed)}',
-                            Icons.handshake,
-                            AppTheme.accentBlue,
-                          ),
-                        ),
-                      ],
-                    );
-                  } else {
-                    return Column(
-                      children: [
-                        Row(
+            // Get user's total contributions - now reactive to controller changes
+            final userContributions = contributionController.userContributions;
+            final totalContributed = userContributions.fold<double>(
+              0,
+              (sum, contribution) => sum + contribution.amount,
+            );
+            final contributionCount = userContributions.length;
+
+            // Debug: Log contribution data when dashboard rebuilds
+            print(
+              'Home Dashboard: Building with $contributionCount contributions, total: ₹$totalContributed',
+            );
+
+            final activeCampaigns = campaignController.campaigns
+                .where((c) => c.status == 'active')
+                .length;
+
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Your Summary',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      if (constraints.maxWidth > 600) {
+                        return Row(
                           children: [
                             Expanded(
                               child: _buildSummaryCard(
@@ -257,16 +241,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                 AppTheme.success,
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
+                            const SizedBox(width: 12),
                             Expanded(
                               child: _buildSummaryCard(
                                 context,
                                 'Contributions',
-                                '0', // TODO: Get from contributions API
+                                contributionCount.toString(),
                                 Icons.favorite,
                                 Colors.orange,
                               ),
@@ -282,14 +262,66 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                           ],
-                        ),
-                      ],
-                    );
-                  }
-                },
+                        );
+                      } else {
+                        return Column(
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildSummaryCard(
+                                    context,
+                                    'Active Campaigns',
+                                    activeCampaigns.toString(),
+                                    Icons.campaign,
+                                    AppTheme.primaryBlue,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildSummaryCard(
+                                    context,
+                                    'Total Raised',
+                                    '₹${_formatAmount(totalRaised)}',
+                                    Icons.trending_up,
+                                    AppTheme.success,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildSummaryCard(
+                                    context,
+                                    'Contributions',
+                                    contributionCount.toString(),
+                                    Icons.favorite,
+                                    Colors.orange,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildSummaryCard(
+                                    context,
+                                    'Total Given',
+                                    '₹${_formatAmount(totalContributed)}',
+                                    Icons.handshake,
+                                    AppTheme.accentBlue,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        );
+                      }
+                    },
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );

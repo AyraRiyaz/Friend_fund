@@ -53,6 +53,9 @@ class ContributionController extends GetxController {
         _userContributions.add(contribution);
       }
 
+      // Trigger UI update for GetBuilder widgets
+      update();
+
       Get.snackbar(
         'Success',
         'Contribution created successfully!',
@@ -88,6 +91,8 @@ class ContributionController extends GetxController {
       _userContributions.assignAll(contributions);
 
       print('Loaded ${contributions.length} user contributions');
+      // Trigger UI update for GetBuilder widgets
+      update();
     } catch (e) {
       _errorMessage.value = e.toString();
       print('Error loading user contributions: $e');

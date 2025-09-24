@@ -161,7 +161,11 @@ class Contribution {
       type: json['type'] ?? 'gift',
       date: json['date'] != null
           ? DateTime.parse(json['date'])
-          : DateTime.now(),
+          : (json['\$createdAt'] != null
+                ? DateTime.parse(json['\$createdAt'])
+                : (json['createdAt'] != null
+                      ? DateTime.parse(json['createdAt'])
+                      : DateTime.now())),
       repaymentStatus: json['repaymentStatus'],
       repaymentDueDate: json['repaymentDueDate'] != null
           ? DateTime.parse(json['repaymentDueDate'])
