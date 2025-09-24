@@ -618,23 +618,31 @@ class FriendFundAPI {
         fileName,
         bufferSize: fileBuffer.length,
         contributionId,
+        bucketId: this.screenshotsBucketId,
       });
 
-      // Try to use storage bucket directly with a simpler approach
-      // Create a file using the storage API
+      // Create a file using the Appwrite storage API
+      const fileId = ID.unique();
       const file = await this.storage.createFile(
         this.screenshotsBucketId,
-        ID.unique(),
+        fileId,
         fileBuffer,
         [Permission.read(Role.any())]
       );
 
-      // Get file URL for frontend use
-      const fileUrl = `${process.env.APPWRITE_FUNCTION_ENDPOINT}/storage/buckets/${this.screenshotsBucketId}/files/${file.$id}/view?project=${process.env.APPWRITE_FUNCTION_PROJECT_ID}`;
+      // Generate file view URL using Appwrite storage API
+      // The getFileView method returns a URL object, so we need to convert to string
+      const fileViewUrl = this.storage.getFileView(
+        this.screenshotsBucketId,
+        file.$id
+      );
+      const fileUrl = fileViewUrl.toString();
 
-      console.log("File uploaded successfully to storage:", {
+      console.log("File uploaded successfully to Appwrite storage:", {
         fileId: file.$id,
-        fileUrl,
+        fileName: fileName,
+        fileUrl: fileUrl,
+        bucketId: this.screenshotsBucketId,
       });
 
       return {
@@ -643,24 +651,17 @@ class FriendFundAPI {
           fileId: file.$id,
           fileName: fileName,
           fileUrl: fileUrl,
+          bucketId: this.screenshotsBucketId,
         },
       };
     } catch (error) {
       console.error("Error uploading payment screenshot:", error);
       console.error("Error details:", JSON.stringify(error, null, 2));
 
-      // Fallback: return a data URL if storage fails
-      const dataUrl = `data:image/jpeg;base64,${fileBuffer.toString("base64")}`;
-      console.log("Using fallback data URL approach");
-
-      return {
-        success: true,
-        data: {
-          fileId: `fallback_${Date.now()}`,
-          fileName: fileName,
-          fileUrl: dataUrl,
-        },
-      };
+      // Re-throw the error instead of using fallback - we want actual uploads
+      throw new Error(
+        `Failed to upload screenshot to Appwrite storage: ${error.message}`
+      );
     }
   }
 
