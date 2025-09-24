@@ -625,55 +625,70 @@ class FriendFundAPI {
       // Create a file using the proper Appwrite storage API method
       const fileId = ID.unique();
 
-      // Create temporary file since InputFile.fromBuffer is not available in this SDK version
-      const fs = await import("fs");
-      const path = await import("path");
-      const os = await import("os");
+      // Try direct buffer approach with proper File-like object
+      // Create a minimal File-like object that should satisfy Appwrite's requirements
+      const inputFile = {
+        name: fileName,
+        size: fileBuffer.length,
+        type: "image/jpeg",
+        lastModified: Date.now(),
 
-      // Create temporary file path
-      const tempDir = os.tmpdir();
-      const tempFilePath = path.join(tempDir, `${fileId}_${fileName}`);
-
-      // Write buffer to temporary file
-      fs.writeFileSync(tempFilePath, fileBuffer);
-
-      // Create InputFile from file path (this should work with older SDK versions)
-      let inputFile;
-      if (sdk.InputFile && sdk.InputFile.fromPath) {
-        inputFile = sdk.InputFile.fromPath(tempFilePath, fileName);
-      } else {
-        // Create a proper file-like object with required properties
-        const stats = fs.statSync(tempFilePath);
-        const stream = fs.createReadStream(tempFilePath);
-
-        inputFile = Object.assign(stream, {
-          name: fileName,
-          size: stats.size,
-          type: "image/jpeg",
-          lastModified: Date.now(),
-
-          // Add required methods
-          arrayBuffer: async function () {
-            return fileBuffer.buffer.slice(
+        // Core File API methods
+        arrayBuffer: () =>
+          Promise.resolve(
+            fileBuffer.buffer.slice(
               fileBuffer.byteOffset,
               fileBuffer.byteOffset + fileBuffer.byteLength
-            );
-          },
+            )
+          ),
 
-          slice: function (
-            start = 0,
-            end = stats.size,
-            contentType = "image/jpeg"
-          ) {
-            return {
-              size: end - start,
-              type: contentType,
-              arrayBuffer: () =>
-                Promise.resolve(fileBuffer.slice(start, end).buffer),
-            };
-          },
-        });
-      }
+        text: () => Promise.resolve(fileBuffer.toString()),
+
+        slice: (
+          start = 0,
+          end = fileBuffer.length,
+          contentType = "image/jpeg"
+        ) => ({
+          size: end - start,
+          type: contentType,
+          arrayBuffer: () =>
+            Promise.resolve(fileBuffer.slice(start, end).buffer),
+          text: () => Promise.resolve(fileBuffer.slice(start, end).toString()),
+        }),
+
+        // Stream method for Node.js compatibility using Readable
+        stream: () => {
+          const { Readable } = require("stream");
+          let index = 0;
+          return new Readable({
+            read() {
+              const chunkSize = 8192;
+              if (index < fileBuffer.length) {
+                const chunk = fileBuffer.slice(
+                  index,
+                  Math.min(index + chunkSize, fileBuffer.length)
+                );
+                this.push(chunk);
+                index += chunkSize;
+              } else {
+                this.push(null); // End of stream
+              }
+            },
+          });
+        },
+
+        // Add constructor name for type checking
+        constructor: { name: "File" },
+        [Symbol.toStringTag]: "File",
+      };
+
+      console.log("Created file object with properties:", {
+        name: inputFile.name,
+        size: inputFile.size,
+        type: inputFile.type,
+        hasArrayBuffer: typeof inputFile.arrayBuffer === "function",
+        hasSlice: typeof inputFile.slice === "function",
+      });
 
       // Upload to Appwrite storage using the older method signature
       const file = await this.storage.createFile(
@@ -682,13 +697,6 @@ class FriendFundAPI {
         inputFile,
         [Permission.read(Role.any())]
       );
-
-      // Clean up temporary file
-      try {
-        fs.unlinkSync(tempFilePath);
-      } catch (cleanupError) {
-        console.warn("Failed to cleanup temporary file:", cleanupError.message);
-      }
 
       // Generate the public URL for the uploaded file
       const fileUrl = this.storage
