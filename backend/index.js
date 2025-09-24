@@ -622,66 +622,30 @@ class FriendFundAPI {
         bucketId: this.screenshotsBucketId,
       });
 
-      // Create a file using the Appwrite storage API
+      // Create a file using the proper Appwrite storage API method
       const fileId = ID.unique();
 
-      // Create InputFile from buffer - this is the proper way for Appwrite Node.js SDK
-      let file;
-      let fileUrl;
+      // Create InputFile from buffer - proper Appwrite Node.js SDK method
+      const inputFile = InputFile.fromBuffer(fileBuffer, fileName);
 
-      try {
-        // Try using InputFile.fromBuffer if available (newer SDK versions)
-        if (typeof InputFile !== "undefined" && InputFile.fromBuffer) {
-          const inputFile = InputFile.fromBuffer(fileBuffer, fileName);
-          file = await this.storage.createFile(
-            this.screenshotsBucketId,
-            fileId,
-            inputFile,
-            [Permission.read(Role.any())]
-          );
-        } else {
-          // Fallback: try direct buffer upload (some Appwrite versions support this)
-          file = await this.storage.createFile(
-            this.screenshotsBucketId,
-            fileId,
-            fileBuffer,
-            [Permission.read(Role.any())]
-          );
-        }
+      // Upload to Appwrite storage using the correct method format from docs
+      const file = await this.storage.createFile({
+        bucketId: this.screenshotsBucketId,
+        fileId: fileId,
+        file: inputFile,
+        permissions: [Permission.read(Role.any())],
+      });
 
-        // Generate the public URL for the uploaded file
-        fileUrl = this.storage
-          .getFileView(this.screenshotsBucketId, file.$id)
-          .toString();
+      // Generate the public URL for the uploaded file
+      const fileUrl = this.storage
+        .getFileView(this.screenshotsBucketId, file.$id)
+        .toString();
 
-        console.log("Successfully uploaded to Appwrite storage:", {
-          fileId: file.$id,
-          fileName: fileName,
-          fileUrl: fileUrl,
-          bucketId: this.screenshotsBucketId,
-        });
-      } catch (uploadError) {
-        console.warn(
-          "Appwrite storage upload failed, using base64 fallback:",
-          uploadError.message
-        );
-
-        // Fallback to base64 data URL
-        const base64Data = fileBuffer.toString("base64");
-        fileUrl = `data:image/jpeg;base64,${base64Data}`;
-        file = { $id: fileId };
-
-        console.log("Using base64 fallback - file will be stored as data URL");
-      }
-
-      console.log("File processed successfully:", {
+      console.log("Successfully uploaded to Appwrite storage:", {
         fileId: file.$id,
         fileName: fileName,
         fileUrl: fileUrl,
         bucketId: this.screenshotsBucketId,
-        method: fileUrl.startsWith("data:")
-          ? "base64_fallback"
-          : "appwrite_storage",
       });
 
       return {
@@ -697,7 +661,7 @@ class FriendFundAPI {
       console.error("Error uploading payment screenshot:", error);
       console.error("Error details:", JSON.stringify(error, null, 2));
 
-      // Re-throw the error instead of using fallback - we want actual uploads
+      // Re-throw the error - no fallback, storage must work
       throw new Error(
         `Failed to upload screenshot to Appwrite storage: ${error.message}`
       );
