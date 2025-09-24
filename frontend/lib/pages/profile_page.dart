@@ -190,9 +190,13 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               // Profile Header
               Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 20,
+                  ),
+                  child: Row(
                     children: [
                       // Profile Picture
                       CircleAvatar(
@@ -215,40 +219,52 @@ class _ProfilePageState extends State<ProfilePage> {
                                 user?.name ?? appwriteUser?.name ?? 'User',
                               ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(width: 24),
 
-                      // Name and Email
-                      Text(
-                        user?.name ?? appwriteUser?.name ?? 'User',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        user?.email ?? appwriteUser?.email ?? '',
-                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                      ),
-                      const SizedBox(height: 16),
+                      // Name, Email and Button section
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user?.name ?? appwriteUser?.name ?? 'User',
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              user?.email ?? appwriteUser?.email ?? '',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
 
-                      // Edit Button
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            _isEditing = !_isEditing;
-                            if (_isEditing) {
-                              _loadUserData();
-                            }
-                          });
-                        },
-                        icon: Icon(_isEditing ? Icons.close : Icons.edit),
-                        label: Text(_isEditing ? 'Cancel' : 'Edit Profile'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _isEditing
-                              ? Colors.grey
-                              : AppTheme.primaryBlue,
-                          foregroundColor: Colors.white,
+                            // Edit Button
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  _isEditing = !_isEditing;
+                                  if (_isEditing) {
+                                    _loadUserData();
+                                  }
+                                });
+                              },
+                              icon: Icon(_isEditing ? Icons.close : Icons.edit),
+                              label: Text(
+                                _isEditing ? 'Cancel' : 'Edit Profile',
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _isEditing
+                                    ? Colors.grey
+                                    : AppTheme.primaryBlue,
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],

@@ -1,8 +1,83 @@
 import 'package:flutter/material.dart';
 import '../widgets/responsive_layout.dart';
+import '../theme/app_theme.dart';
 
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
+
+  void _showPrivacyPolicy(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Privacy Policy'),
+        content: const SingleChildScrollView(
+          child: Text(
+            'Privacy Policy\n\n'
+            'Pro26 Technologies ("we", "our", or "us") is committed to protecting your privacy. '
+            'This Privacy Policy explains how we collect, use, and safeguard your information when you use FriendFund.\n\n'
+            'Information We Collect:\n'
+            '• Personal information (name, email, phone number)\n'
+            '• Financial information for transactions (UPI details)\n'
+            '• Usage data and app analytics\n\n'
+            'How We Use Information:\n'
+            '• To provide and improve our services\n'
+            '• To process transactions and maintain security\n'
+            '• To send important notifications\n\n'
+            'Data Security:\n'
+            'We implement industry-standard security measures to protect your data. '
+            'All transactions are encrypted and securely processed.\n\n'
+            'Contact Us:\n'
+            'If you have questions about this Privacy Policy, contact us at info@pro26technologies.com',
+            style: TextStyle(fontSize: 14, height: 1.4),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showTermsOfService(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Terms of Service'),
+        content: const SingleChildScrollView(
+          child: Text(
+            'Terms of Service\n\n'
+            'Welcome to FriendFund. By using our app, you agree to these terms.\n\n'
+            'User Responsibilities:\n'
+            '• Provide accurate information\n'
+            '• Use the app for legitimate fundraising purposes only\n'
+            '• Respect other users and maintain appropriate conduct\n'
+            '• Honor loan repayment commitments\n\n'
+            'App Usage:\n'
+            '• FriendFund facilitates connections between users\n'
+            '• We are not responsible for individual user transactions\n'
+            '• Users are responsible for verifying campaign authenticity\n\n'
+            'Prohibited Activities:\n'
+            '• Fraudulent campaigns or false information\n'
+            '• Harassment or inappropriate behavior\n'
+            '• Misuse of personal information\n\n'
+            'Limitation of Liability:\n'
+            'Pro26 Technologies provides the platform "as is" and is not liable for disputes between users.\n\n'
+            'For questions, contact: info@pro26technologies.com',
+            style: TextStyle(fontSize: 14, height: 1.4),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,10 +92,14 @@ class AboutPage extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.blue.withValues(alpha: 0.1),
+                color: AppTheme.primaryBlue.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.handshake, size: 80, color: Colors.blue),
+              child: const Icon(
+                Icons.handshake,
+                size: 80,
+                color: AppTheme.primaryBlue,
+              ),
             ),
             const SizedBox(height: 24),
 
@@ -30,13 +109,13 @@ class AboutPage extends StatelessWidget {
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
-                color: Colors.blue,
+                color: AppTheme.primaryBlue,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Version 1.0.0',
-              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 16, color: AppTheme.textSecondary),
             ),
             const SizedBox(height: 32),
 
@@ -51,7 +130,7 @@ class AboutPage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue,
+                        color: AppTheme.primaryBlue,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -59,7 +138,7 @@ class AboutPage extends StatelessWidget {
                       'FriendFund bridges the gap between friends in need and those willing to help. We believe in the power of community support and making financial assistance transparent, secure, and accessible.',
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.grey[700],
+                        color: AppTheme.textPrimary,
                         height: 1.5,
                       ),
                       textAlign: TextAlign.center,
@@ -81,7 +160,7 @@ class AboutPage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue,
+                        color: AppTheme.primaryBlue,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -114,7 +193,7 @@ class AboutPage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Developer Info
+            // Developer Info & Legal
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -125,7 +204,7 @@ class AboutPage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue,
+                        color: AppTheme.primaryBlue,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -139,62 +218,38 @@ class AboutPage extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       'Innovative solutions for modern problems',
-                      style: TextStyle(color: Colors.grey[600]),
+                      style: TextStyle(color: AppTheme.textSecondary),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Divider
+                    Divider(
+                      color: AppTheme.textSecondary.withValues(alpha: 0.3),
+                      thickness: 1,
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        TextButton.icon(
-                          onPressed: () {
-                            // TODO: Open website
-                          },
-                          icon: const Icon(Icons.web),
-                          label: const Text('Website'),
-                        ),
-                        const SizedBox(width: 16),
-                        TextButton.icon(
-                          onPressed: () {
-                            // TODO: Open email
-                          },
-                          icon: const Icon(Icons.email),
-                          label: const Text('Contact'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
 
-            // Legal
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
+                    // Legal buttons
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         TextButton(
-                          onPressed: () {
-                            // TODO: Show privacy policy
-                          },
+                          onPressed: () => _showPrivacyPolicy(context),
                           child: const Text('Privacy Policy'),
                         ),
                         TextButton(
-                          onPressed: () {
-                            // TODO: Show terms of service
-                          },
+                          onPressed: () => _showTermsOfService(context),
                           child: const Text('Terms of Service'),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      '© 2024 Pro26 Technologies. All rights reserved.',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                      '© 2025 Pro26 Technologies. All rights reserved.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -217,9 +272,9 @@ class AboutPage extends StatelessWidget {
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: Colors.blue.withValues(alpha: 0.1),
+            backgroundColor: AppTheme.primaryBlue.withValues(alpha: 0.1),
             radius: 20,
-            child: Icon(icon, color: Colors.blue, size: 20),
+            child: Icon(icon, color: AppTheme.primaryBlue, size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -236,7 +291,7 @@ class AboutPage extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
                 ),
               ],
             ),

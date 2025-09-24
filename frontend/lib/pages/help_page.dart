@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/responsive_layout.dart';
+import '../theme/app_theme.dart';
 
 class HelpPage extends StatelessWidget {
   const HelpPage({super.key});
@@ -13,14 +14,66 @@ class HelpPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // FAQ Section
-            const Text(
-              'Frequently Asked Questions',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue,
+            // Header Section
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.primaryBlue.withOpacity(0.1),
+                    AppTheme.secondaryBlue.withOpacity(0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
               ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.help_outline_rounded,
+                    size: 48,
+                    color: AppTheme.primaryBlue,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'How can we help you?',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryBlue,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Find answers to common questions or get in touch with our support team',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // FAQ Section
+            Row(
+              children: [
+                Icon(
+                  Icons.quiz_outlined,
+                  color: AppTheme.primaryBlue,
+                  size: 28,
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Frequently Asked Questions',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryBlue,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 20),
 
@@ -51,74 +104,92 @@ class HelpPage extends StatelessWidget {
 
             const SizedBox(height: 30),
 
+            const SizedBox(height: 32),
+
             // Contact Section
-            const Text(
-              'Contact Support',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue,
-              ),
+            Row(
+              children: [
+                Icon(
+                  Icons.support_agent_outlined,
+                  color: AppTheme.primaryBlue,
+                  size: 28,
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Need More Help?',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryBlue,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
             _buildContactCard(
-              icon: Icons.email,
+              icon: Icons.email_outlined,
               title: 'Email Support',
               content: 'support@friendfund.pro26.in',
+              description: 'Get help via email within 24 hours',
               onTap: () {
                 // TODO: Open email app
               },
             ),
 
-            _buildContactCard(
-              icon: Icons.phone,
-              title: 'Phone Support',
-              content: '+91 98765 43210',
-              onTap: () {
-                // TODO: Open phone app
-              },
-            ),
-
-            _buildContactCard(
-              icon: Icons.chat,
-              title: 'Live Chat',
-              content: 'Available 9 AM - 6 PM IST',
-              onTap: () {
-                // TODO: Open chat support
-              },
-            ),
-
-            const SizedBox(height: 30),
+            const SizedBox(height: 32),
 
             // App Info
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    const Text(
-                      'FriendFund',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
-                      ),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[200]!),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryBlue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Version 1.0.0',
-                      style: TextStyle(color: Colors.grey[600]),
+                    child: Icon(
+                      Icons.info_outline,
+                      color: AppTheme.primaryBlue,
+                      size: 24,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Developed by Pro26',
-                      style: TextStyle(color: Colors.grey[600]),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'FriendFund',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryBlue,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Version 1.0.0 • Developed by Pro26',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
+            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -126,22 +197,50 @@ class HelpPage extends StatelessWidget {
   }
 
   Widget _buildFAQItem(String question, String answer) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Text(
           question,
           style: const TextStyle(
             fontWeight: FontWeight.w600,
-            color: Colors.blue,
+            fontSize: 16,
+            color: AppTheme.primaryBlue,
           ),
         ),
+        iconColor: AppTheme.primaryBlue,
         children: [
-          Padding(
+          Container(
+            width: double.infinity,
             padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.only(top: 8),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryBlue.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: Text(
               answer,
-              style: TextStyle(color: Colors.grey[700], height: 1.5),
+              style: TextStyle(
+                color: Colors.grey[700],
+                height: 1.5,
+                fontSize: 14,
+              ),
             ),
           ),
         ],
@@ -153,19 +252,79 @@ class HelpPage extends StatelessWidget {
     required IconData icon,
     required String title,
     required String content,
+    required String description,
     required VoidCallback onTap,
   }) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.blue.withValues(alpha: 0.1),
-          child: Icon(icon, color: Colors.blue),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryBlue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: AppTheme.primaryBlue, size: 24),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          color: AppTheme.primaryBlue,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        content,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        description,
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Colors.grey[400],
+                ),
+              ],
+            ),
+          ),
         ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(content),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-        onTap: onTap,
       ),
     );
   }
