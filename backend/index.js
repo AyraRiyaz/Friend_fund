@@ -642,8 +642,37 @@ class FriendFundAPI {
       if (sdk.InputFile && sdk.InputFile.fromPath) {
         inputFile = sdk.InputFile.fromPath(tempFilePath, fileName);
       } else {
-        // Fallback: create a readable stream
-        inputFile = fs.createReadStream(tempFilePath);
+        // Create a proper file-like object with required properties
+        const stats = fs.statSync(tempFilePath);
+        const stream = fs.createReadStream(tempFilePath);
+
+        inputFile = Object.assign(stream, {
+          name: fileName,
+          size: stats.size,
+          type: "image/jpeg",
+          lastModified: Date.now(),
+
+          // Add required methods
+          arrayBuffer: async function () {
+            return fileBuffer.buffer.slice(
+              fileBuffer.byteOffset,
+              fileBuffer.byteOffset + fileBuffer.byteLength
+            );
+          },
+
+          slice: function (
+            start = 0,
+            end = stats.size,
+            contentType = "image/jpeg"
+          ) {
+            return {
+              size: end - start,
+              type: contentType,
+              arrayBuffer: () =>
+                Promise.resolve(fileBuffer.slice(start, end).buffer),
+            };
+          },
+        });
       }
 
       // Upload to Appwrite storage using the older method signature
