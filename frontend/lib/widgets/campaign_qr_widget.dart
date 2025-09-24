@@ -1,6 +1,6 @@
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:flutter/rendering.dart';
 // import 'package:share_plus/share_plus.dart'; // Temporarily disabled for web
 import '../models/campaign.dart';
 import '../pages/public_campaign_details_page.dart';
@@ -30,7 +30,10 @@ class _CampaignQRWidgetState extends State<CampaignQRWidget> {
         widget.campaign.shareableUrl ??
         '${currentUri.scheme}://${currentUri.host}$port/campaign/${widget.campaign.id}';
 
-    print('QR Code URL: $contributionUrl'); // Debug print
+    developer.log(
+      'QR Code URL: $contributionUrl',
+      name: 'CampaignQRWidget',
+    ); // Debug log
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -39,7 +42,7 @@ class _CampaignQRWidgetState extends State<CampaignQRWidget> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 2,
             blurRadius: 8,
             offset: const Offset(0, 2),
@@ -131,8 +134,9 @@ class _CampaignQRWidgetState extends State<CampaignQRWidget> {
 
   void _shareLink(String url) {
     // Temporarily disabled for web compatibility - Share functionality will be available in mobile app
-    print(
+    developer.log(
       'Would share: Help ${widget.campaign.hostName} reach their goal! Contribute to "${widget.campaign.title}": $url',
+      name: 'CampaignQRWidget',
     );
   }
 

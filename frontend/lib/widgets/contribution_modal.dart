@@ -1,7 +1,7 @@
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
-import 'dart:typed_data';
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:get/get.dart';
@@ -16,10 +16,10 @@ class EnhancedContributionModal extends StatefulWidget {
   final bool isFromQrCode; // True if accessed via QR code
 
   const EnhancedContributionModal({
-    Key? key,
+    super.key,
     required this.campaignId,
     this.isFromQrCode = false,
-  }) : super(key: key);
+  });
 
   @override
   State<EnhancedContributionModal> createState() =>
@@ -1036,9 +1036,13 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
 
         // Check file size (5MB limit)
         if (imageBytes.length > 5 * 1024 * 1024) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Image size should be less than 5MB')),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Image size should be less than 5MB'),
+              ),
+            );
+          }
           return;
         }
 
@@ -1052,9 +1056,11 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
+      }
     }
   }
 
@@ -1135,17 +1141,19 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
       });
 
       // Show user-friendly error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Unable to verify payment. Please try again.'),
-          backgroundColor: Colors.red,
-          action: SnackBarAction(
-            label: 'Try Again',
-            textColor: Colors.white,
-            onPressed: _verifyPayment,
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Unable to verify payment. Please try again.'),
+            backgroundColor: Colors.red,
+            action: SnackBarAction(
+              label: 'Try Again',
+              textColor: Colors.white,
+              onPressed: _verifyPayment,
+            ),
           ),
-        ),
-      );
+        );
+      }
     }
   }
 
@@ -1294,13 +1302,18 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
         throw Exception(uploadResult['error'] ?? 'Upload failed');
       }
     } catch (e) {
-      print('Error uploading screenshot: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error uploading screenshot: $e'),
-          backgroundColor: Colors.red,
-        ),
+      developer.log(
+        'Error uploading screenshot: $e',
+        name: 'ContributionModal',
       );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error uploading screenshot: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return null;
     }
   }
@@ -1339,8 +1352,8 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
         ),
         borderRadius: BorderRadius.circular(8),
         color: _isUserLoggedIn
-            ? Colors.green.withOpacity(0.1)
-            : Colors.orange.withOpacity(0.1),
+            ? Colors.green.withValues(alpha: 0.1)
+            : Colors.orange.withValues(alpha: 0.1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

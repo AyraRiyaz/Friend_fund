@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 /// Configuration class for API endpoints and app settings
 /// Modified for FriendFund Appwrite Function integration
 class AppConfig {
@@ -28,7 +30,7 @@ class AppConfig {
   // Development helpers
   static void debugPrint(String message) {
     if (isDebug) {
-      print('[FriendFund Debug] $message');
+      developer.log('[FriendFund Debug] $message', name: 'FriendFund');
     }
   }
 

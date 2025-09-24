@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+import 'dart:developer' as developer;
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -154,13 +154,13 @@ class OCRService {
     required double expectedAmount,
     required String expectedUpiId,
   }) {
-    print('\n=== STRICT PAYMENT VALIDATION ===');
-    print('Expected Amount: ₹$expectedAmount');
-    print('Expected UPI: $expectedUpiId');
-    print(
+    developer.log('\n=== STRICT PAYMENT VALIDATION ===');
+    developer.log('Expected Amount: ₹$expectedAmount');
+    developer.log('Expected UPI: $expectedUpiId');
+    developer.log(
       'Today: ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
     );
-    print('Extracted Text: $extractedText');
+    developer.log('Extracted Text: $extractedText');
 
     // Extract data from text
     final amounts = _extractAmounts(extractedText);
@@ -168,10 +168,10 @@ class OCRService {
     final dates = _extractDates(extractedText);
     final utrNumbers = _extractUtrNumbers(extractedText);
 
-    print('Found amounts: $amounts');
-    print('Found UPI IDs: $upiIds');
-    print('Found dates: $dates');
-    print('Found UTR numbers: $utrNumbers');
+    developer.log('Found amounts: $amounts');
+    developer.log('Found UPI IDs: $upiIds');
+    developer.log('Found dates: $dates');
+    developer.log('Found UTR numbers: $utrNumbers');
 
     // STRICT validation - all must match exactly
     bool amountValid = amounts.contains(expectedAmount);
@@ -191,32 +191,36 @@ class OCRService {
     bool isValid = amountValid && upiValid && dateValid && utrValid;
 
     List<String> issues = [];
-    if (!amountValid)
+    if (!amountValid) {
       issues.add(
         'Amount does not exactly match. Expected: ₹$expectedAmount, Found: $amounts',
       );
-    if (!upiValid)
+    }
+    if (!upiValid) {
       issues.add(
         'UPI ID does not exactly match. Expected: $expectedUpiId, Found: $upiIds',
       );
-    if (!dateValid)
+    }
+    if (!dateValid) {
       issues.add(
         'Date is not today. Expected: ${today.day}/${today.month}/${today.year}, Found: $dates',
       );
-    if (!utrValid)
+    }
+    if (!utrValid) {
       issues.add(
         'No valid UTR/Transaction ID found in the screenshot. Found: $utrNumbers',
       );
+    }
 
-    print('VALIDATION RESULTS:');
-    print('- Amount Match: ${amountValid ? "✅" : "❌"}');
-    print('- UPI Match: ${upiValid ? "✅" : "❌"}');
-    print('- Date Match: ${dateValid ? "✅" : "❌"}');
-    print('- UTR Found: ${utrValid ? "✅" : "❌"}');
-    print('FINAL RESULT: ${isValid ? "ACCEPTED" : "REJECTED"}');
+    developer.log('VALIDATION RESULTS:');
+    developer.log('- Amount Match: ${amountValid ? "✅" : "❌"}');
+    developer.log('- UPI Match: ${upiValid ? "✅" : "❌"}');
+    developer.log('- Date Match: ${dateValid ? "✅" : "❌"}');
+    developer.log('- UTR Found: ${utrValid ? "✅" : "❌"}');
+    developer.log('FINAL RESULT: ${isValid ? "ACCEPTED" : "REJECTED"}');
 
     if (issues.isNotEmpty) {
-      print('ISSUES: ${issues.join(", ")}');
+      developer.log('ISSUES: ${issues.join(", ")}');
     }
 
     return PaymentTextAnalysis(
@@ -304,7 +308,7 @@ class OCRService {
 
     // Remove duplicates and sort
     final uniqueAmounts = amounts.toSet().toList()..sort();
-    print('Debug - Amount extraction patterns found: $uniqueAmounts');
+    developer.log('Debug - Amount extraction patterns found: $uniqueAmounts');
     return uniqueAmounts;
   }
 
@@ -322,8 +326,9 @@ class OCRService {
       // Time patterns
       if (before == ':' || after == ':') return true;
       if (RegExp(r'[0-2]\d').hasMatch(numberStr) &&
-          (before == ' ' && after == ':'))
+          (before == ' ' && after == ':')) {
         return true;
+      }
     }
 
     // Filter out years (2020-2030)
@@ -414,7 +419,7 @@ class OCRService {
         final receiverName = match.group(1)?.trim().toLowerCase() ?? '';
         // Check if expected username is part of receiver name
         if (receiverName.contains(expectedUsername)) {
-          print(
+          developer.log(
             'Found receiver match: "$receiverName" contains "$expectedUsername"',
           );
           return true;
@@ -517,8 +522,8 @@ class OCRService {
 
   List<String> _extractUtrNumbers(String text) {
     final utrNumbers = <String>[];
-    print('Debug - UTR extraction starting');
-    print('Debug - Text to search: $text');
+    developer.log('Debug - UTR extraction starting');
+    developer.log('Debug - Text to search: $text');
 
     // UTR/Transaction ID patterns
     final utrPatterns = [
@@ -549,16 +554,16 @@ class OCRService {
 
     for (final pattern in utrPatterns) {
       final matches = pattern.allMatches(text);
-      print(
+      developer.log(
         'Debug - Pattern ${pattern.pattern} found ${matches.length} matches',
       );
       for (final match in matches) {
         final utr = match.group(1);
-        print('Debug - Found UTR candidate: "$utr"');
+        developer.log('Debug - Found UTR candidate: "$utr"');
         if (utr != null) {
           // Clean up the UTR (remove spaces, convert to uppercase)
           final cleanUtr = utr.replaceAll(RegExp(r'\s+'), '');
-          print(
+          developer.log(
             'Debug - Cleaned UTR: "$cleanUtr" (length: ${cleanUtr.length})',
           );
           if (cleanUtr.length >= 6) {
@@ -566,18 +571,20 @@ class OCRService {
             // Validate that it's not a timestamp, phone number, or other common false positive
             if (!_isLikelyNotUtr(cleanUtr)) {
               utrNumbers.add(cleanUtr.toUpperCase());
-              print('Debug - Added UTR: "$cleanUtr"');
+              developer.log('Debug - Added UTR: "$cleanUtr"');
             } else {
-              print('Debug - Rejected UTR (likely not UTR): "$cleanUtr"');
+              developer.log(
+                'Debug - Rejected UTR (likely not UTR): "$cleanUtr"',
+              );
             }
           } else {
-            print('Debug - Rejected UTR (too short): "$cleanUtr"');
+            developer.log('Debug - Rejected UTR (too short): "$cleanUtr"');
           }
         }
       }
     }
 
-    print('Debug - Final UTR numbers: $utrNumbers');
+    developer.log('Debug - Final UTR numbers: $utrNumbers');
     return utrNumbers.toSet().toList();
   }
 
@@ -591,8 +598,9 @@ class OCRService {
 
     // Filter out amounts (pure numbers under a certain threshold)
     final numValue = int.tryParse(value);
-    if (numValue != null && numValue < 1000000 && value.length < 8)
+    if (numValue != null && numValue < 1000000 && value.length < 8) {
       return true; // Only filter small amounts with short length
+    }
 
     // Filter out very short numbers (likely not UTR)
     if (value.length < 6) return true;
@@ -658,20 +666,20 @@ class PaymentVerificationService {
         final data = json.decode(response.body);
         if (data['success'] == true) {
           final isDuplicate = data['data']['isDuplicate'] ?? false;
-          print(
+          developer.log(
             'UTR duplication check result: $isDuplicate for UTR: $utrNumber',
           );
           return isDuplicate;
         } else {
-          print('UTR check API error: ${data['error']}');
+          developer.log('UTR check API error: ${data['error']}');
           return false; // Allow transaction on API error
         }
       } else {
-        print('UTR check HTTP error: ${response.statusCode}');
+        developer.log('UTR check HTTP error: ${response.statusCode}');
         return false; // Allow transaction on HTTP error
       }
     } catch (e) {
-      print('Error checking UTR duplication: $e');
+      developer.log('Error checking UTR duplication: $e');
       // On error, we'll allow the transaction to proceed
       return false;
     }
@@ -723,7 +731,7 @@ class PaymentVerificationService {
         campaignId: campaignId,
       );
     } catch (e) {
-      print('Web verification error: $e');
+      developer.log('Web verification error: $e');
       return PaymentVerificationResult(
         isValid: false,
         confidence: 0.0,
@@ -748,7 +756,7 @@ class PaymentVerificationService {
     try {
       // Extract text from image using OCR
       final ocrResult = await _ocrService.extractTextFromImage(imageBytes);
-      print('OCR Result: ${ocrResult.extractedText}');
+      developer.log('OCR Result: ${ocrResult.extractedText}');
 
       if (!ocrResult.success) {
         return PaymentVerificationResult(
@@ -771,7 +779,7 @@ class PaymentVerificationService {
         expectedAmount: expectedAmount,
         expectedUpiId: expectedUpiId,
       );
-      print('Payment Analysis: ${paymentAnalysis.toJson()}');
+      developer.log('Payment Analysis: ${paymentAnalysis.toJson()}');
 
       // Check for UTR duplication if campaignId is provided and UTR is found
       if (campaignId != null &&
@@ -831,7 +839,7 @@ class PaymentVerificationService {
         verificationMethod: 'OCR-based verification',
       );
     } catch (e) {
-      print('OCR verification error: $e');
+      developer.log('OCR verification error: $e');
       return PaymentVerificationResult(
         isValid: false,
         confidence: 0.0,

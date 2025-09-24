@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../widgets/responsive_layout.dart';
@@ -33,15 +34,22 @@ class _HomeScreenState extends State<HomeScreen> {
           final contributionController = Get.find<ContributionController>();
           // Force reload to ensure we have fresh data
           contributionController.loadUserContributions();
-          print(
+          developer.log(
             'ContributionController: Loading user contributions for home dashboard',
+            name: 'HomeScreen',
           );
         } else {
-          print('ContributionController: Not registered yet');
+          developer.log(
+            'ContributionController: Not registered yet',
+            name: 'HomeScreen',
+          );
         }
       } catch (e) {
         // ContributionController might not be initialized yet, that's ok
-        print('ContributionController not available: $e');
+        developer.log(
+          'ContributionController not available: $e',
+          name: 'HomeScreen',
+        );
       }
     });
   }
@@ -81,7 +89,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   await contributionController.loadUserContributions();
                 }
               } catch (e) {
-                print('Error refreshing contributions: $e');
+                developer.log(
+                  'Error refreshing contributions: $e',
+                  name: 'HomeScreen',
+                );
               }
             },
             child: SingleChildScrollView(
@@ -199,8 +210,9 @@ class _HomeScreenState extends State<HomeScreen> {
             final contributionCount = userContributions.length;
 
             // Debug: Log contribution data when dashboard rebuilds
-            print(
+            developer.log(
               'Home Dashboard: Building with $contributionCount contributions, total: ₹$totalContributed',
+              name: 'HomeScreen',
             );
 
             final activeCampaigns = campaignController.campaigns

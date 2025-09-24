@@ -65,7 +65,7 @@ class _AddCampaignModalState extends State<AddCampaignModal> {
       upiId: _upiIdController.text.trim(),
     );
 
-    if (success) {
+    if (success && mounted) {
       Navigator.pop(context); // Close modal
       Get.snackbar(
         'Success',

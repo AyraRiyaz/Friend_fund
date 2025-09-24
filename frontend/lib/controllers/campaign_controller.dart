@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'package:get/get.dart';
 import '../services/http_api_service.dart';
 import '../services/cache_service.dart';
@@ -36,7 +37,10 @@ class CampaignController extends GetxController {
       _isLoading.value = true;
       _errorMessage.value = '';
 
-      print('Loading campaigns from HTTP API...');
+      developer.log(
+        'Loading campaigns from HTTP API...',
+        name: 'CampaignController',
+      );
 
       // Fetch from API
       final campaigns = await _httpApiService.getAllCampaigns();
@@ -44,7 +48,10 @@ class CampaignController extends GetxController {
 
       // Cache the results
       await CacheService.cacheCampaigns(campaigns);
-      print('Loaded ${campaigns.length} campaigns from API and cached');
+      developer.log(
+        'Loaded ${campaigns.length} campaigns from API and cached',
+        name: 'CampaignController',
+      );
     } catch (e) {
       _errorMessage.value = e.toString();
       Get.snackbar(

@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/campaign_controller.dart';
@@ -86,7 +87,10 @@ class _PublicCampaignDetailsPageState extends State<PublicCampaignDetailsPage> {
         _campaign = _campaign!.copyWith(contributions: contributions);
       });
     } catch (e) {
-      print('Error loading contributions: $e');
+      developer.log(
+        'Error loading contributions: $e',
+        name: 'PublicCampaignDetailsPage',
+      );
     } finally {
       setState(() {
         _isLoadingContributions = false;
@@ -467,7 +471,7 @@ class _PublicCampaignDetailsPageState extends State<PublicCampaignDetailsPage> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryBlue.withOpacity(0.1),
+                    color: AppTheme.primaryBlue.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -531,8 +535,8 @@ class _PublicCampaignDetailsPageState extends State<PublicCampaignDetailsPage> {
                         children: [
                           CircleAvatar(
                             radius: 20,
-                            backgroundColor: AppTheme.primaryBlue.withOpacity(
-                              0.1,
+                            backgroundColor: AppTheme.primaryBlue.withValues(
+                              alpha: 0.1,
                             ),
                             child: Icon(
                               Icons.person_outline,
@@ -568,7 +572,7 @@ class _PublicCampaignDetailsPageState extends State<PublicCampaignDetailsPage> {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: AppTheme.success.withOpacity(0.1),
+                              color: AppTheme.success.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(

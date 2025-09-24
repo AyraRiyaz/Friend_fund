@@ -644,9 +644,9 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
   }
 
   Widget _buildLoanRepaymentCard(Contribution loan) {
-    final daysUntilDue = loan.repaymentDueDate != null
-        ? loan.repaymentDueDate!.difference(DateTime.now()).inDays
-        : null;
+    final daysUntilDue = loan.repaymentDueDate
+        ?.difference(DateTime.now())
+        .inDays;
     final isOverdue = daysUntilDue != null && daysUntilDue < 0;
     final isNearDue =
         daysUntilDue != null && daysUntilDue <= 7 && daysUntilDue >= 0;

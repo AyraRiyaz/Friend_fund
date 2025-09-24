@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'package:get/get.dart';
 import '../services/http_api_service.dart';
 import '../models/campaign.dart';
@@ -40,7 +41,10 @@ class ContributionController extends GetxController {
           ? authController.appwriteUser?.$id
           : null;
 
-      print('Creating contribution with data: $contributionData');
+      developer.log(
+        'Creating contribution with data: $contributionData',
+        name: 'ContributionController',
+      );
 
       final contribution = await _httpApiService.createContribution(
         contributionData,
@@ -90,12 +94,18 @@ class ContributionController extends GetxController {
       );
       _userContributions.assignAll(contributions);
 
-      print('Loaded ${contributions.length} user contributions');
+      developer.log(
+        'Loaded ${contributions.length} user contributions',
+        name: 'ContributionController',
+      );
       // Trigger UI update for GetBuilder widgets
       update();
     } catch (e) {
       _errorMessage.value = e.toString();
-      print('Error loading user contributions: $e');
+      developer.log(
+        'Error loading user contributions: $e',
+        name: 'ContributionController',
+      );
     } finally {
       _isLoading.value = false;
     }
@@ -105,7 +115,10 @@ class ContributionController extends GetxController {
   Future<List<Contribution>> loadLoansToRepay() async {
     final authController = AuthController.instance;
     if (!authController.isAuthenticated) {
-      print('User not authenticated for loading loans to repay');
+      developer.log(
+        'User not authenticated for loading loans to repay',
+        name: 'ContributionController',
+      );
       return [];
     }
 
@@ -114,26 +127,39 @@ class ContributionController extends GetxController {
       _errorMessage.value = '';
 
       final userId = authController.appwriteUser!.$id;
-      print('Loading loans to repay for user ID: $userId');
+      developer.log(
+        'Loading loans to repay for user ID: $userId',
+        name: 'ContributionController',
+      );
 
       // Get all contributions to campaigns hosted by the current user
       final loansToRepay = await _httpApiService.getLoansToRepay(userId);
 
-      print('Successfully loaded ${loansToRepay.length} loans to repay');
+      developer.log(
+        'Successfully loaded ${loansToRepay.length} loans to repay',
+        name: 'ContributionController',
+      );
       if (loansToRepay.isNotEmpty) {
         for (var loan in loansToRepay) {
-          print(
+          developer.log(
             'Loan: ${loan.amount} from ${loan.contributorName} for campaign ${loan.campaignId}',
+            name: 'ContributionController',
           );
         }
       } else {
-        print('No loans to repay found for user $userId');
+        developer.log(
+          'No loans to repay found for user $userId',
+          name: 'ContributionController',
+        );
       }
 
       return loansToRepay;
     } catch (e) {
       _errorMessage.value = e.toString();
-      print('Error loading loans to repay: $e');
+      developer.log(
+        'Error loading loans to repay: $e',
+        name: 'ContributionController',
+      );
       return [];
     } finally {
       _isLoading.value = false;
@@ -152,13 +178,17 @@ class ContributionController extends GetxController {
         campaignId,
       );
 
-      print(
+      developer.log(
         'Loaded ${contributions.length} contributions for campaign $campaignId',
+        name: 'ContributionController',
       );
       return contributions;
     } catch (e) {
       _errorMessage.value = e.toString();
-      print('Error loading campaign contributions: $e');
+      developer.log(
+        'Error loading campaign contributions: $e',
+        name: 'ContributionController',
+      );
       return [];
     } finally {
       _isLoading.value = false;

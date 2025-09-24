@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'package:get_storage/get_storage.dart';
 import '../models/campaign.dart';
 import '../models/user.dart' as app_user;
@@ -23,9 +24,12 @@ class CacheService {
         _campaignsCacheTimeKey,
         DateTime.now().millisecondsSinceEpoch,
       );
-      print('Cached ${campaigns.length} campaigns');
+      developer.log(
+        'Cached ${campaigns.length} campaigns',
+        name: 'CacheService',
+      );
     } catch (e) {
-      print('Error caching campaigns: $e');
+      developer.log('Error caching campaigns: $e', name: 'CacheService');
     }
   }
 
@@ -48,10 +52,16 @@ class CacheService {
           .map((json) => Campaign.fromJson(json))
           .toList();
 
-      print('Retrieved ${campaigns.length} campaigns from cache');
+      developer.log(
+        'Retrieved ${campaigns.length} campaigns from cache',
+        name: 'CacheService',
+      );
       return campaigns;
     } catch (e) {
-      print('Error retrieving cached campaigns: $e');
+      developer.log(
+        'Error retrieving cached campaigns: $e',
+        name: 'CacheService',
+      );
       return null;
     }
   }
@@ -105,7 +115,7 @@ class CacheService {
   static Future<void> clearAllCache() async {
     await clearCampaignsCache();
     await clearUserProfileCache();
-    print('Cleared all cache');
+    developer.log('Cleared all cache', name: 'CacheService');
   }
 
   // Cache health check

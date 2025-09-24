@@ -1,8 +1,7 @@
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter/foundation.dart';
-import 'dart:typed_data';
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:get/get.dart';
@@ -15,8 +14,7 @@ import '../controllers/loan_repayment_controller.dart';
 class LoanRepaymentModal extends StatefulWidget {
   final Contribution loanContribution;
 
-  const LoanRepaymentModal({Key? key, required this.loanContribution})
-    : super(key: key);
+  const LoanRepaymentModal({super.key, required this.loanContribution});
 
   @override
   State<LoanRepaymentModal> createState() => _LoanRepaymentModalState();
@@ -816,9 +814,11 @@ class _LoanRepaymentModalState extends State<LoanRepaymentModal> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error selecting image: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error selecting image: $e')));
+      }
     }
   }
 
@@ -1012,13 +1012,18 @@ Purpose: Loan Repayment
         throw Exception(uploadResult['error'] ?? 'Upload failed');
       }
     } catch (e) {
-      print('Error uploading screenshot: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error uploading screenshot: $e'),
-          backgroundColor: Colors.red,
-        ),
+      developer.log(
+        'Error uploading screenshot: $e',
+        name: 'LoanRepaymentModal',
       );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error uploading screenshot: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return null;
     }
   }

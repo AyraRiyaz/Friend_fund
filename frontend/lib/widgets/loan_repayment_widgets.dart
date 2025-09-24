@@ -11,10 +11,10 @@ class LoanRepaymentListWidget extends StatefulWidget {
   showUserRepayments; // Show user's repayments or received repayments
 
   const LoanRepaymentListWidget({
-    Key? key,
+    super.key,
     this.loanContributionId,
     this.showUserRepayments = true,
-  }) : super(key: key);
+  });
 
   @override
   State<LoanRepaymentListWidget> createState() =>
@@ -429,7 +429,7 @@ class _LoanRepaymentListWidgetState extends State<LoanRepaymentListWidget> {
 
 /// Widget to display loan repayment statistics
 class LoanRepaymentStatsWidget extends StatelessWidget {
-  const LoanRepaymentStatsWidget({Key? key}) : super(key: key);
+  const LoanRepaymentStatsWidget({super.key});
 
   @override
   Widget build(BuildContext context) {

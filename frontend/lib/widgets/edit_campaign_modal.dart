@@ -77,7 +77,7 @@ class _EditCampaignModalState extends State<EditCampaignModal> {
       dueDate: _dueDate,
     );
 
-    if (success) {
+    if (success && mounted) {
       Navigator.pop(context); // Close modal
       Get.snackbar(
         'Success',

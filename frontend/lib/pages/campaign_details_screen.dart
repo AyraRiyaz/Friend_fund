@@ -1,5 +1,5 @@
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../widgets/responsive_layout.dart';
 import '../controllers/auth_controller.dart';
@@ -25,7 +25,6 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
   final ContributionController _contributionController =
       Get.find<ContributionController>();
   late Campaign _currentCampaign;
-  List<Contribution> _contributions = [];
   bool _isLoadingContributions = false;
   bool _showAllContributions = false;
 
@@ -45,14 +44,16 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
       final contributions = await _contributionController
           .loadCampaignContributions(_currentCampaign.id);
       setState(() {
-        _contributions = contributions;
         // Update the campaign with the latest contributions
         _currentCampaign = _currentCampaign.copyWith(
           contributions: contributions,
         );
       });
     } catch (e) {
-      print('Error loading contributions: $e');
+      developer.log(
+        'Error loading contributions: $e',
+        name: 'CampaignDetailsScreen',
+      );
     } finally {
       setState(() {
         _isLoadingContributions = false;
@@ -77,6 +78,9 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
   Widget build(BuildContext context) {
     return ResponsiveLayout(
       title: 'Campaign Details',
+      floatingActionButton: isMyOwnCampaign
+          ? _buildHostFAB()
+          : _buildContributorFAB(),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,9 +104,6 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
           ],
         ),
       ),
-      floatingActionButton: isMyOwnCampaign
-          ? _buildHostFAB()
-          : _buildContributorFAB(),
     );
   }
 
@@ -667,8 +668,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                             : _getMostRecentContributions(3))
                         .map((contribution) {
                           return _buildContributionTile(contribution);
-                        })
-                        .toList(),
+                        }),
                     if (_currentCampaign.contributions.length > 3) ...[
                       const SizedBox(height: 16),
                       Center(
@@ -997,17 +997,18 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
               Navigator.pop(context);
               final success = await _campaignController.pauseCampaign(
                 _currentCampaign.id,
               );
-              if (success) {
+              if (success && mounted) {
                 setState(() {
                   _currentCampaign = _currentCampaign.copyWith(
                     status: 'inactive',
                   );
                 });
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   const SnackBar(
                     content: Text('Campaign paused successfully!'),
                   ),
@@ -1039,17 +1040,18 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
               Navigator.pop(context);
               final success = await _campaignController.activateCampaign(
                 _currentCampaign.id,
               );
-              if (success) {
+              if (success && mounted) {
                 setState(() {
                   _currentCampaign = _currentCampaign.copyWith(
                     status: 'active',
                   );
                 });
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   const SnackBar(
                     content: Text('Campaign activated successfully!'),
                   ),
@@ -1079,17 +1081,18 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
               Navigator.pop(context);
               final success = await _campaignController.closeCampaign(
                 _currentCampaign.id,
               );
-              if (success) {
+              if (success && mounted) {
                 setState(() {
                   _currentCampaign = _currentCampaign.copyWith(
                     status: 'closed',
                   );
                 });
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   const SnackBar(
                     content: Text('Campaign closed successfully!'),
                   ),

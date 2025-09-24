@@ -21,8 +21,8 @@ class HelpPage extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    AppTheme.primaryBlue.withOpacity(0.1),
-                    AppTheme.secondaryBlue.withOpacity(0.05),
+                    AppTheme.primaryBlue.withValues(alpha: 0.1),
+                    AppTheme.secondaryBlue.withValues(alpha: 0.05),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -153,7 +153,7 @@ class HelpPage extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryBlue.withOpacity(0.1),
+                      color: AppTheme.primaryBlue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
@@ -205,7 +205,7 @@ class HelpPage extends StatelessWidget {
         border: Border.all(color: Colors.grey[200]!),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 4,
             offset: const Offset(0, 2),
@@ -231,7 +231,7 @@ class HelpPage extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             margin: const EdgeInsets.only(top: 8),
             decoration: BoxDecoration(
-              color: AppTheme.primaryBlue.withOpacity(0.05),
+              color: AppTheme.primaryBlue.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -263,7 +263,7 @@ class HelpPage extends StatelessWidget {
         border: Border.all(color: Colors.grey[200]!),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 4,
             offset: const Offset(0, 2),
@@ -282,7 +282,7 @@ class HelpPage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryBlue.withOpacity(0.1),
+                    color: AppTheme.primaryBlue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(icon, color: AppTheme.primaryBlue, size: 24),

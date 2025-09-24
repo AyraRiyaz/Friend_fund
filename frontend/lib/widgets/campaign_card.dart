@@ -8,11 +8,11 @@ class CampaignCard extends StatelessWidget {
   final bool showProgress;
 
   const CampaignCard({
-    Key? key,
+    super.key,
     required this.campaign,
     this.onTap,
     this.showProgress = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

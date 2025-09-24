@@ -70,9 +70,10 @@ class HttpApiService {
       );
 
       final queryParams = <String, String>{};
-      if (creatorId != null && creatorId.isNotEmpty)
+      if (creatorId != null && creatorId.isNotEmpty) {
         queryParams['hostId'] =
             creatorId; // Backend expects 'hostId' not 'creatorId'
+      }
       if (status != null && status.isNotEmpty) queryParams['status'] = status;
       if (search != null && search.isNotEmpty) queryParams['search'] = search;
       if (limit != null) queryParams['limit'] = limit.toString();

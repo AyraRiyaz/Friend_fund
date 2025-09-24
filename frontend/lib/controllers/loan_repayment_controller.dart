@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'package:get/get.dart';
 import '../services/http_api_service.dart';
 import '../models/loan_repayment.dart';
@@ -55,7 +56,10 @@ class LoanRepaymentController extends GetxController {
         'status': 'pending',
       };
 
-      print('Creating loan repayment with data: $repaymentData');
+      developer.log(
+        'Creating loan repayment with data: $repaymentData',
+        name: 'LoanRepaymentController',
+      );
 
       final repayment = await _httpApiService.createLoanRepayment(
         repaymentData,
@@ -103,10 +107,16 @@ class LoanRepaymentController extends GetxController {
       );
       _userRepayments.assignAll(repayments);
 
-      print('Loaded ${repayments.length} user loan repayments');
+      developer.log(
+        'Loaded ${repayments.length} user loan repayments',
+        name: 'LoanRepaymentController',
+      );
     } catch (e) {
       _errorMessage.value = e.toString();
-      print('Error loading user loan repayments: $e');
+      developer.log(
+        'Error loading user loan repayments: $e',
+        name: 'LoanRepaymentController',
+      );
     } finally {
       _isLoading.value = false;
     }
@@ -126,10 +136,16 @@ class LoanRepaymentController extends GetxController {
       );
       _receivedRepayments.assignAll(repayments);
 
-      print('Loaded ${repayments.length} received loan repayments');
+      developer.log(
+        'Loaded ${repayments.length} received loan repayments',
+        name: 'LoanRepaymentController',
+      );
     } catch (e) {
       _errorMessage.value = e.toString();
-      print('Error loading received loan repayments: $e');
+      developer.log(
+        'Error loading received loan repayments: $e',
+        name: 'LoanRepaymentController',
+      );
     } finally {
       _isLoading.value = false;
     }
@@ -147,13 +163,17 @@ class LoanRepaymentController extends GetxController {
         loanContributionId,
       );
 
-      print(
+      developer.log(
         'Loaded ${repayments.length} repayments for loan $loanContributionId',
+        name: 'LoanRepaymentController',
       );
       return repayments;
     } catch (e) {
       _errorMessage.value = e.toString();
-      print('Error loading loan repayments for loan $loanContributionId: $e');
+      developer.log(
+        'Error loading loan repayments for loan $loanContributionId: $e',
+        name: 'LoanRepaymentController',
+      );
       return [];
     } finally {
       _isLoading.value = false;

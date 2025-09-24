@@ -1,7 +1,7 @@
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
-import 'dart:typed_data';
 import 'package:intl/intl.dart';
 import 'package:get/get.dart';
 import '../models/campaign.dart';
@@ -14,8 +14,7 @@ import '../theme/app_theme.dart';
 class LoanRepaymentScreen extends StatefulWidget {
   final Contribution loanContribution;
 
-  const LoanRepaymentScreen({Key? key, required this.loanContribution})
-    : super(key: key);
+  const LoanRepaymentScreen({super.key, required this.loanContribution});
 
   @override
   State<LoanRepaymentScreen> createState() => _LoanRepaymentScreenState();
@@ -795,9 +794,11 @@ class _LoanRepaymentScreenState extends State<LoanRepaymentScreen> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error selecting image: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error selecting image: $e')));
+      }
     }
   }
 
@@ -936,7 +937,10 @@ class _LoanRepaymentScreenState extends State<LoanRepaymentScreen> {
       // In real implementation, upload to file storage service
       return 'https://example.com/repayment-screenshots/${DateTime.now().millisecondsSinceEpoch}.jpg';
     } catch (e) {
-      print('Error uploading screenshot: $e');
+      developer.log(
+        'Error uploading screenshot: $e',
+        name: 'LoanRepaymentScreen',
+      );
       return null;
     }
   }
