@@ -843,22 +843,15 @@ class HttpApiService {
     }
   }
 
-  /// Upload a file (for payment screenshots)
+  /// Upload a file (for payment screenshots) - DEPRECATED
+  /// Use uploadPaymentScreenshot() instead for proper file upload
+  @Deprecated(
+    'Use uploadPaymentScreenshot() for proper file upload functionality',
+  )
   Future<Map<String, dynamic>> uploadFile(dynamic file) async {
-    try {
-      // For now, we'll return a placeholder response
-      // In a real implementation, you would upload to a file storage service
-      // like Appwrite Storage, AWS S3, or Cloudinary
-
-      // This is a mock implementation - replace with actual file upload logic
-      return {
-        'success': true,
-        'fileUrl': 'https://placeholder.com/payment-screenshot.jpg',
-        'fileId': 'mock-file-id-${DateTime.now().millisecondsSinceEpoch}',
-      };
-    } catch (e) {
-      throw Exception('Failed to upload file: $e');
-    }
+    throw Exception(
+      'This method is deprecated. Use uploadPaymentScreenshot() instead.',
+    );
   }
 
   /// Process payment screenshot with OCR

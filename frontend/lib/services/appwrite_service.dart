@@ -86,9 +86,7 @@ class AppwriteService {
     );
   }
 
-  Future<Map<String, dynamic>> uploadFile(dynamic file) async {
-    return await _httpApiService.uploadFile(file);
-  }
+  // Deprecated - use HttpApiService.uploadPaymentScreenshot() directly
 
   Future<Map<String, dynamic>> generatePaymentQR({
     required String campaignId,
