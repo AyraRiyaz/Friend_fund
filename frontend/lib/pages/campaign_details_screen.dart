@@ -27,6 +27,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
   late Campaign _currentCampaign;
   List<Contribution> _contributions = [];
   bool _isLoadingContributions = false;
+  bool _showAllContributions = false;
 
   @override
   void initState() {
@@ -659,9 +660,41 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                 )
               else
                 Column(
-                  children: _currentCampaign.contributions.map((contribution) {
-                    return _buildContributionTile(contribution);
-                  }).toList(),
+                  children: [
+                    // Show contributions based on _showAllContributions state
+                    ...(_showAllContributions
+                            ? _getAllContributionsSorted()
+                            : _getMostRecentContributions(3))
+                        .map((contribution) {
+                          return _buildContributionTile(contribution);
+                        })
+                        .toList(),
+                    if (_currentCampaign.contributions.length > 3) ...[
+                      const SizedBox(height: 16),
+                      Center(
+                        child: TextButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              _showAllContributions = !_showAllContributions;
+                            });
+                          },
+                          icon: Icon(
+                            _showAllContributions
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                          ),
+                          label: Text(
+                            _showAllContributions
+                                ? 'Show Less'
+                                : 'View All ${_currentCampaign.contributions.length} Contributions',
+                          ),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppTheme.primaryBlue,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
             ],
           ),
@@ -1123,6 +1156,22 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
     } else {
       return amount.toStringAsFixed(0);
     }
+  }
+
+  List<Contribution> _getMostRecentContributions(int count) {
+    final sortedContributions = List<Contribution>.from(
+      _currentCampaign.contributions,
+    );
+    sortedContributions.sort((a, b) => b.date.compareTo(a.date));
+    return sortedContributions.take(count).toList();
+  }
+
+  List<Contribution> _getAllContributionsSorted() {
+    final sortedContributions = List<Contribution>.from(
+      _currentCampaign.contributions,
+    );
+    sortedContributions.sort((a, b) => b.date.compareTo(a.date));
+    return sortedContributions;
   }
 
   String _formatDate(DateTime date) {

@@ -51,8 +51,9 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
       await _contributionController.loadUserContributions();
       final loansToRepay = await _contributionController.loadLoansToRepay();
       setState(() {
-        _allContributions = _contributionController.userContributions;
-        _loansToRepay = loansToRepay;
+        _allContributions = _contributionController.userContributions
+          ..sort((a, b) => b.date.compareTo(a.date));
+        _loansToRepay = loansToRepay..sort((a, b) => b.date.compareTo(a.date));
         _isLoading = false;
       });
     } catch (e) {
@@ -107,12 +108,13 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
       );
     }
 
-    // Filter contributions by type
-    final gifts = _allContributions.where((c) => c.type == 'gift').toList();
-    final loansGiven = _allContributions
-        .where((c) => c.type == 'loan')
-        .toList();
-    final loansToRepay = _loansToRepay;
+    // Filter contributions by type and sort by most recent first
+    final gifts = _allContributions.where((c) => c.type == 'gift').toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+    final loansGiven = _allContributions.where((c) => c.type == 'loan').toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+    final loansToRepay = _loansToRepay
+      ..sort((a, b) => b.date.compareTo(a.date));
 
     // Calculate summary stats
     final totalGifted = gifts.fold<double>(0, (sum, c) => sum + c.amount);

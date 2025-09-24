@@ -17,9 +17,11 @@ class MyCampaignsScreen extends StatelessWidget {
         final authController = Get.find<AuthController>();
         final currentUserId = authController.appwriteUser?.$id;
 
-        final myCampaigns = campaignController.campaigns
-            .where((c) => c.hostId == currentUserId)
-            .toList();
+        final myCampaigns =
+            campaignController.campaigns
+                .where((c) => c.hostId == currentUserId)
+                .toList()
+              ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
         return ResponsiveLayout(
           title: 'My Campaigns',

@@ -51,10 +51,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return GetBuilder<CampaignController>(
       builder: (campaignController) {
         final allCampaigns = campaignController.campaigns;
-        // Filter to only show active campaigns
-        final activeCampaigns = allCampaigns
-            .where((campaign) => campaign.status == 'active')
-            .toList();
+        // Filter to only show active campaigns and sort by most recent first
+        final activeCampaigns =
+            allCampaigns
+                .where((campaign) => campaign.status == 'active')
+                .toList()
+              ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
         final displayCampaigns = _showAllCampaigns
             ? activeCampaigns
             : activeCampaigns.take(6).toList();

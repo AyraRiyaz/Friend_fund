@@ -84,7 +84,9 @@ class Campaign {
       hostName: json['hostName'] ?? '',
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
-          : DateTime.now(),
+          : (json['\$createdAt'] != null
+                ? DateTime.parse(json['\$createdAt'])
+                : DateTime.now()),
       dueDate: json['dueDate'] != null ? DateTime.parse(json['dueDate']) : null,
       status: json['status'] ?? 'active',
       contributions: (json['contributions'] as List? ?? [])
