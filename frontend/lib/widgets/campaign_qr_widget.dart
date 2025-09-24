@@ -3,7 +3,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:flutter/rendering.dart';
 // import 'package:share_plus/share_plus.dart'; // Temporarily disabled for web
 import '../models/campaign.dart';
-import 'contribution_modal.dart';
+import '../pages/public_campaign_details_page.dart';
 
 class CampaignQRWidget extends StatefulWidget {
   final Campaign campaign;
@@ -24,11 +24,11 @@ class _CampaignQRWidgetState extends State<CampaignQRWidget> {
         ? ':${currentUri.port}'
         : '';
 
-    // Generate a URL that points to the contribution modal
-    // This will work when the QR code is scanned by opening the contribution modal
+    // Generate a URL that points to the public campaign details page
+    // This will allow users to read campaign details before contributing
     final contributionUrl =
         widget.campaign.shareableUrl ??
-        '${currentUri.scheme}://${currentUri.host}$port/modal/contribute/${widget.campaign.id}';
+        '${currentUri.scheme}://${currentUri.host}$port/campaign/${widget.campaign.id}';
 
     print('QR Code URL: $contributionUrl'); // Debug print
 
@@ -76,7 +76,7 @@ class _CampaignQRWidgetState extends State<CampaignQRWidget> {
           const SizedBox(height: 16),
 
           Text(
-            'Scan to contribute',
+            'Scan to view campaign',
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
@@ -152,11 +152,13 @@ class _CampaignQRWidgetState extends State<CampaignQRWidget> {
   }
 
   void _testQRCode(BuildContext context) {
-    // Open the contribution modal to test QR code functionality
-    showDialog(
-      context: context,
-      builder: (context) =>
-          EnhancedContributionModal(campaignId: widget.campaign.id),
+    // Navigate to the public campaign details page to test QR code functionality
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            PublicCampaignDetailsPage(campaignId: widget.campaign.id),
+      ),
     );
   }
 }

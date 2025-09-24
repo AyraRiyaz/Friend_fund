@@ -4,6 +4,7 @@ import '../widgets/responsive_layout.dart';
 import '../theme/app_theme.dart';
 import '../models/campaign.dart';
 import '../controllers/contribution_controller.dart';
+import '../controllers/campaign_controller.dart';
 import '../controllers/auth_controller.dart';
 import '../widgets/loan_repayment_modal.dart';
 
@@ -19,6 +20,7 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
   late TabController _tabController;
   final ContributionController _contributionController =
       Get.find<ContributionController>();
+  final CampaignController _campaignController = Get.find<CampaignController>();
   final AuthController _authController = Get.find<AuthController>();
 
   List<Contribution> _allContributions = [];
@@ -126,81 +128,97 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
 
     return ResponsiveLayout(
       title: 'My Contributions',
-      appBarActions: [
-        IconButton(
-          onPressed: _refreshContributions,
-          icon: const Icon(Icons.refresh),
-          tooltip: 'Refresh',
-        ),
-      ],
       child: Column(
         children: [
           _buildSummarySection(context, totalGifted, totalLoaned, totalToRepay),
           Container(
             color: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             child: TabBar(
               controller: _tabController,
               labelColor: AppTheme.primaryBlue,
               unselectedLabelColor: AppTheme.textSecondary,
               indicatorColor: AppTheme.primaryBlue,
               indicatorWeight: 3,
+              isScrollable: false,
+              tabAlignment: TabAlignment.fill,
               tabs: [
                 Tab(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.card_giftcard_outlined),
-                      const SizedBox(height: 4),
-                      Text('Gifts (${gifts.length})'),
-                    ],
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.card_giftcard_outlined, size: 18),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Gifts (${gifts.length})',
+                          style: const TextStyle(fontSize: 10),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 Tab(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.handshake_outlined),
-                      const SizedBox(height: 4),
-                      Text('Loans Given (${loansGiven.length})'),
-                    ],
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.handshake_outlined, size: 18),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Loans (${loansGiven.length})',
+                          style: const TextStyle(fontSize: 10),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 Tab(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Stack(
-                        children: [
-                          const Icon(Icons.schedule),
-                          if (loansToRepay.isNotEmpty)
-                            Positioned(
-                              right: 0,
-                              top: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(2),
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                                constraints: const BoxConstraints(
-                                  minWidth: 12,
-                                  minHeight: 12,
-                                ),
-                                child: Text(
-                                  loansToRepay.length.toString(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 8,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            const Icon(Icons.schedule, size: 18),
+                            if (loansToRepay.isNotEmpty)
+                              Positioned(
+                                right: -8,
+                                top: -4,
+                                child: Container(
+                                  padding: const EdgeInsets.all(1),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
                                   ),
-                                  textAlign: TextAlign.center,
+                                  constraints: const BoxConstraints(
+                                    minWidth: 14,
+                                    minHeight: 14,
+                                  ),
+                                  child: Text(
+                                    loansToRepay.length.toString(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
                                 ),
                               ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text('To Repay (${loansToRepay.length})'),
-                    ],
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Repay (${loansToRepay.length})',
+                          style: const TextStyle(fontSize: 10),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -299,30 +317,40 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
     Color color,
   ) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      height: 110, // Fixed height to ensure all cards are the same size
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color,
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            label,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
-            textAlign: TextAlign.center,
+          Flexible(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppTheme.textSecondary,
+                fontSize: 11,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
@@ -407,7 +435,7 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        'Campaign ID: ${loan.campaignId}',
+                        _getCampaignName(loan.campaignId),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppTheme.textSecondary,
                         ),
@@ -762,7 +790,10 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
                       ],
                     ),
                     const SizedBox(height: 12),
-                    _buildDetailRow('Campaign ID:', loan.campaignId),
+                    _buildDetailRow(
+                      'Campaign:',
+                      _getCampaignName(loan.campaignId),
+                    ),
                     const SizedBox(height: 8),
                     _buildDetailRow(
                       'Loan Amount:',
@@ -989,7 +1020,7 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        'Campaign ID: ${contribution.campaignId}',
+                        _getCampaignName(contribution.campaignId),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppTheme.textSecondary,
                         ),
@@ -1170,6 +1201,18 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
       }
     } else {
       return '${date.day}/${date.month}/${date.year}';
+    }
+  }
+
+  String _getCampaignName(String campaignId) {
+    try {
+      final campaign = _campaignController.campaigns.firstWhere(
+        (campaign) => campaign.id == campaignId,
+      );
+      return campaign.title;
+    } catch (e) {
+      // If campaign not found, return the ID with a fallback label
+      return 'Campaign ID: $campaignId';
     }
   }
 

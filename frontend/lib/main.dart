@@ -20,6 +20,7 @@ import 'pages/my_contributions_screen.dart';
 import 'pages/profile_page.dart';
 import 'pages/help_page.dart';
 import 'pages/about_page.dart';
+import 'pages/public_campaign_details_page.dart';
 import 'widgets/contribution_modal.dart';
 
 void main() async {
@@ -115,6 +116,24 @@ class MyApp extends StatelessWidget {
         GetPage(
           name: '/help',
           page: () => const AuthProtectedPage(child: HelpPage()),
+        ),
+
+        // Public campaign details route (no authentication required)
+        GetPage(
+          name: '/campaign/:campaignId',
+          page: () => Builder(
+            builder: (context) {
+              final campaignId = Get.parameters['campaignId'];
+              if (campaignId != null && campaignId.isNotEmpty) {
+                return PublicCampaignDetailsPage(campaignId: campaignId);
+              }
+              // If no campaign ID provided, redirect to home
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                Get.offAllNamed('/home');
+              });
+              return const SizedBox.shrink();
+            },
+          ),
         ),
 
         // Public contribution modal route (no authentication required)
