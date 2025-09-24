@@ -646,13 +646,13 @@ class FriendFundAPI {
         inputFile = fs.createReadStream(tempFilePath);
       }
 
-      // Upload to Appwrite storage using the correct method format from docs
-      const file = await this.storage.createFile({
-        bucketId: this.screenshotsBucketId,
-        fileId: fileId,
-        file: inputFile,
-        permissions: [Permission.read(Role.any())],
-      });
+      // Upload to Appwrite storage using the older method signature
+      const file = await this.storage.createFile(
+        this.screenshotsBucketId,
+        fileId,
+        inputFile,
+        [Permission.read(Role.any())]
+      );
 
       // Clean up temporary file
       try {
