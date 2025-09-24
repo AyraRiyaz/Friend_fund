@@ -624,12 +624,42 @@ class FriendFundAPI {
       // Create a file using the Appwrite storage API
       const fileId = ID.unique();
 
-      // For Appwrite Functions, we can try passing buffer directly
-      // or create a simple object with required properties
+      // Create a File-like object that Appwrite expects
+      const fileObject = {
+        name: fileName,
+        type: "image/jpeg",
+        size: fileBuffer.length,
+        lastModified: Date.now(),
+        // Add arrayBuffer method that returns the buffer
+        arrayBuffer: async () => fileBuffer,
+        // Add stream method for compatibility
+        stream: () => {
+          const stream = new ReadableStream({
+            start(controller) {
+              controller.enqueue(fileBuffer);
+              controller.close();
+            },
+          });
+          return stream;
+        },
+        // Add text method (though not used for images)
+        text: async () => fileBuffer.toString(),
+        // Add slice method for File interface compatibility
+        slice: (
+          start = 0,
+          end = fileBuffer.length,
+          contentType = "image/jpeg"
+        ) => {
+          return new Blob([fileBuffer.slice(start, end)], {
+            type: contentType,
+          });
+        },
+      };
+
       const file = await this.storage.createFile(
         this.screenshotsBucketId,
         fileId,
-        fileBuffer,
+        fileObject,
         [Permission.read(Role.any())]
       );
 
