@@ -690,25 +690,76 @@ class FriendFundAPI {
         hasSlice: typeof inputFile.slice === "function",
       });
 
-      // Upload to Appwrite storage using the older method signature
-      const file = await this.storage.createFile(
-        this.screenshotsBucketId,
-        fileId,
-        inputFile,
-        [Permission.read(Role.any())]
+      // Upload to Appwrite storage using REST API directly
+      console.log("Using Appwrite REST API for file upload");
+
+      const endpoint =
+        process.env.APPWRITE_FUNCTION_ENDPOINT ||
+        "https://fra.cloud.appwrite.io/v1";
+      const projectId = process.env.APPWRITE_FUNCTION_PROJECT_ID;
+      const apiKey = process.env.APPWRITE_API_KEY;
+
+      // Create multipart form data manually
+      const boundary = `----formdata-${Date.now()}`;
+      const CRLF = "\r\n";
+
+      let body = "";
+
+      // Add fileId field
+      body += `--${boundary}${CRLF}`;
+      body += `Content-Disposition: form-data; name="fileId"${CRLF}${CRLF}`;
+      body += `${fileId}${CRLF}`;
+
+      // Add permissions field
+      body += `--${boundary}${CRLF}`;
+      body += `Content-Disposition: form-data; name="permissions[]"${CRLF}${CRLF}`;
+      body += `read("any")${CRLF}`;
+
+      // Add file field
+      body += `--${boundary}${CRLF}`;
+      body += `Content-Disposition: form-data; name="file"; filename="${fileName}"${CRLF}`;
+      body += `Content-Type: image/jpeg${CRLF}${CRLF}`;
+
+      // Convert body to buffer and append file buffer
+      const bodyBuffer = Buffer.concat([
+        Buffer.from(body, "utf8"),
+        fileBuffer,
+        Buffer.from(`${CRLF}--${boundary}--${CRLF}`, "utf8"),
+      ]);
+
+      const response = await fetch(
+        `${endpoint}/storage/buckets/${this.screenshotsBucketId}/files`,
+        {
+          method: "POST",
+          headers: {
+            "X-Appwrite-Project": projectId,
+            "X-Appwrite-Key": apiKey,
+            "Content-Type": `multipart/form-data; boundary=${boundary}`,
+            "Content-Length": bodyBuffer.length.toString(),
+          },
+          body: bodyBuffer,
+        }
       );
 
-      // Generate the public URL for the uploaded file
-      const fileUrl = this.storage
-        .getFileView(this.screenshotsBucketId, file.$id)
-        .toString();
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
 
-      console.log("Successfully uploaded to Appwrite storage:", {
-        fileId: file.$id,
-        fileName: fileName,
-        fileUrl: fileUrl,
-        bucketId: this.screenshotsBucketId,
-      });
+      const file = await response.json();
+
+      // Generate the public URL for the uploaded file
+      const fileUrl = `${endpoint}/storage/buckets/${this.screenshotsBucketId}/files/${file.$id}/view?project=${projectId}`;
+
+      console.log(
+        "Successfully processed screenshot (using base64 data URL):",
+        {
+          fileId: file.$id,
+          fileName: fileName,
+          fileUrlLength: fileUrl.length,
+          bucketId: this.screenshotsBucketId,
+        }
+      );
 
       return {
         success: true,
