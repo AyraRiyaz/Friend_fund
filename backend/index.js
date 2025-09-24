@@ -624,57 +624,29 @@ class FriendFundAPI {
       // Create a file using the Appwrite storage API
       const fileId = ID.unique();
 
-      // Create a File-like object that Appwrite expects
-      const fileObject = {
-        name: fileName,
-        type: "image/jpeg",
-        size: fileBuffer.length,
-        lastModified: Date.now(),
-        // Add arrayBuffer method that returns the buffer
-        arrayBuffer: async () => fileBuffer,
-        // Add stream method for compatibility
-        stream: () => {
-          const stream = new ReadableStream({
-            start(controller) {
-              controller.enqueue(fileBuffer);
-              controller.close();
-            },
-          });
-          return stream;
-        },
-        // Add text method (though not used for images)
-        text: async () => fileBuffer.toString(),
-        // Add slice method for File interface compatibility
-        slice: (
-          start = 0,
-          end = fileBuffer.length,
-          contentType = "image/jpeg"
-        ) => {
-          return new Blob([fileBuffer.slice(start, end)], {
-            type: contentType,
-          });
-        },
+      // For now, store as base64 data URL since Appwrite file upload is problematic
+      // This is a temporary workaround until we resolve the Appwrite SDK file upload issue
+      const base64Data = fileBuffer.toString("base64");
+      const dataUrl = `data:image/jpeg;base64,${base64Data}`;
+
+      console.log("Using base64 data URL as temporary solution:", {
+        fileId: fileId,
+        fileName: fileName,
+        dataLength: base64Data.length,
+      });
+
+      // Return the data URL as fileUrl for now
+      const file = {
+        $id: fileId,
       };
 
-      const file = await this.storage.createFile(
-        this.screenshotsBucketId,
-        fileId,
-        fileObject,
-        [Permission.read(Role.any())]
-      );
+      // Use the data URL as the file URL (temporary solution)
+      const fileUrl = dataUrl;
 
-      // Generate file view URL using Appwrite storage API
-      // The getFileView method returns a URL object, so we need to convert to string
-      const fileViewUrl = this.storage.getFileView(
-        this.screenshotsBucketId,
-        file.$id
-      );
-      const fileUrl = fileViewUrl.toString();
-
-      console.log("File uploaded successfully to Appwrite storage:", {
+      console.log("File processed successfully (using base64 data URL):", {
         fileId: file.$id,
         fileName: fileName,
-        fileUrl: fileUrl,
+        fileUrlLength: fileUrl.length,
         bucketId: this.screenshotsBucketId,
       });
 
