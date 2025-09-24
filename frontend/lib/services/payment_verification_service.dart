@@ -517,13 +517,15 @@ class OCRService {
 
   List<String> _extractUtrNumbers(String text) {
     final utrNumbers = <String>[];
+    print('Debug - UTR extraction starting');
+    print('Debug - Text to search: $text');
 
     // UTR/Transaction ID patterns
     final utrPatterns = [
       // Standard 12-digit UTR number
       RegExp(r'\b(\d{12})\b'),
 
-      // UPI reference number with potential spaces (like "6911067 71966")
+      // UPI reference number with potential spaces (like "6911431 49650")
       RegExp(
         r'(?:upi\s+ref\.?\s+no\.?|reference\s+no\.?|ref\.?\s+no\.?)\s*[:\-]?\s*(\d+\s*\d+)',
         caseSensitive: false,
@@ -543,31 +545,39 @@ class OCRService {
 
       // IMPS/NEFT reference numbers
       RegExp(r'\b([A-Z]{4}\d{8,12})\b'),
-
-      // Generic number patterns after payment keywords (backup)
-      RegExp(
-        r'(?:txn|transaction|reference|ref)\s*(?:no\.?|id|number)?\s*[:\-]?\s*(\d+(?:\s+\d+)*)',
-        caseSensitive: false,
-      ),
     ];
 
     for (final pattern in utrPatterns) {
-      for (final match in pattern.allMatches(text)) {
+      final matches = pattern.allMatches(text);
+      print(
+        'Debug - Pattern ${pattern.pattern} found ${matches.length} matches',
+      );
+      for (final match in matches) {
         final utr = match.group(1);
+        print('Debug - Found UTR candidate: "$utr"');
         if (utr != null) {
           // Clean up the UTR (remove spaces, convert to uppercase)
           final cleanUtr = utr.replaceAll(RegExp(r'\s+'), '');
+          print(
+            'Debug - Cleaned UTR: "$cleanUtr" (length: ${cleanUtr.length})',
+          );
           if (cleanUtr.length >= 6) {
             // Lowered minimum length for UTR acceptance
             // Validate that it's not a timestamp, phone number, or other common false positive
             if (!_isLikelyNotUtr(cleanUtr)) {
               utrNumbers.add(cleanUtr.toUpperCase());
+              print('Debug - Added UTR: "$cleanUtr"');
+            } else {
+              print('Debug - Rejected UTR (likely not UTR): "$cleanUtr"');
             }
+          } else {
+            print('Debug - Rejected UTR (too short): "$cleanUtr"');
           }
         }
       }
     }
 
+    print('Debug - Final UTR numbers: $utrNumbers');
     return utrNumbers.toSet().toList();
   }
 
