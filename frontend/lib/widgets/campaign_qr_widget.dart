@@ -1,9 +1,9 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-// import 'package:share_plus/share_plus.dart'; // Temporarily disabled for web
+import 'package:share_plus/share_plus.dart';
 import '../models/campaign.dart';
-import '../pages/public_campaign_details_page.dart';
 
 class CampaignQRWidget extends StatefulWidget {
   final Campaign campaign;
@@ -114,55 +114,105 @@ class _CampaignQRWidgetState extends State<CampaignQRWidget> {
               label: const Text('Copy Link'),
             ),
           ),
-
-          const SizedBox(height: 8),
-
-          // Test button for development
-          SizedBox(
-            width: double.infinity,
-            child: TextButton.icon(
-              onPressed: () => _testQRCode(context),
-              icon: const Icon(Icons.open_in_new),
-              label: const Text('Test QR Code (Dev)'),
-              style: TextButton.styleFrom(foregroundColor: Colors.orange),
-            ),
-          ),
         ],
       ),
     );
   }
 
-  void _shareLink(String url) {
-    // Temporarily disabled for web compatibility - Share functionality will be available in mobile app
-    developer.log(
-      'Would share: Help ${widget.campaign.hostName} reach their goal! Contribute to "${widget.campaign.title}": $url',
-      name: 'CampaignQRWidget',
-    );
+  Future<void> _shareLink(String url) async {
+    final shareText =
+        'Help ${widget.campaign.hostName} reach their goal! Contribute to "${widget.campaign.title}": $url';
+
+    try {
+      // Use the share_plus package for proper sharing
+      await Share.share(shareText, subject: 'Support ${widget.campaign.title}');
+
+      developer.log('Campaign share dialog opened', name: 'CampaignQRWidget');
+    } catch (e) {
+      developer.log('Failed to share campaign: $e', name: 'CampaignQRWidget');
+
+      // Fallback to copying to clipboard if sharing fails
+      try {
+        await Clipboard.setData(ClipboardData(text: shareText));
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                'Sharing not available. Campaign details copied to clipboard instead!',
+              ),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 3),
+              action: SnackBarAction(
+                label: 'OK',
+                textColor: Colors.white,
+                onPressed: () =>
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+              ),
+            ),
+          );
+        }
+      } catch (clipboardError) {
+        developer.log(
+          'Failed to copy to clipboard as fallback: $clipboardError',
+          name: 'CampaignQRWidget',
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Share failed. Text: $shareText'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
+              action: SnackBarAction(
+                label: 'OK',
+                textColor: Colors.white,
+                onPressed: () =>
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+              ),
+            ),
+          );
+        }
+      }
+    }
   }
 
-  void _copyLink(BuildContext context, String url) {
-    // For web, we would use html.window.navigator.clipboard?.writeText(url)
-    // For mobile, we would use Clipboard.setData()
-    // For now, just show a snackbar
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Link copied: $url'),
-        action: SnackBarAction(
-          label: 'OK',
-          onPressed: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-        ),
-      ),
-    );
-  }
-
-  void _testQRCode(BuildContext context) {
-    // Navigate to the public campaign details page to test QR code functionality
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            PublicCampaignDetailsPage(campaignId: widget.campaign.id),
-      ),
-    );
+  Future<void> _copyLink(BuildContext context, String url) async {
+    try {
+      await Clipboard.setData(ClipboardData(text: url));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Campaign link copied to clipboard!'),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: 'OK',
+              textColor: Colors.white,
+              onPressed: () =>
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      developer.log(
+        'Failed to copy to clipboard: $e',
+        name: 'CampaignQRWidget',
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to copy link. URL: $url'),
+            backgroundColor: Colors.orange,
+            action: SnackBarAction(
+              label: 'OK',
+              textColor: Colors.white,
+              onPressed: () =>
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar(),
+            ),
+          ),
+        );
+      }
+    }
   }
 }
