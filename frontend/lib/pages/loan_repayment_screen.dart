@@ -87,14 +87,14 @@ class _LoanRepaymentScreenState extends State<LoanRepaymentScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Repay Loan'),
-        backgroundColor: AppTheme.primaryBlue,
+        backgroundColor: AppTheme.primaryViolet,
         foregroundColor: Colors.white,
       ),
       body: Theme(
         data: Theme.of(context).copyWith(
           colorScheme: Theme.of(
             context,
-          ).colorScheme.copyWith(primary: AppTheme.primaryBlue),
+          ).colorScheme.copyWith(primary: AppTheme.primaryViolet),
         ),
         child: Stepper(
           currentStep: _currentStep,
@@ -137,10 +137,10 @@ class _LoanRepaymentScreenState extends State<LoanRepaymentScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppTheme.primaryBlue.withValues(alpha: 0.1),
+              color: AppTheme.primaryViolet.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: AppTheme.primaryBlue.withValues(alpha: 0.2),
+                color: AppTheme.primaryViolet.withValues(alpha: 0.2),
               ),
             ),
             child: Column(
@@ -150,14 +150,14 @@ class _LoanRepaymentScreenState extends State<LoanRepaymentScreen> {
                   children: [
                     Icon(
                       Icons.account_balance_wallet,
-                      color: AppTheme.primaryBlue,
+                      color: AppTheme.primaryViolet,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       'Loan Details',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.primaryBlue,
+                        color: AppTheme.primaryViolet,
                       ),
                     ),
                   ],
@@ -336,10 +336,10 @@ class _LoanRepaymentScreenState extends State<LoanRepaymentScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppTheme.primaryBlue.withValues(alpha: 0.1),
+            color: AppTheme.primaryViolet.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: AppTheme.primaryBlue.withValues(alpha: 0.2),
+              color: AppTheme.primaryViolet.withValues(alpha: 0.2),
             ),
           ),
           child: Column(
@@ -347,14 +347,14 @@ class _LoanRepaymentScreenState extends State<LoanRepaymentScreen> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.contact_phone, color: AppTheme.primaryBlue),
+                  Icon(Icons.contact_phone, color: AppTheme.primaryViolet),
                   const SizedBox(width: 8),
                   Text(
                     'Contact Lender',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: AppTheme.primaryBlue,
+                      color: AppTheme.primaryViolet,
                     ),
                   ),
                 ],
@@ -459,7 +459,7 @@ class _LoanRepaymentScreenState extends State<LoanRepaymentScreen> {
                       : const Icon(Icons.verified),
                   label: Text(_isVerifyingPayment ? 'Verifying...' : 'Verify'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryBlue,
+                    backgroundColor: AppTheme.primaryViolet,
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -574,10 +574,10 @@ class _LoanRepaymentScreenState extends State<LoanRepaymentScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppTheme.primaryBlue.withValues(alpha: 0.1),
+            color: AppTheme.primaryViolet.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: AppTheme.primaryBlue.withValues(alpha: 0.2),
+              color: AppTheme.primaryViolet.withValues(alpha: 0.2),
             ),
           ),
           child: Column(
@@ -587,7 +587,7 @@ class _LoanRepaymentScreenState extends State<LoanRepaymentScreen> {
                 'Repayment Summary',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryBlue,
+                  color: AppTheme.primaryViolet,
                 ),
               ),
               const SizedBox(height: 16),
@@ -713,7 +713,7 @@ class _LoanRepaymentScreenState extends State<LoanRepaymentScreen> {
           ElevatedButton(
             onPressed: _nextStep,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryBlue,
+              backgroundColor: AppTheme.primaryViolet,
               foregroundColor: Colors.white,
             ),
             child: Text(details.stepIndex == 2 ? 'Verify & Continue' : 'Next'),

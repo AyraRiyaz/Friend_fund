@@ -136,9 +136,9 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: TabBar(
               controller: _tabController,
-              labelColor: AppTheme.primaryBlue,
+              labelColor: AppTheme.primaryViolet,
               unselectedLabelColor: AppTheme.textSecondary,
-              indicatorColor: AppTheme.primaryBlue,
+              indicatorColor: AppTheme.primaryViolet,
               indicatorWeight: 3,
               isScrollable: false,
               tabAlignment: TabAlignment.fill,
@@ -251,14 +251,16 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppTheme.primaryBlue.withValues(alpha: 0.1),
-            AppTheme.secondaryBlue.withValues(alpha: 0.05),
+            AppTheme.primaryViolet.withValues(alpha: 0.1),
+            AppTheme.secondaryViolet.withValues(alpha: 0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.primaryBlue.withValues(alpha: 0.2)),
+        border: Border.all(
+          color: AppTheme.primaryViolet.withValues(alpha: 0.2),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -267,7 +269,7 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
             'Your Contribution Summary',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
-              color: AppTheme.primaryBlue,
+              color: AppTheme.primaryViolet,
             ),
           ),
           const SizedBox(height: 16),
@@ -289,7 +291,7 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
                   'Total Loaned',
                   '₹${totalLoaned.toStringAsFixed(0)}',
                   Icons.handshake_outlined,
-                  AppTheme.primaryBlue,
+                  AppTheme.primaryViolet,
                 ),
               ),
               const SizedBox(width: 16),
@@ -415,12 +417,12 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryBlue.withValues(alpha: 0.1),
+                    color: AppTheme.primaryViolet.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
                     Icons.handshake_outlined,
-                    color: AppTheme.primaryBlue,
+                    color: AppTheme.primaryViolet,
                     size: 20,
                   ),
                 ),
@@ -450,7 +452,7 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
                       '₹${loan.amount.toStringAsFixed(0)}',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.primaryBlue,
+                        color: AppTheme.primaryViolet,
                       ),
                     ),
                     Container(
@@ -677,12 +679,12 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
                     decoration: BoxDecoration(
                       color: isOverdue
                           ? Colors.red.withValues(alpha: 0.1)
-                          : AppTheme.primaryBlue.withValues(alpha: 0.1),
+                          : AppTheme.primaryViolet.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       Icons.account_balance_wallet_outlined,
-                      color: isOverdue ? Colors.red : AppTheme.primaryBlue,
+                      color: isOverdue ? Colors.red : AppTheme.primaryViolet,
                       size: 24,
                     ),
                   ),
@@ -698,7 +700,7 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
                                 fontWeight: FontWeight.bold,
                                 color: isOverdue
                                     ? Colors.red
-                                    : AppTheme.primaryBlue,
+                                    : AppTheme.primaryViolet,
                               ),
                         ),
                         const SizedBox(height: 2),
@@ -720,7 +722,7 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
                               fontWeight: FontWeight.bold,
                               color: isOverdue
                                   ? Colors.red
-                                  : AppTheme.primaryBlue,
+                                  : AppTheme.primaryViolet,
                             ),
                       ),
                       const SizedBox(height: 4),
@@ -762,10 +764,10 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryBlue.withValues(alpha: 0.05),
+                  color: AppTheme.primaryViolet.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: AppTheme.primaryBlue.withValues(alpha: 0.1),
+                    color: AppTheme.primaryViolet.withValues(alpha: 0.1),
                   ),
                 ),
                 child: Column(
@@ -776,7 +778,7 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
                         Icon(
                           Icons.info_outline,
                           size: 18,
-                          color: AppTheme.primaryBlue,
+                          color: AppTheme.primaryViolet,
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -784,7 +786,7 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
                           style: Theme.of(context).textTheme.titleSmall
                               ?.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: AppTheme.primaryBlue,
+                                color: AppTheme.primaryViolet,
                               ),
                         ),
                       ],
@@ -933,7 +935,7 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
                         ? Colors.red
                         : isNearDue
                         ? Colors.orange
-                        : AppTheme.primaryBlue,
+                        : AppTheme.primaryViolet,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -997,7 +999,7 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: isLoan
-                        ? AppTheme.primaryBlue.withValues(alpha: 0.1)
+                        ? AppTheme.primaryViolet.withValues(alpha: 0.1)
                         : AppTheme.success.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -1005,7 +1007,7 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
                     isLoan
                         ? Icons.handshake_outlined
                         : Icons.card_giftcard_outlined,
-                    color: isLoan ? AppTheme.primaryBlue : AppTheme.success,
+                    color: isLoan ? AppTheme.primaryViolet : AppTheme.success,
                     size: 20,
                   ),
                 ),
@@ -1032,7 +1034,7 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
                   '₹${contribution.amount.toStringAsFixed(0)}',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: isLoan ? AppTheme.primaryBlue : AppTheme.success,
+                    color: isLoan ? AppTheme.primaryViolet : AppTheme.success,
                   ),
                 ),
               ],
@@ -1083,7 +1085,7 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
               icon: const Icon(Icons.add_circle_outline),
               label: const Text('Start Contributing'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryBlue,
+                backgroundColor: AppTheme.primaryViolet,
                 foregroundColor: Colors.white,
               ),
             ),
@@ -1133,20 +1135,24 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppTheme.primaryBlue.withValues(alpha: 0.1),
+              color: AppTheme.primaryViolet.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: AppTheme.primaryBlue.withValues(alpha: 0.2),
+                color: AppTheme.primaryViolet.withValues(alpha: 0.2),
               ),
             ),
             child: Column(
               children: [
-                Icon(Icons.info_outline, color: AppTheme.primaryBlue, size: 24),
+                Icon(
+                  Icons.info_outline,
+                  color: AppTheme.primaryViolet,
+                  size: 24,
+                ),
                 const SizedBox(height: 8),
                 Text(
                   'How Loans Work',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: AppTheme.primaryBlue,
+                    color: AppTheme.primaryViolet,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -1154,7 +1160,7 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
                 Text(
                   'When someone contributes to your campaigns as a "loan" instead of a "gift", those amounts will appear here as loans you need to repay to the contributor.',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppTheme.primaryBlue,
+                    color: AppTheme.primaryViolet,
                     height: 1.4,
                   ),
                   textAlign: TextAlign.center,
@@ -1168,7 +1174,7 @@ class _MyContributionsScreenState extends State<MyContributionsScreen>
             icon: const Icon(Icons.campaign_outlined),
             label: const Text('View My Campaigns'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryBlue,
+              backgroundColor: AppTheme.primaryViolet,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),

@@ -19,7 +19,6 @@ import 'models/campaign.dart';
 import 'pages/my_contributions_screen.dart';
 import 'pages/profile_page.dart';
 import 'pages/help_page.dart';
-import 'pages/about_page.dart';
 import 'pages/public_campaign_details_page.dart';
 import 'widgets/contribution_modal.dart';
 
@@ -59,7 +58,7 @@ class MyApp extends StatelessWidget {
       title: 'Friend Fund',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme
-          .lightTheme, // Use light theme for both to maintain white and blue design
+          .lightTheme, // Use light theme for both to maintain white and Violet design
       themeMode: ThemeMode.light,
       initialRoute: '/auth',
       getPages: [
@@ -162,11 +161,6 @@ class MyApp extends StatelessWidget {
             },
           ),
         ),
-
-        GetPage(
-          name: '/about',
-          page: () => const AuthProtectedPage(child: AboutPage()),
-        ),
       ],
       unknownRoute: GetPage(
         name: '/notfound',
@@ -194,7 +188,7 @@ class GuestProtectedPage extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(color: Colors.blue),
+                  CircularProgressIndicator(color: AppTheme.primaryViolet),
                   SizedBox(height: 16),
                   Text('Loading...'),
                 ],
@@ -236,7 +230,7 @@ class AuthProtectedPage extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(color: Colors.blue),
+                  CircularProgressIndicator(color: AppTheme.primaryViolet),
                   SizedBox(height: 16),
                   Text('Loading...'),
                 ],
@@ -275,7 +269,7 @@ class AuthWrapper extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(color: Colors.blue),
+                  CircularProgressIndicator(color: AppTheme.primaryViolet),
                   SizedBox(height: 16),
                   Text('Loading...'),
                 ],

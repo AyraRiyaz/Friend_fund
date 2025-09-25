@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
+import '../theme/app_theme.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -65,7 +66,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppTheme.backgroundLight,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -79,44 +80,46 @@ class _RegisterPageState extends State<RegisterPage> {
                   children: [
                     // Logo/Title
                     Container(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.blue.withValues(alpha: 0.1),
+                        gradient: AppTheme.primaryGradientDecoration.gradient,
                         shape: BoxShape.circle,
+                        boxShadow: AppTheme.cardShadowLarge,
                       ),
                       child: const Icon(
-                        Icons.handshake,
+                        Icons.handshake_rounded,
                         size: 48,
-                        color: Colors.blue,
+                        color: Colors.white,
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Create Account',
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Join the FriendFund community',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
-                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 32),
+                    Text(
+                      'Create Account',
+                      style: Theme.of(context).textTheme.headlineLarge
+                          ?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.textPrimary,
+                            letterSpacing: -0.5,
+                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Join the FriendFund community',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: AppTheme.textSecondary,
+                        height: 1.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 40),
 
                     // Registration Form
-                    Card(
-                      elevation: 8,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
+                    Container(
+                      decoration: AppTheme.cardDecoration.copyWith(
+                        boxShadow: AppTheme.cardShadowLarge,
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.all(24),
+                        padding: const EdgeInsets.all(32),
                         child: Column(
                           children: [
                             // Name Input
@@ -296,7 +299,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                       _agreeToTerms = value ?? false;
                                     });
                                   },
-                                  activeColor: Colors.blue,
+                                  activeColor: AppTheme.primaryViolet,
                                 ),
                                 Expanded(
                                   child: GestureDetector(
@@ -315,7 +318,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                           TextSpan(
                                             text: 'Terms and Conditions',
                                             style: TextStyle(
-                                              color: Colors.blue,
+                                              color: AppTheme.primaryViolet,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
@@ -323,7 +326,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                           TextSpan(
                                             text: 'Privacy Policy',
                                             style: TextStyle(
-                                              color: Colors.blue,
+                                              color: AppTheme.primaryViolet,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
@@ -437,7 +440,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             'Sign In',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Colors.blue,
+                              color: AppTheme.primaryViolet,
                             ),
                           ),
                         ),

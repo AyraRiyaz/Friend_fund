@@ -148,13 +148,13 @@ class _PublicCampaignDetailsPageState extends State<PublicCampaignDetailsPage> {
       appBar: AppBar(
         title: Row(
           children: [
-            Icon(Icons.handshake, color: AppTheme.primaryBlue, size: 28),
+            Icon(Icons.handshake, color: AppTheme.primaryViolet, size: 28),
             const SizedBox(width: 8),
             const Text('Campaign Details'),
           ],
         ),
         backgroundColor: AppTheme.surfaceWhite,
-        foregroundColor: AppTheme.primaryBlue,
+        foregroundColor: AppTheme.primaryViolet,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.close),
@@ -187,14 +187,16 @@ class _PublicCampaignDetailsPageState extends State<PublicCampaignDetailsPage> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppTheme.primaryBlue.withValues(alpha: 0.1),
-            AppTheme.secondaryBlue.withValues(alpha: 0.05),
+            AppTheme.primaryViolet.withValues(alpha: 0.1),
+            AppTheme.secondaryViolet.withValues(alpha: 0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.primaryBlue.withValues(alpha: 0.2)),
+        border: Border.all(
+          color: AppTheme.primaryViolet.withValues(alpha: 0.2),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,13 +219,13 @@ class _PublicCampaignDetailsPageState extends State<PublicCampaignDetailsPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppTheme.primaryBlue.withValues(alpha: 0.1),
+              color: AppTheme.primaryViolet.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               _campaign!.purpose,
               style: const TextStyle(
-                color: AppTheme.primaryBlue,
+                color: AppTheme.primaryViolet,
                 fontWeight: FontWeight.w600,
                 fontSize: 12,
               ),
@@ -288,7 +290,7 @@ class _PublicCampaignDetailsPageState extends State<PublicCampaignDetailsPage> {
         statusText = 'Paused';
         break;
       default:
-        chipColor = AppTheme.primaryBlue;
+        chipColor = AppTheme.primaryViolet;
         statusText = _campaign!.status;
     }
 
@@ -330,7 +332,7 @@ class _PublicCampaignDetailsPageState extends State<PublicCampaignDetailsPage> {
                 'Funding Progress',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryBlue,
+                  color: AppTheme.primaryViolet,
                 ),
               ),
               const SizedBox(height: 20),
@@ -344,7 +346,7 @@ class _PublicCampaignDetailsPageState extends State<PublicCampaignDetailsPage> {
                   valueColor: AlwaysStoppedAnimation<Color>(
                     progressPercentage >= 1.0
                         ? AppTheme.success
-                        : AppTheme.primaryBlue,
+                        : AppTheme.primaryViolet,
                   ),
                 ),
               ),
@@ -444,7 +446,7 @@ class _PublicCampaignDetailsPageState extends State<PublicCampaignDetailsPage> {
             padding: const EdgeInsets.all(40),
             child: Column(
               children: [
-                CircularProgressIndicator(color: AppTheme.primaryBlue),
+                CircularProgressIndicator(color: AppTheme.primaryViolet),
                 const SizedBox(height: 20),
                 Text(
                   'Loading supporters...',
@@ -471,13 +473,13 @@ class _PublicCampaignDetailsPageState extends State<PublicCampaignDetailsPage> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryBlue.withValues(alpha: 0.1),
+                    color: AppTheme.primaryViolet.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.favorite_border,
                     size: 48,
-                    color: AppTheme.primaryBlue,
+                    color: AppTheme.primaryViolet,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -514,13 +516,13 @@ class _PublicCampaignDetailsPageState extends State<PublicCampaignDetailsPage> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.people_outline, color: AppTheme.primaryBlue),
+                  Icon(Icons.people_outline, color: AppTheme.primaryViolet),
                   const SizedBox(width: 8),
                   Text(
                     'Recent Supporters',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryBlue,
+                      color: AppTheme.primaryViolet,
                     ),
                   ),
                 ],
@@ -535,12 +537,12 @@ class _PublicCampaignDetailsPageState extends State<PublicCampaignDetailsPage> {
                         children: [
                           CircleAvatar(
                             radius: 20,
-                            backgroundColor: AppTheme.primaryBlue.withValues(
+                            backgroundColor: AppTheme.primaryViolet.withValues(
                               alpha: 0.1,
                             ),
                             child: Icon(
                               Icons.person_outline,
-                              color: AppTheme.primaryBlue,
+                              color: AppTheme.primaryViolet,
                               size: 20,
                             ),
                           ),
@@ -624,7 +626,7 @@ class _PublicCampaignDetailsPageState extends State<PublicCampaignDetailsPage> {
   Widget _buildContributeFAB() {
     return FloatingActionButton.extended(
       onPressed: () => _showContributionModal(),
-      backgroundColor: AppTheme.primaryBlue,
+      backgroundColor: AppTheme.primaryViolet,
       elevation: 6,
       icon: const Icon(Icons.favorite, color: Colors.white),
       label: const Text(

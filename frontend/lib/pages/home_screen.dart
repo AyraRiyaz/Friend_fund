@@ -76,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.add),
             label: const Text('Create Campaign'),
             tooltip: 'Create New Campaign',
-            backgroundColor: AppTheme.primaryBlue,
+            backgroundColor: AppTheme.primaryViolet,
           ),
           child: RefreshIndicator(
             onRefresh: () async {
@@ -109,7 +109,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     displayCampaigns,
                     activeCampaigns,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
                   _buildQuickActions(context),
                   const SizedBox(height: 80), // Space for FAB
                 ],
@@ -124,21 +124,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHeroSection(BuildContext context) {
     return Container(
       margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppTheme.primaryBlue, AppTheme.secondaryBlue],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryBlue.withValues(alpha: 0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
+      padding: const EdgeInsets.all(28),
+      decoration: AppTheme.primaryGradientDecoration.copyWith(
+        boxShadow: AppTheme.cardShadowLarge,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -157,22 +145,76 @@ class _HomeScreenState extends State<HomeScreen> {
                             'Friend';
                         return Text(
                           'Welcome back, ${userName.split(' ').first}! 👋',
-                          style: Theme.of(context).textTheme.headlineMedium
+                          style: Theme.of(context).textTheme.headlineLarge
                               ?.copyWith(
                                 color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.5,
                               ),
                         );
                       },
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Text(
                       'Help your friends achieve their goals or get support for yours.',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyLarge?.copyWith(color: Colors.white70),
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.trending_up,
+                            color: Colors.white.withValues(alpha: 0.9),
+                            size: 16,
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              'Start your fundraising journey today',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Icon(
+                  Icons.handshake_rounded,
+                  color: Colors.white,
+                  size: 32,
                 ),
               ),
             ],
@@ -242,7 +284,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 'Active Campaigns',
                                 activeCampaigns.toString(),
                                 Icons.campaign,
-                                AppTheme.primaryBlue,
+                                AppTheme.primaryViolet,
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -272,7 +314,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 'Total Given',
                                 '₹${_formatAmount(totalContributed)}',
                                 Icons.handshake,
-                                AppTheme.accentBlue,
+                                AppTheme.accentViolet,
                               ),
                             ),
                           ],
@@ -288,7 +330,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     'Active Campaigns',
                                     activeCampaigns.toString(),
                                     Icons.campaign,
-                                    AppTheme.primaryBlue,
+                                    AppTheme.primaryViolet,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -322,7 +364,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     'Total Given',
                                     '₹${_formatAmount(totalContributed)}',
                                     Icons.handshake,
-                                    AppTheme.accentBlue,
+                                    AppTheme.accentViolet,
                                   ),
                                 ),
                               ],
@@ -348,27 +390,36 @@ class _HomeScreenState extends State<HomeScreen> {
     IconData icon,
     Color color,
   ) {
-    return Card(
-      elevation: 2,
+    return Container(
+      decoration: AppTheme.cardDecoration,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(height: 16),
             Text(
               value,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
                 color: color,
+                letterSpacing: -0.25,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Text(
               title,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppTheme.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -437,7 +488,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   physics: const NeverScrollableScrollPhysics(),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.9,
+                    childAspectRatio: 0.65,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                   ),
@@ -456,122 +507,261 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCampaignCard(BuildContext context, dynamic campaign) {
     return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+      decoration: AppTheme.cardDecoration.copyWith(
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: AppTheme.primaryViolet.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
           ),
         ],
       ),
-      child: Card(
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
         child: InkWell(
           onTap: () => Navigator.pushNamed(
             context,
             '/campaign-details',
             arguments: campaign,
           ),
+          borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Title
-                Text(
-                  campaign.title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-
-                // Purpose
-                Text(
-                  campaign.purpose,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                    fontSize: 10,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const Spacer(),
-
-                // Progress bar
-                Container(
-                  height: 3,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(2),
-                    color: Colors.grey[200],
-                  ),
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: campaign.progressPercentage,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(2),
-                        color: AppTheme.primaryBlue,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 6),
-
-                // Amount info
+                // Header with title and status
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '₹${_formatAmount(campaign.collectedAmount)}',
-                            style: Theme.of(context).textTheme.labelLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.primaryBlue,
-                                  fontSize: 11,
-                                ),
-                          ),
-                          Text(
-                            'of ₹${_formatAmount(campaign.targetAmount)}',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Colors.grey[500],
-                                  fontSize: 9,
-                                ),
-                          ),
-                        ],
+                      child: Text(
+                        campaign.title,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.1,
+                              color: AppTheme.textPrimary,
+                              height: 1.3,
+                            ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 1,
+                        horizontal: 8,
+                        vertical: 3,
                       ),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryBlue.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(6),
+                      decoration: AppTheme.getStatusChipDecoration(
+                        campaign.status,
                       ),
                       child: Text(
-                        '${(campaign.progressPercentage * 100).toInt()}%',
-                        style: TextStyle(
-                          color: AppTheme.primaryBlue,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
+                        campaign.status.toUpperCase(),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: AppTheme.getStatusColor(campaign.status),
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.3,
+                          fontSize: 10,
                         ),
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 6),
+
+                // Purpose chip
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryViolet.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: AppTheme.primaryViolet.withValues(alpha: 0.2),
+                      width: 0.5,
+                    ),
+                  ),
+                  child: Text(
+                    campaign.purpose,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: AppTheme.primaryViolet,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Progress section
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Progress',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: AppTheme.textSecondary,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryViolet.withValues(
+                              alpha: 0.1,
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: AppTheme.primaryViolet.withValues(
+                                alpha: 0.3,
+                              ),
+                              width: 0.5,
+                            ),
+                          ),
+                          child: Text(
+                            '${(campaign.progressPercentage * 100).toInt()}%',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: AppTheme.primaryViolet,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 11,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 12,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(6),
+                        color: Colors.grey.shade400,
+                        border: Border.all(
+                          color: Colors.grey.shade500,
+                          width: 0.5,
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(5.5),
+                        child: Stack(
+                          children: [
+                            // Grey background is already set by the parent Container
+                            FractionallySizedBox(
+                              alignment: Alignment.centerLeft,
+                              widthFactor: campaign.progressPercentage,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(5.5),
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppTheme.primaryViolet,
+                                      AppTheme.secondaryViolet,
+                                    ],
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Amount info
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.backgroundLight,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Raised',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: AppTheme.textSecondary,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 11,
+                                  ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '₹${_formatAmount(campaign.collectedAmount)}',
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: AppTheme.primaryViolet,
+                                    letterSpacing: -0.2,
+                                    fontSize: 15,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        width: 1,
+                        height: 30,
+                        color: AppTheme.primaryViolet.withValues(alpha: 0.2),
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              'Goal',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: AppTheme.textSecondary,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 11,
+                                  ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '₹${_formatAmount(campaign.targetAmount)}',
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.textPrimary,
+                                    letterSpacing: -0.2,
+                                    fontSize: 15,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -602,7 +792,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   'My Campaigns',
                   'View and manage your campaigns',
                   Icons.campaign,
-                  AppTheme.primaryBlue,
+                  AppTheme.primaryViolet,
                   () => Navigator.pushNamed(context, '/my-campaigns'),
                 ),
               ),
@@ -632,32 +822,58 @@ class _HomeScreenState extends State<HomeScreen> {
     Color color,
     VoidCallback onTap,
   ) {
-    return Card(
-      elevation: 2,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, color: color, size: 32),
-              const SizedBox(height: 12),
-              Text(
-                title,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
-              ),
-            ],
+    return Container(
+      decoration: AppTheme.cardDecoration,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: color, size: 24),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.1,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Text(
+                      'Explore',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: color,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(Icons.arrow_forward_ios, color: color, size: 12),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

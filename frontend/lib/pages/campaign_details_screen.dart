@@ -114,14 +114,16 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppTheme.primaryBlue.withValues(alpha: 0.1),
-            AppTheme.secondaryBlue.withValues(alpha: 0.05),
+            AppTheme.primaryViolet.withValues(alpha: 0.1),
+            AppTheme.secondaryViolet.withValues(alpha: 0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.primaryBlue.withValues(alpha: 0.2)),
+        border: Border.all(
+          color: AppTheme.primaryViolet.withValues(alpha: 0.2),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,13 +146,13 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppTheme.primaryBlue.withValues(alpha: 0.1),
+              color: AppTheme.primaryViolet.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               _currentCampaign.purpose,
               style: const TextStyle(
-                color: AppTheme.primaryBlue,
+                color: AppTheme.primaryViolet,
                 fontWeight: FontWeight.w600,
                 fontSize: 12,
               ),
@@ -215,7 +217,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
         statusText = 'Paused';
         break;
       default:
-        chipColor = AppTheme.primaryBlue;
+        chipColor = AppTheme.primaryViolet;
         statusText = _currentCampaign.status;
     }
 
@@ -255,21 +257,27 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                 'Funding Progress',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryBlue,
+                  color: AppTheme.primaryViolet,
                 ),
               ),
               const SizedBox(height: 20),
               // Progress bar
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: LinearProgressIndicator(
-                  value: progressPercentage,
-                  minHeight: 12,
-                  backgroundColor: Colors.grey[200],
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    progressPercentage >= 1.0
-                        ? AppTheme.success
-                        : AppTheme.primaryBlue,
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade500, width: 0.5),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(7.5),
+                  child: LinearProgressIndicator(
+                    value: progressPercentage,
+                    minHeight: 12,
+                    backgroundColor: Colors.grey.shade400,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      progressPercentage >= 1.0
+                          ? AppTheme.success
+                          : AppTheme.primaryViolet,
+                    ),
                   ),
                 ),
               ),
@@ -366,7 +374,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                         icon: const Icon(Icons.share),
                         label: const Text('Share Campaign'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryBlue,
+                          backgroundColor: AppTheme.primaryViolet,
                         ),
                       ),
                     ),
@@ -443,7 +451,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                     icon: const Icon(Icons.share),
                     label: const Text('Share Campaign'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryBlue,
+                      backgroundColor: AppTheme.primaryViolet,
                     ),
                   ),
                 ),
@@ -471,7 +479,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                 'Support this Campaign',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryBlue,
+                  color: AppTheme.primaryViolet,
                 ),
               ),
               const SizedBox(height: 16),
@@ -545,7 +553,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                     icon: const Icon(Icons.volunteer_activism),
                     label: const Text('Contribute Now'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryBlue,
+                      backgroundColor: AppTheme.primaryViolet,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                   ),
@@ -625,7 +633,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                     child: _buildContributionSummary(
                       'Total',
                       _currentCampaign.contributions.length,
-                      AppTheme.primaryBlue,
+                      AppTheme.primaryViolet,
                     ),
                   ),
                   Expanded(
@@ -689,7 +697,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
                                 : 'View All ${_currentCampaign.contributions.length} Contributions',
                           ),
                           style: TextButton.styleFrom(
-                            foregroundColor: AppTheme.primaryBlue,
+                            foregroundColor: AppTheme.primaryViolet,
                           ),
                         ),
                       ),
@@ -833,12 +841,12 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
 
                     return ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: AppTheme.primaryBlue.withValues(
+                        backgroundColor: AppTheme.primaryViolet.withValues(
                           alpha: 0.2,
                         ),
                         child: Icon(
                           isAnonymous ? Icons.person_outline : Icons.person,
-                          color: AppTheme.primaryBlue,
+                          color: AppTheme.primaryViolet,
                         ),
                       ),
                       title: Row(
@@ -942,7 +950,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
       onPressed: () => _shareCampaign(),
       icon: const Icon(Icons.share),
       label: const Text('Share'),
-      backgroundColor: AppTheme.primaryBlue,
+      backgroundColor: AppTheme.primaryViolet,
     );
   }
 
@@ -953,7 +961,7 @@ class _CampaignDetailsScreenState extends State<CampaignDetailsScreen> {
       onPressed: () => _showContributionDialog(),
       icon: const Icon(Icons.volunteer_activism),
       label: const Text('Contribute'),
-      backgroundColor: AppTheme.primaryBlue,
+      backgroundColor: AppTheme.primaryViolet,
     );
   }
 

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../controllers/campaign_controller.dart';
 import '../models/campaign.dart';
+import '../theme/app_theme.dart';
 
 class EditCampaignModal extends StatefulWidget {
   final Campaign campaign;
@@ -90,36 +92,46 @@ class _EditCampaignModalState extends State<EditCampaignModal> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      backgroundColor: Colors.transparent,
       child: Container(
         constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
+        decoration: AppTheme.cardDecoration.copyWith(
+          boxShadow: AppTheme.cardShadowLarge,
+        ),
         child: Column(
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.blue,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                ),
-              ),
+              padding: const EdgeInsets.all(24),
+              decoration: AppTheme.primaryGradientDecoration,
               child: Row(
                 children: [
-                  const Icon(Icons.edit, color: Colors.white, size: 24),
-                  const SizedBox(width: 12),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.edit_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Text(
                       'Edit Campaign',
-                      style: const TextStyle(
+                      style: GoogleFonts.inter(
                         color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.25,
                       ),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
+                    icon: const Icon(Icons.close_rounded, color: Colors.white),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -129,7 +141,7 @@ class _EditCampaignModalState extends State<EditCampaignModal> {
             // Body
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(32),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -138,21 +150,22 @@ class _EditCampaignModalState extends State<EditCampaignModal> {
                       // Subtitle
                       Text(
                         'Update your campaign details',
-                        style: TextStyle(color: Colors.grey[600]),
+                        style: GoogleFonts.inter(
+                          color: AppTheme.textSecondary,
+                          fontSize: 16,
+                          height: 1.5,
+                        ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 32),
 
                       // Title Field
                       TextFormField(
                         controller: _titleController,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Campaign Title *',
                           hintText: 'Enter a clear, descriptive title',
-                          prefixIcon: const Icon(Icons.title),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          prefixIcon: Icon(Icons.title_rounded),
                         ),
                         maxLength: 100,
                         validator: (value) {
@@ -170,12 +183,9 @@ class _EditCampaignModalState extends State<EditCampaignModal> {
                       // Purpose Dropdown
                       DropdownButtonFormField<String>(
                         value: _selectedPurpose,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Purpose *',
-                          prefixIcon: const Icon(Icons.category),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          prefixIcon: Icon(Icons.category_rounded),
                         ),
                         items: _purposes.map((purpose) {
                           return DropdownMenuItem(
@@ -194,13 +204,10 @@ class _EditCampaignModalState extends State<EditCampaignModal> {
                       // Target Amount Field
                       TextFormField(
                         controller: _targetAmountController,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Target Amount (₹) *',
                           hintText: 'Enter target amount in rupees',
-                          prefixIcon: const Icon(Icons.currency_rupee),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          prefixIcon: Icon(Icons.currency_rupee_rounded),
                         ),
                         keyboardType: TextInputType.number,
                         validator: (value) {
@@ -223,21 +230,18 @@ class _EditCampaignModalState extends State<EditCampaignModal> {
                       InkWell(
                         onTap: _selectDueDate,
                         child: InputDecorator(
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             labelText: 'Due Date (Optional)',
-                            prefixIcon: const Icon(Icons.calendar_today),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                            prefixIcon: Icon(Icons.calendar_today_rounded),
                           ),
                           child: Text(
                             _dueDate != null
                                 ? '${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}'
                                 : 'Select due date',
-                            style: TextStyle(
+                            style: GoogleFonts.inter(
                               color: _dueDate != null
-                                  ? Colors.black
-                                  : Colors.grey[600],
+                                  ? AppTheme.textPrimary
+                                  : AppTheme.textTertiary,
                             ),
                           ),
                         ),
@@ -247,13 +251,10 @@ class _EditCampaignModalState extends State<EditCampaignModal> {
                       // Description Field
                       TextFormField(
                         controller: _descriptionController,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Description *',
                           hintText: 'Describe your campaign in detail...',
-                          prefixIcon: const Icon(Icons.description),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          prefixIcon: Icon(Icons.description_rounded),
                           alignLabelWithHint: true,
                         ),
                         maxLines: 4,
@@ -272,10 +273,13 @@ class _EditCampaignModalState extends State<EditCampaignModal> {
 
                       // Warning for editing
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.orange.shade50,
-                          borderRadius: BorderRadius.circular(8),
+                          color: AppTheme.warningLight,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppTheme.warning.withValues(alpha: 0.2),
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,25 +287,29 @@ class _EditCampaignModalState extends State<EditCampaignModal> {
                             Row(
                               children: [
                                 Icon(
-                                  Icons.warning,
-                                  color: Colors.orange.shade700,
+                                  Icons.warning_rounded,
+                                  color: AppTheme.warning,
                                   size: 20,
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 12),
                                 Text(
                                   'Important',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.orange.shade700,
+                                  style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.warning,
                                     fontSize: 14,
                                   ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 8),
-                            const Text(
+                            Text(
                               'Changes will be visible to all supporters. Make sure your updates are accurate and necessary.',
-                              style: TextStyle(fontSize: 12),
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: AppTheme.textSecondary,
+                                height: 1.5,
+                              ),
                             ),
                           ],
                         ),
@@ -314,32 +322,41 @@ class _EditCampaignModalState extends State<EditCampaignModal> {
 
             // Footer buttons
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: Colors.grey.shade300)),
+                color: AppTheme.surfaceElevated,
+                border: Border(
+                  top: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
+                ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
+                    child: Text(
+                      'Cancel',
+                      style: GoogleFonts.inter(
+                        color: AppTheme.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 16),
                   Obx(
                     () => ElevatedButton(
                       onPressed: _campaignController.isLoading
                           ? null
                           : _updateCampaign,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
+                        backgroundColor: AppTheme.primaryViolet,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
+                          horizontal: 32,
+                          vertical: 16,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       child: _campaignController.isLoading
@@ -354,11 +371,18 @@ class _EditCampaignModalState extends State<EditCampaignModal> {
                                     strokeWidth: 2,
                                   ),
                                 ),
-                                SizedBox(width: 8),
+                                SizedBox(width: 12),
                                 Text('Updating...'),
                               ],
                             )
-                          : const Text('Update Campaign'),
+                          : Text(
+                              'Update Campaign',
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: -0.1,
+                              ),
+                            ),
                     ),
                   ),
                 ],

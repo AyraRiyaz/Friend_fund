@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../widgets/responsive_layout.dart';
 import '../theme/app_theme.dart';
 
@@ -17,39 +18,44 @@ class HelpPage extends StatelessWidget {
             // Header Section
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppTheme.primaryBlue.withValues(alpha: 0.1),
-                    AppTheme.secondaryBlue.withValues(alpha: 0.05),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
+              padding: const EdgeInsets.all(28),
+              decoration: AppTheme.primaryGradientDecoration.copyWith(
+                boxShadow: AppTheme.cardShadowLarge,
               ),
               child: Column(
                 children: [
-                  Icon(
-                    Icons.help_outline_rounded,
-                    size: 48,
-                    color: AppTheme.primaryBlue,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'How can we help you?',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryBlue,
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Icon(
+                      Icons.help_outline_rounded,
+                      size: 48,
+                      color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 20),
+                  Text(
+                    'How can we help you?',
+                    style: GoogleFonts.inter(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
                   Text(
                     'Find answers to common questions or get in touch with our support team',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      color: Colors.white.withValues(alpha: 0.9),
+                      height: 1.5,
+                    ),
                   ),
                 ],
               ),
@@ -59,18 +65,26 @@ class HelpPage extends StatelessWidget {
             // FAQ Section
             Row(
               children: [
-                Icon(
-                  Icons.quiz_outlined,
-                  color: AppTheme.primaryBlue,
-                  size: 28,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryViolet.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.quiz_outlined,
+                    color: AppTheme.primaryViolet,
+                    size: 24,
+                  ),
                 ),
-                const SizedBox(width: 12),
-                const Text(
+                const SizedBox(width: 16),
+                Text(
                   'Frequently Asked Questions',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryBlue,
+                  style: GoogleFonts.inter(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                    letterSpacing: -0.25,
                   ),
                 ),
               ],
@@ -109,18 +123,26 @@ class HelpPage extends StatelessWidget {
             // Contact Section
             Row(
               children: [
-                Icon(
-                  Icons.support_agent_outlined,
-                  color: AppTheme.primaryBlue,
-                  size: 28,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryViolet.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.support_agent_outlined,
+                    color: AppTheme.primaryViolet,
+                    size: 24,
+                  ),
                 ),
-                const SizedBox(width: 12),
-                const Text(
+                const SizedBox(width: 16),
+                Text(
                   'Need More Help?',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryBlue,
+                  style: GoogleFonts.inter(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                    letterSpacing: -0.25,
                   ),
                 ),
               ],
@@ -143,22 +165,18 @@ class HelpPage extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[200]!),
-              ),
+              decoration: AppTheme.cardDecoration,
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryBlue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      color: AppTheme.primaryViolet.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       Icons.info_outline,
-                      color: AppTheme.primaryBlue,
+                      color: AppTheme.primaryViolet,
                       size: 24,
                     ),
                   ),
@@ -167,20 +185,22 @@ class HelpPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'FriendFund',
-                          style: TextStyle(
+                          style: GoogleFonts.inter(
                             fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryBlue,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.textPrimary,
+                            letterSpacing: -0.25,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Version 1.0.0 • Developed by Pro26',
-                          style: TextStyle(
-                            color: Colors.grey[600],
+                          style: GoogleFonts.inter(
+                            color: AppTheme.textSecondary,
                             fontSize: 14,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -198,48 +218,41 @@ class HelpPage extends StatelessWidget {
 
   Widget _buildFAQItem(String question, String answer) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: AppTheme.cardDecoration,
       child: ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           question,
-          style: const TextStyle(
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.w600,
             fontSize: 16,
-            color: AppTheme.primaryBlue,
+            color: AppTheme.textPrimary,
+            letterSpacing: -0.1,
           ),
         ),
-        iconColor: AppTheme.primaryBlue,
+        iconColor: AppTheme.primaryViolet,
         children: [
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             margin: const EdgeInsets.only(top: 8),
             decoration: BoxDecoration(
-              color: AppTheme.primaryBlue.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(8),
+              color: AppTheme.lightViolet,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppTheme.primaryViolet.withValues(alpha: 0.2),
+              ),
             ),
             child: Text(
               answer,
-              style: TextStyle(
-                color: Colors.grey[700],
-                height: 1.5,
+              style: GoogleFonts.inter(
+                color: AppTheme.textSecondary,
+                height: 1.6,
                 fontSize: 14,
+                fontWeight: FontWeight.w400,
               ),
             ),
           ),
@@ -257,23 +270,11 @@ class HelpPage extends StatelessWidget {
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: AppTheme.cardDecoration,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -282,10 +283,10 @@ class HelpPage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryBlue.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppTheme.primaryViolet.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(icon, color: AppTheme.primaryBlue, size: 24),
+                  child: Icon(icon, color: AppTheme.primaryViolet, size: 24),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -294,24 +295,29 @@ class HelpPage extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.w600,
                           fontSize: 16,
-                          color: AppTheme.primaryBlue,
+                          color: AppTheme.textPrimary,
+                          letterSpacing: -0.1,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         content,
-                        style: const TextStyle(
+                        style: GoogleFonts.inter(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
+                          color: AppTheme.primaryViolet,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         description,
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: AppTheme.textSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -319,7 +325,7 @@ class HelpPage extends StatelessWidget {
                 Icon(
                   Icons.arrow_forward_ios,
                   size: 16,
-                  color: Colors.grey[400],
+                  color: AppTheme.textTertiary,
                 ),
               ],
             ),

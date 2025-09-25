@@ -70,14 +70,14 @@ class MyCampaignsScreen extends StatelessWidget {
             Icon(
               Icons.campaign_outlined,
               size: 80,
-              color: AppTheme.primaryBlue.withValues(alpha: 0.3),
+              color: AppTheme.primaryViolet.withValues(alpha: 0.3),
             ),
             const SizedBox(height: 24),
             Text(
               'No Campaigns Yet',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AppTheme.primaryBlue,
+                color: AppTheme.primaryViolet,
               ),
             ),
             const SizedBox(height: 12),

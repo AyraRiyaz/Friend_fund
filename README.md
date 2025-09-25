@@ -455,7 +455,7 @@ Deployment:
 #### Color Palette
 
 ```css
-Primary: #2563EB (Blue 600)
+Primary: #2563EB (Violet 600)
 Secondary: #059669 (Emerald 600)
 Success: #10B981 (Emerald 500)
 Warning: #F59E0B (Amber 500)

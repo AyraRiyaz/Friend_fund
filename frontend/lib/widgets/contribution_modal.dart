@@ -5,11 +5,13 @@ import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/campaign.dart';
 import '../services/http_api_service.dart';
 import '../services/payment_verification_service.dart';
 import '../controllers/auth_controller.dart';
 import '../controllers/contribution_controller.dart';
+import '../theme/app_theme.dart';
 
 class EnhancedContributionModal extends StatefulWidget {
   final String campaignId;
@@ -173,28 +175,36 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(8),
-          topRight: Radius.circular(8),
-        ),
-      ),
+      decoration: AppTheme.primaryGradientDecoration,
       child: Row(
         children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.volunteer_activism_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
           Expanded(
             child: Text(
               'Contribute to ${_campaign?.title ?? 'Campaign'}',
-              style: const TextStyle(
+              style: GoogleFonts.inter(
                 color: Colors.white,
                 fontSize: 18,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.25,
               ),
             ),
           ),
           IconButton(
             onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.close, color: Colors.white),
+            icon: const Icon(Icons.close_rounded, color: Colors.white),
           ),
         ],
       ),
@@ -439,7 +449,7 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
       children: [
         // Payment Summary
         Card(
-          color: Colors.blue.shade50,
+          color: AppTheme.lightViolet,
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -819,7 +829,7 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
                         icon: const Icon(Icons.refresh, size: 16),
                         label: const Text('Try Again'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
+                          backgroundColor: AppTheme.primaryViolet,
                           foregroundColor: Colors.white,
                         ),
                       ),
@@ -855,9 +865,9 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
+              color: AppTheme.lightViolet,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue.shade200),
+              border: Border.all(color: AppTheme.secondaryViolet),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1402,8 +1412,8 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
                 icon: const Icon(Icons.login),
                 label: const Text('Sign In'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.blue,
-                  side: const BorderSide(color: Colors.blue),
+                  foregroundColor: AppTheme.primaryViolet,
+                  side: const BorderSide(color: AppTheme.primaryViolet),
                 ),
               ),
             ),

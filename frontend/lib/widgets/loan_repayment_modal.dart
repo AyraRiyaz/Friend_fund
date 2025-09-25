@@ -5,11 +5,13 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/campaign.dart';
 import '../models/user.dart';
 import '../services/http_api_service.dart';
 import '../services/payment_verification_service.dart';
 import '../controllers/loan_repayment_controller.dart';
+import '../theme/app_theme.dart';
 
 class LoanRepaymentModal extends StatefulWidget {
   final Contribution loanContribution;
@@ -167,28 +169,36 @@ class _LoanRepaymentModalState extends State<LoanRepaymentModal> {
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(8),
-          topRight: Radius.circular(8),
-        ),
-      ),
+      decoration: AppTheme.primaryGradientDecoration,
       child: Row(
         children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.account_balance_wallet_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
           Expanded(
             child: Text(
               'Repay Loan to ${widget.loanContribution.contributorName}',
-              style: const TextStyle(
+              style: GoogleFonts.inter(
                 color: Colors.white,
                 fontSize: 18,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.25,
               ),
             ),
           ),
           IconButton(
             onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.close, color: Colors.white),
+            icon: const Icon(Icons.close_rounded, color: Colors.white),
           ),
         ],
       ),
@@ -410,7 +420,7 @@ class _LoanRepaymentModalState extends State<LoanRepaymentModal> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              Icon(Icons.info, size: 48, color: Colors.blue),
+              Icon(Icons.info, size: 48, color: AppTheme.primaryViolet),
               const SizedBox(height: 16),
               Text(
                 'Contact Required',

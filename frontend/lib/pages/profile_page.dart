@@ -201,7 +201,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       // Profile Picture
                       CircleAvatar(
                         radius: 50,
-                        backgroundColor: AppTheme.primaryBlue.withValues(
+                        backgroundColor: AppTheme.primaryViolet.withValues(
                           alpha: 0.1,
                         ),
                         child: user?.profileImage != null
@@ -260,7 +260,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: _isEditing
                                     ? Colors.grey
-                                    : AppTheme.primaryBlue,
+                                    : AppTheme.primaryViolet,
                                 foregroundColor: Colors.white,
                               ),
                             ),
@@ -288,7 +288,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: AppTheme.primaryBlue,
+                              color: AppTheme.primaryViolet,
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -375,7 +375,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ? null
                                 : _updateProfile,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.primaryBlue,
+                              backgroundColor: AppTheme.primaryViolet,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
@@ -417,7 +417,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryBlue,
+                            color: AppTheme.primaryViolet,
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -468,7 +468,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: AppTheme.primaryBlue,
+                                color: AppTheme.primaryViolet,
                               ),
                             ),
                             ElevatedButton.icon(
@@ -626,7 +626,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryBlue,
+                          color: AppTheme.primaryViolet,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -681,7 +681,7 @@ class _ProfilePageState extends State<ProfilePage> {
       style: const TextStyle(
         fontSize: 32,
         fontWeight: FontWeight.bold,
-        color: AppTheme.primaryBlue,
+        color: AppTheme.primaryViolet,
       ),
     );
   }
@@ -691,7 +691,7 @@ class _ProfilePageState extends State<ProfilePage> {
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         children: [
-          Icon(icon, color: AppTheme.primaryBlue, size: 20),
+          Icon(icon, color: AppTheme.primaryViolet, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
