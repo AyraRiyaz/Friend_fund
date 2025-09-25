@@ -15,49 +15,37 @@ class AppwriteService {
         .setEndpoint(AppwriteConfig.endpoint)
         .setProject(AppwriteConfig.projectId);
 
-    // Set platform for web deployment
+    // Configure for web deployment - no custom headers needed
     if (kIsWeb) {
-      // Check if running on deployed domain
       final currentHost = Uri.base.host;
       final currentOrigin = Uri.base.origin;
 
+      // Configure SSL verification based on environment
       if (currentHost.contains('friendfund-pro26.netlify.app') ||
           currentHost.contains('netlify.app')) {
-        // Handle all variations of the deployed domain (with/without www, different protocols)
-        _client
-          ..addHeader('X-Appwrite-Origin', AppwriteConfig.webPlatform)
-          ..addHeader('Origin', AppwriteConfig.webPlatform)
-          ..addHeader('Referer', AppwriteConfig.webPlatform)
-          ..setSelfSigned(
-              status: false); // Ensure SSL verification for production
+        // Production environment - use SSL verification
+        _client.setSelfSigned(status: false);
 
         if (kDebugMode) {
-          print(
-              'Setting Appwrite Origin for production: ${AppwriteConfig.webPlatform}');
-          print('Current host: $currentHost');
+          print('Production environment detected: $currentHost');
           print('Current origin: $currentOrigin');
+          print('Appwrite endpoint: ${AppwriteConfig.endpoint}');
         }
       } else if (currentHost == 'localhost' || currentHost == '127.0.0.1') {
-        final localhostOrigin =
-            '${AppwriteConfig.localPlatform}:${Uri.base.port}';
-        _client
-          ..addHeader('X-Appwrite-Origin', localhostOrigin)
-          ..addHeader('Origin', localhostOrigin)
-          ..setSelfSigned(
-              status: true); // Allow self-signed certs for localhost
+        // Development environment - allow self-signed certificates
+        _client.setSelfSigned(status: true);
 
         if (kDebugMode) {
-          print('Setting Appwrite Origin for localhost: $localhostOrigin');
+          print('Development environment detected: $currentHost');
+          print('Current origin: $currentOrigin');
         }
       } else {
-        // Fallback: use current origin
-        _client
-          ..addHeader('X-Appwrite-Origin', currentOrigin)
-          ..addHeader('Origin', currentOrigin)
-          ..setSelfSigned(status: false);
+        // Default configuration
+        _client.setSelfSigned(status: false);
 
         if (kDebugMode) {
-          print('Setting Appwrite Origin fallback: $currentOrigin');
+          print('Default configuration for host: $currentHost');
+          print('Current origin: $currentOrigin');
         }
       }
     }
