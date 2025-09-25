@@ -24,7 +24,13 @@ class AppwriteService {
       if (currentHost.contains('friendfund-pro26.netlify.app') ||
           currentHost.contains('netlify.app')) {
         // Handle all variations of the deployed domain (with/without www, different protocols)
-        _client.addHeader('X-Appwrite-Origin', AppwriteConfig.webPlatform);
+        _client
+          ..addHeader('X-Appwrite-Origin', AppwriteConfig.webPlatform)
+          ..addHeader('Origin', AppwriteConfig.webPlatform)
+          ..addHeader('Referer', AppwriteConfig.webPlatform)
+          ..setSelfSigned(
+              status: false); // Ensure SSL verification for production
+
         if (kDebugMode) {
           print(
               'Setting Appwrite Origin for production: ${AppwriteConfig.webPlatform}');
@@ -32,15 +38,24 @@ class AppwriteService {
           print('Current origin: $currentOrigin');
         }
       } else if (currentHost == 'localhost' || currentHost == '127.0.0.1') {
-        _client.addHeader('X-Appwrite-Origin',
-            '${AppwriteConfig.localPlatform}:${Uri.base.port}');
+        final localhostOrigin =
+            '${AppwriteConfig.localPlatform}:${Uri.base.port}';
+        _client
+          ..addHeader('X-Appwrite-Origin', localhostOrigin)
+          ..addHeader('Origin', localhostOrigin)
+          ..setSelfSigned(
+              status: true); // Allow self-signed certs for localhost
+
         if (kDebugMode) {
-          print(
-              'Setting Appwrite Origin for localhost: ${AppwriteConfig.localPlatform}:${Uri.base.port}');
+          print('Setting Appwrite Origin for localhost: $localhostOrigin');
         }
       } else {
         // Fallback: use current origin
-        _client.addHeader('X-Appwrite-Origin', currentOrigin);
+        _client
+          ..addHeader('X-Appwrite-Origin', currentOrigin)
+          ..addHeader('Origin', currentOrigin)
+          ..setSelfSigned(status: false);
+
         if (kDebugMode) {
           print('Setting Appwrite Origin fallback: $currentOrigin');
         }
@@ -338,6 +353,15 @@ class AppwriteService {
 
   // Error Handling
   static String _handleAppwriteException(dynamic e) {
+    // Log error details for debugging
+    if (kDebugMode) {
+      print('Appwrite Error Details:');
+      print('Error Type: ${e.runtimeType}');
+      print('Error String: $e');
+      print('Current host: ${Uri.base.host}');
+      print('Current origin: ${Uri.base.origin}');
+    }
+
     if (e is AppwriteException) {
       // Debug information for troubleshooting (removed print for production)
 
@@ -366,10 +390,17 @@ class AppwriteService {
     }
 
     // Handle network and other errors
-    if (e.toString().contains('Failed host lookup') ||
-        e.toString().contains('Connection refused') ||
-        e.toString().contains('Network is unreachable')) {
-      return 'Network error. Please check your internet connection.';
+    final errorString = e.toString().toLowerCase();
+    if (errorString.contains('failed to fetch') ||
+        errorString.contains('failed host lookup') ||
+        errorString.contains('connection refused') ||
+        errorString.contains('network is unreachable') ||
+        errorString.contains('cors') ||
+        errorString.contains('blocked by cors policy')) {
+      if (kDebugMode) {
+        return 'Network/CORS error: $e. Please check the browser console for more details.';
+      }
+      return 'Connection error. Please check your internet connection and try again.';
     }
 
     return 'An unexpected error occurred: $e';
