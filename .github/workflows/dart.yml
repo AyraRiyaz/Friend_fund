@@ -1,0 +1,42 @@
+# Basic Flutter CI Workflow
+# Analyzes and builds Flutter web application
+
+name: Flutter CI
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/**"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "frontend/**"
+
+jobs:
+  flutter-ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.32.0"
+          channel: "stable"
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+        working-directory: ./frontend
+
+      - name: Analyze project source
+        run: flutter analyze --fatal-infos
+        working-directory: ./frontend
+
+      - name: Build web application
+        run: flutter build web --release
+        working-directory: ./frontend

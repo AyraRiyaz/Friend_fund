@@ -106,10 +106,7 @@ pubspec.lock
 *.dylib
 *.dll
 
-# Flutter build outputs
-build/
-.flutter-plugins
-.flutter-plugins-dependencies
+
 
 # IDE files
 .vscode/
