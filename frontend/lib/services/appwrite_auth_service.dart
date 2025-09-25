@@ -12,8 +12,11 @@ class AppwriteService {
   static void initialize() {
     _client = Client()
         .setEndpoint(AppwriteConfig.endpoint)
-        .setProject(AppwriteConfig.projectId)
-        .setSelfSigned(status: true); // Only for development
+        .setProject(AppwriteConfig.projectId);
+
+    // Only enable self-signed certificates for development
+    // Remove or comment out for production deployment
+    // .setSelfSigned(status: true);
 
     _account = Account(_client);
     _databases = Databases(_client);

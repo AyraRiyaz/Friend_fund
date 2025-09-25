@@ -25,7 +25,7 @@
     "CONTRIBUTIONS_COLLECTION_ID": "68b54a0700208ba7fdaa",
     "NOTIFICATIONS_COLLECTION_ID": "notifications",
     "SCREENSHOTS_BUCKET_ID": "68c66749001ad2d77cfa",
-    "FRONTEND_BASE_URL": "https://friendfund.pro26.in",
+    "FRONTEND_BASE_URL": "https://friendfund-pro26.netlify.app",
     "NODE_ENV": "production",
     "APPWRITE_API_KEY": "standard_f13a28485c36b4c7237fcb9ed0a6822fffc8b9083cd47a605c54c3d8d7b42c281c1feaa99b26bc0d807e5249c8761516ca411b884cb35d971022865658ee81c617f014c6ead01c4a4460b53096c9c08f4d03b4a19ca4c194011414da3e1bcf18f89dcf0f77b23987d6c7cc1a339a6db6f44718b9ac5d79655cf76b9c7e857331"
   },
