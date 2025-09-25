@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/campaign_controller.dart';
+import '../theme/app_theme.dart';
 
 class AddCampaignModal extends StatefulWidget {
   const AddCampaignModal({super.key});
@@ -78,36 +79,46 @@ class _AddCampaignModalState extends State<AddCampaignModal> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      backgroundColor: Colors.transparent,
       child: Container(
         constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
+        decoration: AppTheme.cardDecoration.copyWith(
+          boxShadow: AppTheme.cardShadowLarge,
+        ),
         child: Column(
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.blue,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                ),
-              ),
+              padding: const EdgeInsets.all(24),
+              decoration: AppTheme.primaryGradientDecoration,
               child: Row(
                 children: [
-                  const Icon(Icons.campaign, color: Colors.white, size: 24),
-                  const SizedBox(width: 12),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.campaign_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Text(
                       'Create a New Campaign',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.25,
+                          ),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
+                    icon: const Icon(Icons.close_rounded, color: Colors.white),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -117,7 +128,7 @@ class _AddCampaignModalState extends State<AddCampaignModal> {
             // Body
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(32),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -126,21 +137,21 @@ class _AddCampaignModalState extends State<AddCampaignModal> {
                       // Subtitle
                       Text(
                         'Share your story and start raising funds for your cause',
-                        style: TextStyle(color: Colors.grey[600]),
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: AppTheme.textSecondary,
+                          height: 1.5,
+                        ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 32),
 
                       // Title Field
                       TextFormField(
                         controller: _titleController,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Campaign Title *',
                           hintText: 'Enter a clear, descriptive title',
-                          prefixIcon: const Icon(Icons.title),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          prefixIcon: Icon(Icons.title_rounded),
                         ),
                         maxLength: 100,
                         validator: (value) {
@@ -158,12 +169,9 @@ class _AddCampaignModalState extends State<AddCampaignModal> {
                       // Purpose Dropdown
                       DropdownButtonFormField<String>(
                         value: _selectedPurpose,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Purpose *',
-                          prefixIcon: const Icon(Icons.category),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          prefixIcon: Icon(Icons.category_rounded),
                         ),
                         items: _purposes.map((purpose) {
                           return DropdownMenuItem(
@@ -182,13 +190,10 @@ class _AddCampaignModalState extends State<AddCampaignModal> {
                       // Target Amount Field
                       TextFormField(
                         controller: _targetAmountController,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Target Amount (₹) *',
                           hintText: 'Enter target amount in rupees',
-                          prefixIcon: const Icon(Icons.currency_rupee),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          prefixIcon: Icon(Icons.currency_rupee_rounded),
                         ),
                         keyboardType: TextInputType.number,
                         validator: (value) {
@@ -210,13 +215,10 @@ class _AddCampaignModalState extends State<AddCampaignModal> {
                       // UPI ID Field
                       TextFormField(
                         controller: _upiIdController,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'UPI ID *',
                           hintText: 'your-upi-id@bank (e.g., name@paytm)',
-                          prefixIcon: const Icon(Icons.payment),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          prefixIcon: Icon(Icons.payment_rounded),
                           helperText:
                               'People will use this UPI ID to contribute',
                         ),
@@ -238,12 +240,9 @@ class _AddCampaignModalState extends State<AddCampaignModal> {
                       InkWell(
                         onTap: _selectDueDate,
                         child: InputDecorator(
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             labelText: 'Due Date (Optional)',
-                            prefixIcon: const Icon(Icons.calendar_today),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                            prefixIcon: Icon(Icons.calendar_today_rounded),
                           ),
                           child: Text(
                             _dueDate != null
@@ -262,13 +261,10 @@ class _AddCampaignModalState extends State<AddCampaignModal> {
                       // Description Field
                       TextFormField(
                         controller: _descriptionController,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Description *',
                           hintText: 'Describe your campaign in detail...',
-                          prefixIcon: const Icon(Icons.description),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          prefixIcon: Icon(Icons.description_rounded),
                           alignLabelWithHint: true,
                         ),
                         maxLines: 4,
@@ -287,10 +283,15 @@ class _AddCampaignModalState extends State<AddCampaignModal> {
 
                       // Guidelines
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(8),
+                          color: AppTheme.lightViolet,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppTheme.primaryViolet.withValues(
+                              alpha: 0.2,
+                            ),
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -298,28 +299,32 @@ class _AddCampaignModalState extends State<AddCampaignModal> {
                             Row(
                               children: [
                                 Icon(
-                                  Icons.info,
-                                  color: Colors.blue.shade700,
+                                  Icons.info_rounded,
+                                  color: AppTheme.primaryViolet,
                                   size: 20,
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 12),
                                 Text(
                                   'Guidelines',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue.shade700,
-                                    fontSize: 14,
-                                  ),
+                                  style: Theme.of(context).textTheme.titleSmall
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: AppTheme.primaryViolet,
+                                      ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
-                            const Text(
+                            const SizedBox(height: 12),
+                            Text(
                               '• Be honest and transparent\n'
                               '• Set a realistic target amount\n'
                               '• Provide detailed description\n'
                               '• Keep supporters updated',
-                              style: TextStyle(fontSize: 12),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: AppTheme.textSecondary,
+                                    height: 1.5,
+                                  ),
                             ),
                           ],
                         ),
@@ -332,32 +337,41 @@ class _AddCampaignModalState extends State<AddCampaignModal> {
 
             // Footer buttons
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: Colors.grey.shade300)),
+                color: AppTheme.surfaceElevated,
+                border: Border(
+                  top: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
+                ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
+                    child: Text(
+                      'Cancel',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppTheme.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 16),
                   Obx(
                     () => ElevatedButton(
                       onPressed: _campaignController.isLoading
                           ? null
                           : _createCampaign,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
+                        backgroundColor: AppTheme.primaryViolet,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
+                          horizontal: 32,
+                          vertical: 16,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       child: _campaignController.isLoading
@@ -372,11 +386,19 @@ class _AddCampaignModalState extends State<AddCampaignModal> {
                                     strokeWidth: 2,
                                   ),
                                 ),
-                                SizedBox(width: 8),
+                                SizedBox(width: 12),
                                 Text('Creating...'),
                               ],
                             )
-                          : const Text('Create Campaign'),
+                          : Text(
+                              'Create Campaign',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: -0.1,
+                                  ),
+                            ),
                     ),
                   ),
                 ],

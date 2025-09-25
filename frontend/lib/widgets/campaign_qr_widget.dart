@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/campaign.dart';
+import '../theme/app_theme.dart';
 
 class CampaignQRWidget extends StatefulWidget {
   final Campaign campaign;
@@ -36,37 +38,50 @@ class _CampaignQRWidgetState extends State<CampaignQRWidget> {
     ); // Debug log
 
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            spreadRadius: 2,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+      padding: const EdgeInsets.all(24),
+      decoration: AppTheme.cardDecoration.copyWith(
+        boxShadow: AppTheme.cardShadowLarge,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            'Share Campaign',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryViolet.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.share_rounded,
+                  color: AppTheme.primaryViolet,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                'Share Campaign',
+                style: GoogleFonts.inter(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                  letterSpacing: -0.25,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
 
           // QR Code
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppTheme.primaryViolet.withValues(alpha: 0.2),
+              ),
             ),
             child: QrImageView(
               data: contributionUrl,
@@ -80,9 +95,11 @@ class _CampaignQRWidgetState extends State<CampaignQRWidget> {
 
           Text(
             'Scan to view campaign',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+            style: GoogleFonts.inter(
+              color: AppTheme.textSecondary,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
           ),
 
           const SizedBox(height: 16),
@@ -92,26 +109,48 @@ class _CampaignQRWidgetState extends State<CampaignQRWidget> {
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () => _shareLink(contributionUrl),
-              icon: const Icon(Icons.share),
-              label: const Text('Share Link'),
+              icon: const Icon(Icons.share_rounded),
+              label: Text(
+                'Share Link',
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.1,
+                ),
+              ),
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                backgroundColor: AppTheme.primaryViolet,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),
           ),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
 
           // Copy link button
           SizedBox(
             width: double.infinity,
-            child: TextButton.icon(
+            child: OutlinedButton.icon(
               onPressed: () => _copyLink(context, contributionUrl),
-              icon: const Icon(Icons.copy),
-              label: const Text('Copy Link'),
+              icon: const Icon(Icons.copy_rounded),
+              label: Text(
+                'Copy Link',
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.1,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.primaryViolet,
+                side: BorderSide(color: AppTheme.primaryViolet),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
             ),
           ),
         ],

@@ -64,7 +64,7 @@ class ResponsiveLayout extends StatelessWidget {
     return AppBar(
       title: Row(
         children: [
-          Icon(Icons.handshake, color: AppTheme.primaryBlue, size: 28),
+          Icon(Icons.handshake, color: AppTheme.primaryViolet, size: 28),
           const SizedBox(width: 8),
           Text(title, style: Theme.of(context).appBarTheme.titleTextStyle),
         ],
@@ -81,8 +81,8 @@ class ResponsiveLayout extends StatelessWidget {
       ],
       elevation: 0,
       backgroundColor: AppTheme.surfaceWhite,
-      foregroundColor: AppTheme.primaryBlue,
-      iconTheme: IconThemeData(color: AppTheme.primaryBlue),
+      foregroundColor: AppTheme.primaryViolet,
+      iconTheme: IconThemeData(color: AppTheme.primaryViolet),
     );
   }
 }
@@ -117,61 +117,41 @@ class NavigationSidebar extends StatelessWidget {
           // Modern App Header
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+            padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
             decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              color: AppTheme.surfaceWhite,
+              boxShadow: AppTheme.cardShadow,
             ),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [AppTheme.primaryBlue, AppTheme.secondaryBlue],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primaryBlue.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
+                  padding: const EdgeInsets.all(12),
+                  decoration: AppTheme.primaryGradientDecoration,
                   child: const Icon(
                     Icons.handshake_rounded,
                     color: Colors.white,
-                    size: 24,
+                    size: 28,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'FriendFund',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.textPrimary,
-                        letterSpacing: -0.5,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.textPrimary,
+                            letterSpacing: -0.5,
+                          ),
                     ),
+                    const SizedBox(height: 2),
                     Text(
                       'Fundraising Platform',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppTheme.textSecondary,
+                        fontWeight: FontWeight.w500,
                         letterSpacing: 0.2,
                       ),
                     ),
@@ -189,22 +169,13 @@ class NavigationSidebar extends StatelessWidget {
             return Container(
               width: double.infinity,
               margin: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+              padding: const EdgeInsets.all(20),
+              decoration: AppTheme.cardDecoration.copyWith(
                 border: Border.all(
-                  color: AppTheme.primaryBlue.withValues(alpha: 0.1),
+                  color: AppTheme.primaryViolet.withValues(alpha: 0.1),
                   width: 1,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryBlue.withValues(alpha: 0.08),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                    spreadRadius: 0,
-                  ),
-                ],
+                boxShadow: AppTheme.cardShadowHover,
               ),
               child: Row(
                 children: [
@@ -215,8 +186,8 @@ class NavigationSidebar extends StatelessWidget {
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              AppTheme.primaryBlue,
-                              AppTheme.secondaryBlue,
+                              AppTheme.primaryViolet,
+                              AppTheme.secondaryViolet,
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
@@ -272,43 +243,47 @@ class NavigationSidebar extends StatelessWidget {
                       children: [
                         Text(
                           user?.name ?? appwriteUser?.name ?? 'User',
-                          style: TextStyle(
-                            color: AppTheme.textPrimary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                            letterSpacing: -0.2,
-                          ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                color: AppTheme.textPrimary,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: -0.1,
+                              ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 4),
                         Text(
                           user?.email ?? appwriteUser?.email ?? '',
-                          style: TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w400,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: AppTheme.textSecondary,
+                                fontWeight: FontWeight.w400,
+                              ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
+                            horizontal: 10,
+                            vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: AppTheme.success.withValues(alpha: 0.1),
+                            color: AppTheme.successLight,
                             borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppTheme.success.withValues(alpha: 0.2),
+                            ),
                           ),
                           child: Text(
                             'Online',
-                            style: TextStyle(
-                              color: AppTheme.success,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                                  color: AppTheme.success,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.1,
+                                ),
                           ),
                         ),
                       ],
@@ -383,13 +358,6 @@ class NavigationSidebar extends StatelessWidget {
                         _handleNavigation(context, () => Get.toNamed('/help')),
                     isSelected: Get.currentRoute == '/help',
                   ),
-                  _buildNavigationItem(
-                    icon: Icons.info_rounded,
-                    title: 'About',
-                    onTap: () =>
-                        _handleNavigation(context, () => Get.toNamed('/about')),
-                    isSelected: Get.currentRoute == '/about',
-                  ),
 
                   // Spacer to push logout to bottom
                   const Spacer(),
@@ -443,7 +411,7 @@ class NavigationSidebar extends StatelessWidget {
       style: TextStyle(
         fontSize: 24,
         fontWeight: FontWeight.bold,
-        color: AppTheme.primaryBlue,
+        color: AppTheme.primaryViolet,
       ),
     );
   }
@@ -469,14 +437,14 @@ class NavigationSidebar extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: isSelected
-                  ? AppTheme.primaryBlue.withValues(alpha: 0.1)
+                  ? AppTheme.primaryViolet.withValues(alpha: 0.1)
                   : isAccent
-                  ? AppTheme.primaryBlue.withValues(alpha: 0.05)
+                  ? AppTheme.primaryViolet.withValues(alpha: 0.05)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(10),
               border: isAccent && !isSelected
                   ? Border.all(
-                      color: AppTheme.primaryBlue.withValues(alpha: 0.2),
+                      color: AppTheme.primaryViolet.withValues(alpha: 0.2),
                       width: 1,
                     )
                   : null,
@@ -488,9 +456,9 @@ class NavigationSidebar extends StatelessWidget {
                   color:
                       iconColor ??
                       (isSelected
-                          ? AppTheme.primaryBlue
+                          ? AppTheme.primaryViolet
                           : isAccent
-                          ? AppTheme.primaryBlue
+                          ? AppTheme.primaryViolet
                           : AppTheme.textSecondary),
                   size: 18,
                 ),
@@ -502,9 +470,9 @@ class NavigationSidebar extends StatelessWidget {
                       color:
                           textColor ??
                           (isSelected
-                              ? AppTheme.primaryBlue
+                              ? AppTheme.primaryViolet
                               : isAccent
-                              ? AppTheme.primaryBlue
+                              ? AppTheme.primaryViolet
                               : AppTheme.textPrimary),
                       fontWeight: isSelected
                           ? FontWeight.w600
@@ -521,7 +489,7 @@ class NavigationSidebar extends StatelessWidget {
                     width: 5,
                     height: 5,
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryBlue,
+                      color: AppTheme.primaryViolet,
                       shape: BoxShape.circle,
                     ),
                   ),

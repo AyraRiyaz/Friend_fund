@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/loan_repayment.dart';
 import '../controllers/loan_repayment_controller.dart';
 import '../theme/app_theme.dart';
@@ -93,8 +94,11 @@ class _LoanRepaymentListWidgetState extends State<LoanRepaymentListWidget> {
               widget.showUserRepayments
                   ? 'No Loan Repayments Made'
                   : 'No Loan Repayments Received',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              style: GoogleFonts.inter(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
                 color: AppTheme.textSecondary,
+                letterSpacing: -0.25,
               ),
             ),
             const SizedBox(height: 8),
@@ -102,9 +106,11 @@ class _LoanRepaymentListWidgetState extends State<LoanRepaymentListWidget> {
               widget.showUserRepayments
                   ? 'Loan repayments you make will appear here'
                   : 'Loan repayments made to you will appear here',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppTheme.textSecondary),
+              style: GoogleFonts.inter(
+                color: AppTheme.textSecondary,
+                fontSize: 14,
+                height: 1.5,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -135,11 +141,11 @@ class _LoanRepaymentListWidgetState extends State<LoanRepaymentListWidget> {
         statusText = 'PENDING';
     }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: AppTheme.cardDecoration,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -165,18 +171,21 @@ class _LoanRepaymentListWidgetState extends State<LoanRepaymentListWidget> {
                     children: [
                       Text(
                         '₹${repayment.amount.toStringAsFixed(0)}',
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.primaryBlue,
-                            ),
+                        style: GoogleFonts.inter(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.primaryViolet,
+                          letterSpacing: -0.25,
+                        ),
                       ),
                       Text(
                         widget.showUserRepayments
                             ? 'Repaid to Lender'
                             : 'Repaid by User',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        style: GoogleFonts.inter(
                           color: AppTheme.textSecondary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -198,10 +207,11 @@ class _LoanRepaymentListWidgetState extends State<LoanRepaymentListWidget> {
                       const SizedBox(width: 4),
                       Text(
                         statusText,
-                        style: const TextStyle(
+                        style: GoogleFonts.inter(
                           color: Colors.white,
                           fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ],
@@ -216,10 +226,10 @@ class _LoanRepaymentListWidgetState extends State<LoanRepaymentListWidget> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppTheme.primaryBlue.withValues(alpha: 0.05),
+                color: AppTheme.primaryViolet.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: AppTheme.primaryBlue.withValues(alpha: 0.1),
+                  color: AppTheme.primaryViolet.withValues(alpha: 0.1),
                 ),
               ),
               child: Column(
@@ -276,8 +286,8 @@ class _LoanRepaymentListWidgetState extends State<LoanRepaymentListWidget> {
                 icon: const Icon(Icons.receipt),
                 label: const Text('View Payment Proof'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppTheme.primaryBlue,
-                  side: BorderSide(color: AppTheme.primaryBlue),
+                  foregroundColor: AppTheme.primaryViolet,
+                  side: BorderSide(color: AppTheme.primaryViolet),
                 ),
               ),
             ),
@@ -393,7 +403,7 @@ class _LoanRepaymentListWidgetState extends State<LoanRepaymentListWidget> {
           children: [
             AppBar(
               title: const Text('Payment Proof'),
-              backgroundColor: AppTheme.primaryBlue,
+              backgroundColor: AppTheme.primaryViolet,
               foregroundColor: Colors.white,
               leading: IconButton(
                 icon: const Icon(Icons.close),
@@ -444,15 +454,15 @@ class LoanRepaymentStatsWidget extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              AppTheme.primaryBlue.withValues(alpha: 0.1),
-              AppTheme.secondaryBlue.withValues(alpha: 0.05),
+              AppTheme.primaryViolet.withValues(alpha: 0.1),
+              AppTheme.secondaryViolet.withValues(alpha: 0.05),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: AppTheme.primaryBlue.withValues(alpha: 0.2),
+            color: AppTheme.primaryViolet.withValues(alpha: 0.2),
           ),
         ),
         child: Column(
@@ -460,9 +470,11 @@ class LoanRepaymentStatsWidget extends StatelessWidget {
           children: [
             Text(
               'Loan Repayment Summary',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppTheme.primaryBlue,
+              style: GoogleFonts.inter(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+                letterSpacing: -0.25,
               ),
             ),
             const SizedBox(height: 16),
@@ -474,7 +486,7 @@ class LoanRepaymentStatsWidget extends StatelessWidget {
                     'Total Repayments',
                     stats['totalRepayments'].toString(),
                     Icons.payment,
-                    AppTheme.primaryBlue,
+                    AppTheme.primaryViolet,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -539,17 +551,21 @@ class LoanRepaymentStatsWidget extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             value,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
               color: color,
+              letterSpacing: -0.25,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             label,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
+            style: GoogleFonts.inter(
+              color: AppTheme.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
