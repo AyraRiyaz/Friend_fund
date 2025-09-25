@@ -1,10 +1,9 @@
 [build]
   base = "frontend"
-  command = "flutter build web --release --web-renderer html --base-href='/'"
+  command = "echo 'Using pre-built files'"
   publish = "build/web"
 
 [build.environment]
-  FLUTTER_WEB = "true"
   NODE_VERSION = "18"
 
 [[redirects]]
