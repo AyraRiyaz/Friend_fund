@@ -111,7 +111,7 @@ class FriendFundAPI {
 
       // Generate shareable URL for the campaign
       const shareableUrl = `${
-        process.env.FRONTEND_URL || "http://localhost:8080"
+        process.env.FRONTEND_BASE_URL || "http://localhost:8080"
       }/contribute/${campaignId}`;
 
       // Generate QR code for the shareable URL

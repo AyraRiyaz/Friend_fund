@@ -22,7 +22,8 @@ class _CampaignQRWidgetState extends State<CampaignQRWidget> {
   Widget build(BuildContext context) {
     // Generate a URL that points to the public campaign details page on the deployed site
     // This will allow users to read campaign details before contributing
-    final contributionUrl = widget.campaign.shareableUrl ??
+    // Always use the deployed site URL, regardless of shareableUrl value
+    final contributionUrl =
         '${AppwriteConfig.webPlatform}/campaign/${widget.campaign.id}';
 
     developer.log(
