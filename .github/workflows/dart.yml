@@ -8,6 +8,7 @@ on:
     branches: ["main"]
     paths:
       - "frontend/**"
+      - ".github/workflows/**"
   pull_request:
     branches: ["main"]
     paths:
@@ -16,9 +17,6 @@ on:
 jobs:
   flutter-ci:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./frontend
 
     steps:
       - name: Checkout repository
@@ -29,12 +27,16 @@ jobs:
         with:
           flutter-version: "3.24.3"
           channel: "stable"
+          cache: true
 
-      - name: Install dependencies
+      - name: Get dependencies
         run: flutter pub get
+        working-directory: ./frontend
 
       - name: Analyze project source
-        run: flutter analyze
+        run: flutter analyze --fatal-infos
+        working-directory: ./frontend
 
-      - name: Build web app
+      - name: Build web application
         run: flutter build web --release
+        working-directory: ./frontend
