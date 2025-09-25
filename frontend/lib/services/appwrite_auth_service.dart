@@ -1,5 +1,6 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import '../config/appwrite_config.dart';
 import '../models/user.dart' as app_user;
 
@@ -14,9 +15,17 @@ class AppwriteService {
         .setEndpoint(AppwriteConfig.endpoint)
         .setProject(AppwriteConfig.projectId);
 
-    // Only enable self-signed certificates for development
-    // Remove or comment out for production deployment
-    // .setSelfSigned(status: true);
+    // Set platform for web deployment
+    if (kIsWeb) {
+      // Check if running on deployed domain
+      final currentHost = Uri.base.host;
+      if (currentHost == 'friendfund-pro26.netlify.app') {
+        _client.addHeader('X-Appwrite-Origin', AppwriteConfig.webPlatform);
+      } else if (currentHost == 'localhost') {
+        _client.addHeader('X-Appwrite-Origin',
+            '${AppwriteConfig.localPlatform}:${Uri.base.port}');
+      }
+    }
 
     _account = Account(_client);
     _databases = Databases(_client);
@@ -310,6 +319,10 @@ class AppwriteService {
   // Error Handling
   static String _handleAppwriteException(dynamic e) {
     if (e is AppwriteException) {
+      // Print debug information for troubleshooting
+      print(
+          'Appwrite Exception - Code: ${e.code}, Message: ${e.message}, Type: ${e.type}');
+
       switch (e.code) {
         case 401:
           return 'Invalid credentials. Please check your email and password.';
@@ -323,10 +336,24 @@ class AppwriteService {
           return 'Resource not found. Please check your configuration.';
         case 500:
           return 'Server error. Please try again later.';
+        case 503:
+          return 'Service temporarily unavailable. Please try again later.';
         default:
+          // Return more detailed error for debugging in development
+          if (kDebugMode) {
+            return '${e.message} (Code: ${e.code}, Type: ${e.type})';
+          }
           return e.message ?? 'An error occurred. Please try again.';
       }
     }
+
+    // Handle network and other errors
+    if (e.toString().contains('Failed host lookup') ||
+        e.toString().contains('Connection refused') ||
+        e.toString().contains('Network is unreachable')) {
+      return 'Network error. Please check your internet connection.';
+    }
+
     return 'An unexpected error occurred: $e';
   }
 }

@@ -4,6 +4,10 @@ class AppwriteConfig {
   static const String projectId = '68b542650008ea019d84';
   static const String databaseId = '68b5433d0004cadff5ff';
 
+  // Platform detection
+  static const String webPlatform = 'https://friendfund-pro26.netlify.app';
+  static const String localPlatform = 'http://localhost';
+
   // Collections (still needed for some auth operations)
   static const String usersCollectionId = '68b5437f000585a01be6';
   static const String campaignsCollectionId = '68b54652001a8a757571';
