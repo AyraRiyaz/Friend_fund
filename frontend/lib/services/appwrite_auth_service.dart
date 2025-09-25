@@ -319,9 +319,7 @@ class AppwriteService {
   // Error Handling
   static String _handleAppwriteException(dynamic e) {
     if (e is AppwriteException) {
-      // Print debug information for troubleshooting
-      print(
-          'Appwrite Exception - Code: ${e.code}, Message: ${e.message}, Type: ${e.type}');
+      // Debug information for troubleshooting (removed print for production)
 
       switch (e.code) {
         case 401:
