@@ -100339,16 +100339,15 @@ else return B.d.a6(a,0)}}
 A.Bh.prototype={
 a8(){return new A.Xa()}}
 A.Xa.prototype={
-I(a){var s,r,q,p=null,o=this.a.c,n=o.ax
-if(n==null)n="https://friendfund-pro26.netlify.app/campaign/"+o.a
+I(a){var s,r,q,p,o=null,n="https://friendfund-pro26.netlify.app/campaign/"+this.a.c.a
 A.bD("QR Code URL: "+n,"CampaignQRWidget")
-o=A.jj().nC(A.ol())
-s=B.o.aq(0.1)
-r=A.a9(12)
-q=t.p
-r=A.aH(A.a([A.a6(p,A.bq(B.rh,B.o,p,24),B.i,p,p,new A.al(s,p,p,r,p,p,p,B.r),p,p,p,p,B.cC,p,p,p),B.by,A.H("Share Campaign",p,p,p,p,A.er().$4$color$fontSize$fontWeight$letterSpacing(B.ai,20,B.w,-0.25),p,p,p)],q),B.m,B.e,B.h)
-s=A.a9(16)
-return A.a6(p,A.ad(A.a([r,B.b5,A.a6(p,new A.EL(n,B.j,-1,200,p),B.i,p,p,new A.al(B.j,p,A.bX(B.o.aq(0.2),B.p,1),s,p,p,p,B.r),p,p,p,p,B.aU,p,p,p),B.u,A.H("Scan to view campaign",p,p,p,p,A.er().$3$color$fontSize$fontWeight(B.E,14,B.M),p,p,p),B.u,A.cd(A.i0(B.Ng,A.H("Share Link",p,p,p,p,A.er().$2$fontWeight$letterSpacing(B.U,-0.1),p,p,p),new A.awA(this,n),A.el(p,p,B.o,p,p,p,p,p,p,B.j,p,p,B.eH,p,new A.cA(A.a9(12),B.v),p,p,p,p,p,p)),p,1/0),B.a3,A.cd(A.Sh(B.MU,A.H("Copy Link",p,p,p,p,A.er().$2$fontWeight$letterSpacing(B.U,-0.1),p,p,p),new A.awB(this,a,n),A.alM(p,p,p,p,p,p,p,p,p,B.o,p,p,B.eH,p,new A.cA(A.a9(12),B.v),new A.b_(B.o,1,B.p,-1),p,p,p,p,p)),p,1/0)],q),B.m,p,B.e,B.ay),B.i,p,p,o,p,p,p,p,B.c9,p,p,p)},
+s=A.jj().nC(A.ol())
+r=B.o.aq(0.1)
+q=A.a9(12)
+p=t.p
+q=A.aH(A.a([A.a6(o,A.bq(B.rh,B.o,o,24),B.i,o,o,new A.al(r,o,o,q,o,o,o,B.r),o,o,o,o,B.cC,o,o,o),B.by,A.H("Share Campaign",o,o,o,o,A.er().$4$color$fontSize$fontWeight$letterSpacing(B.ai,20,B.w,-0.25),o,o,o)],p),B.m,B.e,B.h)
+r=A.a9(16)
+return A.a6(o,A.ad(A.a([q,B.b5,A.a6(o,new A.EL(n,B.j,-1,200,o),B.i,o,o,new A.al(B.j,o,A.bX(B.o.aq(0.2),B.p,1),r,o,o,o,B.r),o,o,o,o,B.aU,o,o,o),B.u,A.H("Scan to view campaign",o,o,o,o,A.er().$3$color$fontSize$fontWeight(B.E,14,B.M),o,o,o),B.u,A.cd(A.i0(B.Ng,A.H("Share Link",o,o,o,o,A.er().$2$fontWeight$letterSpacing(B.U,-0.1),o,o,o),new A.awA(this,n),A.el(o,o,B.o,o,o,o,o,o,o,B.j,o,o,B.eH,o,new A.cA(A.a9(12),B.v),o,o,o,o,o,o)),o,1/0),B.a3,A.cd(A.Sh(B.MU,A.H("Copy Link",o,o,o,o,A.er().$2$fontWeight$letterSpacing(B.U,-0.1),o,o,o),new A.awB(this,a,n),A.alM(o,o,o,o,o,o,o,o,o,B.o,o,o,B.eH,o,new A.cA(A.a9(12),B.v),new A.b_(B.o,1,B.p,-1),o,o,o,o,o)),o,1/0)],p),B.m,o,B.e,B.ay),B.i,o,o,s,o,o,o,o,B.c9,o,o,o)},
 vY(a){return this.aqJ(a)},
 aqJ(a){var s=0,r=A.w(t.H),q=1,p=[],o=this,n,m,l,k,j,i,h,g
 var $async$vY=A.q(function(b,c){if(b===1){p.push(c)
