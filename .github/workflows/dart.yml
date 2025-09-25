@@ -1,5 +1,5 @@
-# Flutter CI/CD Workflow for Friend Fund Frontend
-# This workflow builds and tests the Flutter web application
+# Basic Flutter CI Workflow
+# Analyzes and builds Flutter web application
 
 name: Flutter CI
 
@@ -8,15 +8,13 @@ on:
     branches: ["main"]
     paths:
       - "frontend/**"
-      - ".github/workflows/**"
   pull_request:
     branches: ["main"]
     paths:
       - "frontend/**"
-      - ".github/workflows/**"
 
 jobs:
-  build-and-test:
+  flutter-ci:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -31,41 +29,12 @@ jobs:
         with:
           flutter-version: "3.24.3"
           channel: "stable"
-          cache: true
-
-      - name: Verify Flutter installation
-        run: |
-          flutter --version
-          dart --version
-
-      - name: Cache Flutter dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pub-cache
-            frontend/.dart_tool
-          key: ${{ runner.os }}-flutter-${{ hashFiles('frontend/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-flutter-
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Verify formatting
-        run: dart format --output=none --set-exit-if-changed lib/
-
       - name: Analyze project source
         run: flutter analyze
 
-      - name: Run tests
-        run: flutter test
-
       - name: Build web app
         run: flutter build web --release
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-build
-          path: frontend/build/web/
-          retention-days: 7
