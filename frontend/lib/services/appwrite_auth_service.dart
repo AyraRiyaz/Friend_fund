@@ -19,11 +19,31 @@ class AppwriteService {
     if (kIsWeb) {
       // Check if running on deployed domain
       final currentHost = Uri.base.host;
-      if (currentHost == 'friendfund-pro26.netlify.app') {
+      final currentOrigin = Uri.base.origin;
+
+      if (currentHost.contains('friendfund-pro26.netlify.app') ||
+          currentHost.contains('netlify.app')) {
+        // Handle all variations of the deployed domain (with/without www, different protocols)
         _client.addHeader('X-Appwrite-Origin', AppwriteConfig.webPlatform);
-      } else if (currentHost == 'localhost') {
+        if (kDebugMode) {
+          print(
+              'Setting Appwrite Origin for production: ${AppwriteConfig.webPlatform}');
+          print('Current host: $currentHost');
+          print('Current origin: $currentOrigin');
+        }
+      } else if (currentHost == 'localhost' || currentHost == '127.0.0.1') {
         _client.addHeader('X-Appwrite-Origin',
             '${AppwriteConfig.localPlatform}:${Uri.base.port}');
+        if (kDebugMode) {
+          print(
+              'Setting Appwrite Origin for localhost: ${AppwriteConfig.localPlatform}:${Uri.base.port}');
+        }
+      } else {
+        // Fallback: use current origin
+        _client.addHeader('X-Appwrite-Origin', currentOrigin);
+        if (kDebugMode) {
+          print('Setting Appwrite Origin fallback: $currentOrigin');
+        }
       }
     }
 
