@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/campaign.dart';
 import '../theme/app_theme.dart';
+import '../config/appwrite_config.dart';
 
 class CampaignQRWidget extends StatefulWidget {
   final Campaign campaign;
@@ -19,18 +20,10 @@ class CampaignQRWidget extends StatefulWidget {
 class _CampaignQRWidgetState extends State<CampaignQRWidget> {
   @override
   Widget build(BuildContext context) {
-    // For development mode, use a URL that will open the contribution modal
-    // In production, this should be your actual domain
-    final currentUri = Uri.base;
-    final port = currentUri.port != 80 && currentUri.port != 443
-        ? ':${currentUri.port}'
-        : '';
-
-    // Generate a URL that points to the public campaign details page
+    // Generate a URL that points to the public campaign details page on the deployed site
     // This will allow users to read campaign details before contributing
-    final contributionUrl =
-        widget.campaign.shareableUrl ??
-        '${currentUri.scheme}://${currentUri.host}$port/campaign/${widget.campaign.id}';
+    final contributionUrl = widget.campaign.shareableUrl ??
+        '${AppwriteConfig.webPlatform}/campaign/${widget.campaign.id}';
 
     developer.log(
       'QR Code URL: $contributionUrl',
