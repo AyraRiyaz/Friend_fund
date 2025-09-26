@@ -352,9 +352,10 @@ class FriendFundAPI {
   // UTR Duplication Check
   async checkUtrDuplication(utrNumber, campaignId) {
     try {
-      // Normalize UTR for better duplicate detection
-      const cleanedUtr = utrNumber.trim();
-      const normalizedUtr = utrNumber.replace(/\s+/g, ''); // Remove all spaces
+      // CRITICAL: Normalize UTR for consistent duplicate detection
+      // Always normalize to remove all spaces for reliable comparison
+      const normalizedUtr = utrNumber.replace(/\s+/g, '').trim(); // Primary format (no spaces)
+      const cleanedUtr = utrNumber.trim(); // As provided
       const spacedUtr = utrNumber.replace(/\s+/g, ' ').trim(); // Single spaces
       
       console.log(`Checking UTR duplication for: "${cleanedUtr}" (normalized: "${normalizedUtr}")`);
@@ -626,8 +627,9 @@ class FriendFundAPI {
       const matches = text.matchAll(pattern);
       for (const match of matches) {
         if (match[1] && (match[1].replace(/\s/g, '').length >= 8 || match[1].length >= 8)) {
-          // Clean up the transaction ID (remove extra spaces but keep intended format)
-          transactionId = match[1].replace(/\s+/g, ' ').trim();
+          // CRITICAL: Normalize transaction ID same way as UTR for consistency
+          // Always remove spaces to ensure consistent duplicate detection
+          transactionId = match[1].replace(/\s+/g, '').trim();
           break;
         }
       }
