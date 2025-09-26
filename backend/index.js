@@ -352,22 +352,55 @@ class FriendFundAPI {
   // UTR Duplication Check
   async checkUtrDuplication(utrNumber, campaignId) {
     try {
-      // Query contributions with the same UTR number in the same campaign
-      const existingContributions = await this.databases.listDocuments(
-        this.databaseId,
-        this.contributionsCollectionId,
-        [Query.equal("campaignId", campaignId), Query.equal("utr", utrNumber)]
-      );
+      // Normalize UTR for better duplicate detection
+      const cleanedUtr = utrNumber.trim();
+      const normalizedUtr = utrNumber.replace(/\s+/g, ''); // Remove all spaces
+      const spacedUtr = utrNumber.replace(/\s+/g, ' ').trim(); // Single spaces
+      
+      console.log(`Checking UTR duplication for: "${cleanedUtr}" (normalized: "${normalizedUtr}")`);
 
-      const isDuplicate = existingContributions.total > 0;
+      // Query contributions with the same UTR number in the same campaign
+      // Check multiple formats to catch variations
+      const queries = [
+        [Query.equal("campaignId", campaignId), Query.equal("utr", cleanedUtr)],
+        [Query.equal("campaignId", campaignId), Query.equal("utr", normalizedUtr)],
+        [Query.equal("campaignId", campaignId), Query.equal("utr", spacedUtr)]
+      ];
+
+      let totalExistingContributions = 0;
+      const existingContributionIds = new Set();
+
+      // Check all variations
+      for (const query of queries) {
+        try {
+          const existingContributions = await this.databases.listDocuments(
+            this.databaseId,
+            this.contributionsCollectionId,
+            query
+          );
+          
+          // Add unique contribution IDs to avoid counting duplicates
+          existingContributions.documents.forEach(doc => {
+            existingContributionIds.add(doc.$id);
+          });
+        } catch (queryError) {
+          console.warn(`Query error for UTR pattern: ${queryError.message}`);
+        }
+      }
+
+      totalExistingContributions = existingContributionIds.size;
+      const isDuplicate = totalExistingContributions > 0;
+
+      console.log(`UTR check result: ${isDuplicate ? 'DUPLICATE' : 'UNIQUE'} (${totalExistingContributions} existing)`);
 
       return {
         success: true,
         data: {
           isDuplicate: isDuplicate,
-          utrNumber: utrNumber,
+          utrNumber: cleanedUtr,
           campaignId: campaignId,
-          existingContributionsCount: existingContributions.total,
+          existingContributionsCount: totalExistingContributions,
+          checkedPatterns: [cleanedUtr, normalizedUtr, spacedUtr],
         },
       };
     } catch (error) {
