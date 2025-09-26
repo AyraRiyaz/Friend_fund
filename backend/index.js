@@ -352,22 +352,56 @@ class FriendFundAPI {
   // UTR Duplication Check
   async checkUtrDuplication(utrNumber, campaignId) {
     try {
-      // Query contributions with the same UTR number in the same campaign
-      const existingContributions = await this.databases.listDocuments(
-        this.databaseId,
-        this.contributionsCollectionId,
-        [Query.equal("campaignId", campaignId), Query.equal("utr", utrNumber)]
-      );
+      // CRITICAL: Normalize UTR for consistent duplicate detection
+      // Always normalize to remove all spaces for reliable comparison
+      const normalizedUtr = utrNumber.replace(/\s+/g, '').trim(); // Primary format (no spaces)
+      const cleanedUtr = utrNumber.trim(); // As provided
+      const spacedUtr = utrNumber.replace(/\s+/g, ' ').trim(); // Single spaces
+      
+      console.log(`Checking UTR duplication for: "${cleanedUtr}" (normalized: "${normalizedUtr}")`);
 
-      const isDuplicate = existingContributions.total > 0;
+      // Query contributions with the same UTR number in the same campaign
+      // Check multiple formats to catch variations
+      const queries = [
+        [Query.equal("campaignId", campaignId), Query.equal("utr", cleanedUtr)],
+        [Query.equal("campaignId", campaignId), Query.equal("utr", normalizedUtr)],
+        [Query.equal("campaignId", campaignId), Query.equal("utr", spacedUtr)]
+      ];
+
+      let totalExistingContributions = 0;
+      const existingContributionIds = new Set();
+
+      // Check all variations
+      for (const query of queries) {
+        try {
+          const existingContributions = await this.databases.listDocuments(
+            this.databaseId,
+            this.contributionsCollectionId,
+            query
+          );
+          
+          // Add unique contribution IDs to avoid counting duplicates
+          existingContributions.documents.forEach(doc => {
+            existingContributionIds.add(doc.$id);
+          });
+        } catch (queryError) {
+          console.warn(`Query error for UTR pattern: ${queryError.message}`);
+        }
+      }
+
+      totalExistingContributions = existingContributionIds.size;
+      const isDuplicate = totalExistingContributions > 0;
+
+      console.log(`UTR check result: ${isDuplicate ? 'DUPLICATE' : 'UNIQUE'} (${totalExistingContributions} existing)`);
 
       return {
         success: true,
         data: {
           isDuplicate: isDuplicate,
-          utrNumber: utrNumber,
+          utrNumber: cleanedUtr,
           campaignId: campaignId,
-          existingContributionsCount: existingContributions.total,
+          existingContributionsCount: totalExistingContributions,
+          checkedPatterns: [cleanedUtr, normalizedUtr, spacedUtr],
         },
       };
     } catch (error) {
@@ -541,11 +575,24 @@ class FriendFundAPI {
       /Amount.*?(\d+(?:,\d+)*(?:\.\d{2})?)/gi,
     ];
 
-    // Transaction ID patterns
+    // Transaction ID patterns - Enhanced to handle UTR numbers with spaces (Paytm style)
     const transactionPatterns = [
+      // Enhanced patterns for UTR with spaces (like Paytm: "6912629 80414")
+      /(?:UPI\s*Ref\.?\s*No\.?\s*:?\s*)([0-9]{6,8}\s+[0-9]{4,8})/gi, // Paytm specific "UPI Ref. No"
+      /(?:UTR|Ref\.?\s*No\.?)\s*:?\s*([0-9]{6,8}\s+[0-9]{4,8})/gi, // UTR/Ref No with space
+      /(?:Transaction\s*ID)\s*:?\s*([0-9]{6,8}\s+[0-9]{4,8})/gi, // Transaction ID with space
+      
+      // Original patterns for continuous numbers (Google Pay style)
       /(?:Transaction|Txn|Trans|UPI|ID|Ref)\s*(?:ID|No|Number)?\s*:?\s*([A-Z0-9]+)/gi,
       /([0-9]{12,16})/g, // Common transaction ID length
       /([A-Z]{2,4}\d{10,14})/g, // Bank specific patterns
+      
+      // Google transaction ID pattern (like: CICAgOjYzavxdg)
+      /(?:Google\s*transaction\s*ID)\s*:?\s*([A-Za-z0-9]{12,20})/gi,
+      /(?:Google\s*Pay)\s*:?\s*([A-Za-z0-9]{12,20})/gi,
+      
+      // Backup pattern for numbers with spaces
+      /([0-9]{6,8}\s[0-9]{4,8})/g,
     ];
 
     // Success indicators
@@ -579,8 +626,10 @@ class FriendFundAPI {
     for (const pattern of transactionPatterns) {
       const matches = text.matchAll(pattern);
       for (const match of matches) {
-        if (match[1] && match[1].length >= 8) {
-          transactionId = match[1];
+        if (match[1] && (match[1].replace(/\s/g, '').length >= 8 || match[1].length >= 8)) {
+          // CRITICAL: Normalize transaction ID same way as UTR for consistency
+          // Always remove spaces to ensure consistent duplicate detection
+          transactionId = match[1].replace(/\s+/g, '').trim();
           break;
         }
       }

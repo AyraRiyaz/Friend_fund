@@ -225,7 +225,7 @@ class _LoanRepaymentModalState extends State<LoanRepaymentModal> {
             onPressed: _nextStep,
             child: Text(details.stepIndex == 2 ? 'Verify & Continue' : 'Next'),
           ),
-        if (details.stepIndex == 3)
+        if (details.stepIndex == 3 && _isPaymentVerified)
           ElevatedButton(
             onPressed: _isSubmitting ? null : _submitRepayment,
             child: _isSubmitting
@@ -562,24 +562,13 @@ class _LoanRepaymentModalState extends State<LoanRepaymentModal> {
                   style: TextStyle(height: 1.5),
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _selectImage(ImageSource.camera),
-                        icon: const Icon(Icons.camera_alt),
-                        label: const Text('Take Photo'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _selectImage(ImageSource.gallery),
-                        icon: const Icon(Icons.photo_library),
-                        label: const Text('From Gallery'),
-                      ),
-                    ),
-                  ],
+                ElevatedButton.icon(
+                  onPressed: () => _selectImage(ImageSource.gallery),
+                  icon: const Icon(Icons.screenshot),
+                  label: const Text('Upload Screenshot'),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
                 ),
               ],
             ),
@@ -662,7 +651,7 @@ class _LoanRepaymentModalState extends State<LoanRepaymentModal> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  if (!_isPaymentVerified && !_isVerifyingPayment) ...[
+                  if (!_isPaymentVerified && !_isVerifyingPayment && _verificationError == null) ...[
                     const Text(
                       'Click "Verify Payment" to automatically extract and verify payment details from your screenshot.',
                     ),
@@ -721,15 +710,35 @@ class _LoanRepaymentModalState extends State<LoanRepaymentModal> {
                             '• Payment screenshot is valid',
                           ),
                           if (_extractedUtrNumber != null) ...[
-                            const SizedBox(height: 8),
-                            Text('UTR: $_extractedUtrNumber'),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Extracted UTR Number:',
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                _extractedUtrNumber!,
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  fontFamily: 'monospace',
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
                           ],
                         ],
                       ),
                     ),
-                  ],
-                  if (_verificationError != null) ...[
-                    const SizedBox(height: 16),
+                  ] else if (_verificationError != null) ...[
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -756,10 +765,50 @@ class _LoanRepaymentModalState extends State<LoanRepaymentModal> {
                           ),
                           const SizedBox(height: 8),
                           Text(_verificationError!),
-                          const SizedBox(height: 8),
-                          TextButton(
-                            onPressed: _verifyPayment,
-                            child: const Text('Retry Verification'),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    setState(() {
+                                      _verificationError = null;
+                                      _isPaymentVerified = false;
+                                      _isVerificationComplete = false;
+                                    });
+                                    _verifyPayment();
+                                  },
+                                  icon: const Icon(Icons.refresh),
+                                  label: const Text('Retry Verification'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.orange,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    setState(() {
+                                      _selectedImage = null;
+                                      _selectedImageBytes = null;
+                                      _isPaymentVerified = false;
+                                      _verificationError = null;
+                                      _extractedUtrNumber = null;
+                                      _isVerificationComplete = false;
+                                      _currentStep = 2;
+                                    });
+                                  },
+                                  icon: const Icon(Icons.upload),
+                                  label: const Text('Upload New'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -769,43 +818,7 @@ class _LoanRepaymentModalState extends State<LoanRepaymentModal> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Manual UTR Entry',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'If automatic verification fails, you can manually enter the UTR number:',
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _utrController,
-                    decoration: const InputDecoration(
-                      labelText: 'UTR Number',
-                      hintText: 'Enter transaction reference number',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (!_isPaymentVerified &&
-                          (value == null || value.trim().isEmpty)) {
-                        return 'Please enter UTR number or verify payment automatically';
-                      }
-                      return null;
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
+
         ],
       ),
     );
@@ -934,10 +947,10 @@ Purpose: Loan Repayment
   }
 
   Future<void> _submitRepayment() async {
-    if (!_isPaymentVerified && _utrController.text.trim().isEmpty) {
+    if (!_isPaymentVerified) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please verify payment or enter UTR number'),
+          content: Text('Please verify payment first'),
         ),
       );
       return;

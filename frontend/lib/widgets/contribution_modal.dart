@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:get/get.dart';
@@ -231,7 +232,7 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
             onPressed: _nextStep,
             child: Text(details.stepIndex == 2 ? 'Verify & Continue' : 'Next'),
           ),
-        if (details.stepIndex == 3)
+        if (details.stepIndex == 3 && _isPaymentVerified)
           ElevatedButton(
             onPressed: _isSubmitting ? null : _submitContribution,
             child: _isSubmitting
@@ -278,25 +279,25 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
         // Payment instructions step - no validation needed
         return true;
       case 2:
-        // Payment proof step - validate screenshot and verify payment
+        // Payment proof step - require image
         if (_selectedImage == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Please upload payment screenshot')),
           );
           return false;
         }
-
-        // If payment is already verified, allow advancement
-        if (_isPaymentVerified) {
-          return true;
-        }
-
-        // If not verified, trigger verification
-        _verifyPayment();
-        return false; // Don't advance immediately, let verification complete
+        return true;
       case 3:
-        // Verification step - check if payment is verified
-        return _isPaymentVerified;
+        // Verification step - require verification
+        if (!_isPaymentVerified) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please verify payment details first'),
+            ),
+          );
+          return false;
+        }
+        return true;
       default:
         return true;
     }
@@ -529,50 +530,57 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
         const SizedBox(height: 16),
 
         // Payment Instructions
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.green.shade50,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.green.shade200),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
-                children: [
-                  Icon(Icons.info, color: Colors.green),
-                  SizedBox(width: 8),
-                  Text(
-                    'Payment Instructions',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Payment Instructions',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (_campaign?.upiId != null) ...[
-                SelectableText(
-                  'UPI ID: ${_campaign!.upiId}',
-                  style: const TextStyle(fontWeight: FontWeight.w500),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
+                Text(
+                  'Amount to pay: ₹${_amountController.text}',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(context).primaryColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (_campaign?.upiId != null) ...[
+                  const SizedBox(height: 8),
+                  Text('UPI ID: ${_campaign!.upiId}'),
+                ],
+                const SizedBox(height: 16),
+                const Text(
+                  'Steps to complete payment:\n'
+                  '1. Open any UPI app (GooglePay, PhonePe, Paytm, etc.)\n'
+                  '2. Make payment to the above UPI ID\n'
+                  '3. Take a screenshot of the payment confirmation\n'
+                  '4. Upload the screenshot in the next step',
+                  style: TextStyle(height: 1.5),
+                ),
               ],
-              SelectableText(
-                'Amount: ₹${_amountController.text}',
-                style: const TextStyle(fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                '1. Open any UPI app (GooglePay, PhonePe, Paytm, etc.)\n'
-                '2. Make payment to the above UPI ID\n'
-                '3. Take a clear screenshot of the payment confirmation\n'
-                '4. Click "Next" and upload the screenshot for verification',
-                style: TextStyle(fontSize: 14),
-              ),
-            ],
+            ),
           ),
         ),
         const SizedBox(height: 16),
+
+        // Copy UPI Details Button
+        if (_campaign?.upiId != null) ...[
+          ElevatedButton.icon(
+            onPressed: _copyUpiDetails,
+            icon: const Icon(Icons.copy),
+            label: const Text('Copy UPI Details'),
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 48),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
 
         // QR Code for Payment
         if (_campaign?.upiId != null) ...[
@@ -631,74 +639,46 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
         ),
         const SizedBox(height: 16),
 
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.orange.shade50,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.orange.shade200),
-          ),
-          child: const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.warning, color: Colors.orange),
-                  SizedBox(width: 8),
-                  Text(
-                    'Important Instructions',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Upload Payment Screenshot',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
-                ],
-              ),
-              SizedBox(height: 8),
-              Text(
-                '• Upload a clear screenshot of your payment confirmation\n'
-                '• Screenshot should show the amount, date, time, and UPI ID\n'
-                '• Make sure all text is clearly visible\n'
-                '• This will be verified automatically',
-                style: TextStyle(fontSize: 14),
-              ),
-            ],
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Please upload a clear screenshot of your payment confirmation that shows:\n'
+                  '• Transaction amount\n'
+                  '• Date and time\n'
+                  '• Screenshot should show the amount, date, time, and UPI ID\n'
+                  '• UTR/Transaction reference number',
+                  style: TextStyle(height: 1.5),
+                ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 16),
 
-        // Image Upload Section
-        if (_selectedImage == null) ...[
-          GestureDetector(
-            onTap: _pickImage,
-            child: Container(
-              width: double.infinity,
-              height: 200,
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Colors.grey.shade300,
-                  width: 2,
-                  style: BorderStyle.solid,
-                ),
-                borderRadius: BorderRadius.circular(8),
-                color: Colors.grey.shade50,
-              ),
-              child: const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.cloud_upload, size: 48, color: Colors.grey),
-                  SizedBox(height: 8),
-                  Text(
-                    'Tap to upload payment screenshot',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'JPEG, PNG (Max 5MB)',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
+        // Single Upload Button
+        ElevatedButton.icon(
+          onPressed: _pickImage,
+          icon: const Icon(Icons.screenshot),
+          label: const Text('Upload Screenshot'),
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 48),
           ),
-        ] else ...[
+        ),
+        const SizedBox(height: 16),
+
+        // Show selected image info
+        if (_selectedImage != null) ...[
           // Show uploaded image
           Container(
             width: double.infinity,
@@ -788,60 +768,56 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
           // Show verification error if any
           if (_verificationError != null) ...[
             const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red.shade200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.error, color: Colors.red.shade600, size: 20),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Verification Failed',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red,
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.error, color: Colors.red),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Verification Failed',
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Please check your screenshot and try again. Make sure:\n'
-                    '• The payment amount matches your contribution\n'
-                    '• Payment was made to the correct UPI ID\n'
-                    '• The screenshot is clear and readable\n'
-                    '• Payment was made recently (within 7 days)',
-                    style: TextStyle(fontSize: 12),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      ElevatedButton.icon(
-                        onPressed: _verifyPayment,
-                        icon: const Icon(Icons.refresh, size: 16),
-                        label: const Text('Try Again'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryViolet,
-                          foregroundColor: Colors.white,
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Please check your screenshot and try again. Make sure:\n'
+                      '• The payment amount matches your contribution\n'
+                      '• Payment was made to the correct UPI ID\n'
+                      '• The screenshot is clear and readable\n'
+                      '• Payment was made recently (within 7 days)',
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: _verifyPayment,
+                          icon: const Icon(Icons.refresh, size: 16),
+                          label: const Text('Try Again'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryViolet,
+                            foregroundColor: Colors.white,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      TextButton.icon(
-                        onPressed: _pickImage,
-                        icon: const Icon(Icons.upload, size: 16),
-                        label: const Text('Upload New Screenshot'),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(width: 8),
+                        TextButton.icon(
+                          onPressed: _pickImage,
+                          icon: const Icon(Icons.upload, size: 16),
+                          label: const Text('Upload New Screenshot'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -860,175 +836,220 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
         ),
         const SizedBox(height: 16),
 
-        if (!_isVerifyingPayment && !_isPaymentVerified) ...[
-          // Start verification
-          Container(
+        Card(
+          child: Padding(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.lightViolet,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppTheme.secondaryViolet),
-            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Ready for Verification',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'We will verify your payment screenshot by analyzing:\n'
-                  '• Image quality and format validation\n'
-                  '• Payment amount verification\n'
-                  '• UPI ID confirmation\n'
-                  '• Transaction authenticity check',
+                Text(
+                  'Payment Verification',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.orange.shade200),
+                if (!_isPaymentVerified && !_isVerifyingPayment && _verificationError == null) ...[
+                  const Text(
+                    'Click "Verify Payment" to automatically extract and verify payment details from your screenshot.',
                   ),
-                  child: const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '💡 Tips for better verification:',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        '• Use a clear, high-quality screenshot\n'
-                        '• Ensure all text is readable\n'
-                        '• Include the full payment confirmation screen\n'
-                        '• Avoid cropping important details',
-                        style: TextStyle(fontSize: 11),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
                     onPressed: _verifyPayment,
-                    child: const Text('Verify Payment'),
+                    icon: const Icon(Icons.verified),
+                    label: const Text('Verify Payment'),
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 48),
+                    ),
                   ),
-                ),
+                ] else if (_isVerifyingPayment) ...[
+                  const Center(
+                    child: Column(
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Verifying payment details...'),
+                      ],
+                    ),
+                  ),
+                ] else if (_isPaymentVerified) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      border: Border.all(color: Colors.green),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.check_circle,
+                              color: Colors.green,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Payment Verified',
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Payment details have been successfully verified:\n'
+                          '• Amount matches contribution amount\n'
+                          '• UTR number extracted\n'
+                          '• Payment screenshot is valid',
+                        ),
+                        if (_extractedUtrNumber != null) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            'Extracted UTR Number:',
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              border: Border.all(color: Colors.grey.shade300),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              _extractedUtrNumber!,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                fontFamily: 'monospace',
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ] else if (_verificationError != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      border: Border.all(color: Colors.red),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.error, color: Colors.red),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Verification Failed',
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(_verificationError!),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  setState(() {
+                                    _verificationError = null;
+                                    _isPaymentVerified = false;
+                                    _isVerificationComplete = false;
+                                  });
+                                  _verifyPayment();
+                                },
+                                icon: const Icon(Icons.refresh),
+                                label: const Text('Retry Verification'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.orange,
+                                  foregroundColor: Colors.white,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  setState(() {
+                                    _selectedImage = null;
+                                    _selectedImageBytes = null;
+                                    _isPaymentVerified = false;
+                                    _verificationError = null;
+                                    _extractedUtrNumber = null;
+                                    _isVerificationComplete = false;
+                                    _currentStep = 2;
+                                  });
+                                },
+                                icon: const Icon(Icons.upload),
+                                label: const Text('Upload New'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blue,
+                                  foregroundColor: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
-        ] else if (_isVerifyingPayment) ...[
-          // Verification in progress
-          const Center(
-            child: Column(
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text(
-                  'Extracting text from screenshot...',
-                  style: TextStyle(fontSize: 16),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Using OCR to verify payment details',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ],
-            ),
-          ),
-        ] else if (_isPaymentVerified) ...[
-          // Verification successful
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.green.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.green.shade200),
-            ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.green, size: 24),
-                    SizedBox(width: 8),
-                    Text(
-                      'Payment Verified Successfully!',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Colors.green,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Your payment has been verified and is ready to be submitted.',
-                ),
-              ],
-            ),
-          ),
-        ] else if (_verificationError != null) ...[
-          // Verification failed
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.red.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.red.shade200),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.error, color: Colors.red, size: 24),
-                    SizedBox(width: 8),
-                    Text(
-                      'Verification Failed',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Colors.red,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(_verificationError!),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          _verificationError = null;
-                          _currentStep = 2; // Go back to upload step
-                        });
-                      },
-                      child: const Text('Upload New Screenshot'),
-                    ),
-                    const SizedBox(width: 8),
-                    TextButton(
-                      onPressed: _verifyPayment,
-                      child: const Text('Try Again'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ],
     );
+  }
+
+  void _copyUpiDetails() async {
+    if (_campaign?.upiId == null) return;
+
+    final details = '''
+UPI ID: ${_campaign!.upiId}
+Campaign: ${_campaign!.title}
+Amount: ₹${_amountController.text}
+Purpose: Contribution
+''';
+
+    try {
+      await Clipboard.setData(ClipboardData(text: details));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('UPI details copied to clipboard!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to copy UPI details'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _pickImage() async {
@@ -1097,20 +1118,7 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
           // Store extracted UTR number for later use
           _extractedUtrNumber = verificationResult['extractedUtrNumber'];
 
-          // Show success message with extracted details
-          final extractedAmount = verificationResult['extractedAmount'];
-          final confidence = verificationResult['confidence'];
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                extractedAmount != null
-                    ? 'Payment verified! Amount: ₹${extractedAmount.toStringAsFixed(2)} (${(confidence * 100).toStringAsFixed(1)}% confidence)'
-                    : 'Payment verified successfully!',
-              ),
-              backgroundColor: Colors.green,
-            ),
-          );
+          // Payment verification success is shown in the modal UI
 
           // Automatically advance to the next step after successful verification
           Future.delayed(const Duration(milliseconds: 1500), () {
@@ -1126,20 +1134,7 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
           // Stay on upload step (step 2) instead of advancing to verification step
           _currentStep = 2;
 
-          // Show user-friendly error message
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Payment verification failed. Please check your screenshot and try again.',
-              ),
-              backgroundColor: Colors.red,
-              action: SnackBarAction(
-                label: 'Try Again',
-                textColor: Colors.white,
-                onPressed: _verifyPayment,
-              ),
-            ),
-          );
+          // Verification error is shown in the modal UI
         }
       });
     } catch (e) {
@@ -1150,20 +1145,7 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
         _currentStep = 2; // Stay on upload step
       });
 
-      // Show user-friendly error message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Unable to verify payment. Please try again.'),
-            backgroundColor: Colors.red,
-            action: SnackBarAction(
-              label: 'Try Again',
-              textColor: Colors.white,
-              onPressed: _verifyPayment,
-            ),
-          ),
-        );
-      }
+      // Verification error is shown in the modal UI
     }
   }
 
@@ -1218,7 +1200,7 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
     if (!_isPaymentVerified) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please verify payment before submitting'),
+          content: Text('Please verify payment first'),
         ),
       );
       return;
@@ -1245,9 +1227,8 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
             : null,
         'paymentScreenshotUrl': screenshotUrl,
         'paymentStatus': 'verified',
-        'utr':
-            _extractedUtrNumber ??
-            'UPI${DateTime.now().millisecondsSinceEpoch}', // Use extracted UTR or fallback
+        'utr': _extractedUtrNumber?.replaceAll(RegExp(r'\s+'), '') ?? 
+            'UPI${DateTime.now().millisecondsSinceEpoch}', // Normalize UTR or fallback
         // Authentication-based contributor ID handling
         'contributorId': _isUserLoggedIn ? _loggedInUserId : null,
         'isAnonymous': !_isUserLoggedIn,
@@ -1261,26 +1242,10 @@ class _EnhancedContributionModalState extends State<EnhancedContributionModal> {
 
       if (mounted && contribution != null) {
         Navigator.of(context).pop(true); // Return true to indicate success
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _isUserLoggedIn
-                  ? 'Contribution of ₹${_amountController.text} submitted successfully!'
-                  : 'Anonymous contribution of ₹${_amountController.text} submitted successfully!',
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error submitting contribution: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      // Error handling is done through the modal UI
+      developer.log('Error submitting contribution: $e', name: 'ContributionModal');
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
