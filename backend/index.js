@@ -541,11 +541,24 @@ class FriendFundAPI {
       /Amount.*?(\d+(?:,\d+)*(?:\.\d{2})?)/gi,
     ];
 
-    // Transaction ID patterns
+    // Transaction ID patterns - Enhanced to handle UTR numbers with spaces (Paytm style)
     const transactionPatterns = [
+      // Enhanced patterns for UTR with spaces (like Paytm: "6912629 80414")
+      /(?:UPI\s*Ref\.?\s*No\.?\s*:?\s*)([0-9]{6,8}\s+[0-9]{4,8})/gi, // Paytm specific "UPI Ref. No"
+      /(?:UTR|Ref\.?\s*No\.?)\s*:?\s*([0-9]{6,8}\s+[0-9]{4,8})/gi, // UTR/Ref No with space
+      /(?:Transaction\s*ID)\s*:?\s*([0-9]{6,8}\s+[0-9]{4,8})/gi, // Transaction ID with space
+      
+      // Original patterns for continuous numbers (Google Pay style)
       /(?:Transaction|Txn|Trans|UPI|ID|Ref)\s*(?:ID|No|Number)?\s*:?\s*([A-Z0-9]+)/gi,
       /([0-9]{12,16})/g, // Common transaction ID length
       /([A-Z]{2,4}\d{10,14})/g, // Bank specific patterns
+      
+      // Google transaction ID pattern (like: CICAgOjYzavxdg)
+      /(?:Google\s*transaction\s*ID)\s*:?\s*([A-Za-z0-9]{12,20})/gi,
+      /(?:Google\s*Pay)\s*:?\s*([A-Za-z0-9]{12,20})/gi,
+      
+      // Backup pattern for numbers with spaces
+      /([0-9]{6,8}\s[0-9]{4,8})/g,
     ];
 
     // Success indicators
@@ -579,8 +592,9 @@ class FriendFundAPI {
     for (const pattern of transactionPatterns) {
       const matches = text.matchAll(pattern);
       for (const match of matches) {
-        if (match[1] && match[1].length >= 8) {
-          transactionId = match[1];
+        if (match[1] && (match[1].replace(/\s/g, '').length >= 8 || match[1].length >= 8)) {
+          // Clean up the transaction ID (remove extra spaces but keep intended format)
+          transactionId = match[1].replace(/\s+/g, ' ').trim();
           break;
         }
       }
