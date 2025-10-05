@@ -17,6 +17,7 @@ import {
 import * as sdk from "node-appwrite";
 import QRCode from "qrcode";
 import { createWorker } from "tesseract.js";
+import crypto from "crypto";
 
 /**
  * @class FriendFundAPI
@@ -413,6 +414,44 @@ class FriendFundAPI {
     }
   }
 
+  // Image Hash Duplication Check
+  async checkImageHashDuplication(imageHash, campaignId) {
+    try {
+      console.log(`Checking image hash duplication: ${imageHash} for campaign: ${campaignId}`);
+
+      // Query contributions with the same image hash
+      const existingContributions = await this.databases.listDocuments(
+        this.databaseId,
+        this.contributionsCollectionId,
+        [
+          Query.equal("imageHash", imageHash),
+          // Optional: restrict to same campaign or check globally
+          // Query.equal("campaignId", campaignId)
+        ]
+      );
+
+      const isDuplicate = existingContributions.documents.length > 0;
+
+      console.log(`Image hash check result: ${isDuplicate ? 'DUPLICATE' : 'UNIQUE'} (${existingContributions.documents.length} existing)`);
+
+      return {
+        success: true,
+        data: {
+          isDuplicate: isDuplicate,
+          imageHash: imageHash,
+          campaignId: campaignId,
+          existingContributionsCount: existingContributions.documents.length,
+        },
+      };
+    } catch (error) {
+      console.error("Error checking image hash duplication:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to check image hash duplication",
+      };
+    }
+  }
+
   // QR Code Generation for UPI Payment
   async generatePaymentQRCode(campaignId, upiId, amount = null) {
     try {
@@ -491,7 +530,7 @@ class FriendFundAPI {
     }
   }
 
-  // OCR-based Payment Processing
+  // OCR-based Payment Processing with Image Hash
   async processPaymentScreenshot(
     imageBuffer,
     expectedAmount,
@@ -499,6 +538,23 @@ class FriendFundAPI {
     campaignId
   ) {
     try {
+      // Compute SHA256 hash of image for duplicate detection
+      const imageHash = crypto.createHash('sha256').update(imageBuffer).digest('hex');
+      console.log(`Computed image hash: ${imageHash}`);
+
+      // Check for duplicate image hash
+      const hashCheck = await this.checkImageHashDuplication(imageHash, campaignId);
+      if (hashCheck.success && hashCheck.data.isDuplicate) {
+        return {
+          success: false,
+          error: "Duplicate screenshot detected. This image has already been used for payment verification.",
+          data: {
+            isDuplicate: true,
+            imageHash: imageHash,
+          },
+        };
+      }
+
       // Initialize Tesseract worker
       const worker = await createWorker("eng");
 
@@ -511,7 +567,7 @@ class FriendFundAPI {
       // Extract payment information from text
       const paymentInfo = this.extractPaymentInfo(text, expectedAmount);
 
-      // Create contribution with OCR extracted data
+      // Create contribution with OCR extracted data and image hash
       const contribution = await this.databases.createDocument(
         this.databaseId,
         this.contributionsCollectionId,
@@ -525,6 +581,7 @@ class FriendFundAPI {
           extractedAmount: paymentInfo.extractedAmount,
           transactionId: paymentInfo.transactionId,
           ocrConfidence: paymentInfo.confidence,
+          imageHash: imageHash, // Store image hash for duplicate prevention
         },
         [Permission.read(Role.any())]
       );
@@ -1295,6 +1352,16 @@ export default async ({ req, res, log, error: logError }) => {
         const campaignId = pathParts[2];
         const utrNumber = pathParts[3];
         result = await friendFundAPI.checkUtrDuplication(utrNumber, campaignId);
+      } else if (
+        pathParts[1] === "check-hash" &&
+        pathParts[2] &&
+        pathParts[3] &&
+        method === "GET"
+      ) {
+        // GET /contributions/check-hash/{campaignId}/{imageHash}
+        const campaignId = pathParts[2];
+        const imageHash = pathParts[3];
+        result = await friendFundAPI.checkImageHashDuplication(imageHash, campaignId);
       } else {
         result = { success: false, error: "Invalid contributions endpoint" };
         statusCode = 400;
