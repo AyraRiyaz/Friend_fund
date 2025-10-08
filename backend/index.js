@@ -16,7 +16,7 @@ import {
 } from "node-appwrite";
 import * as sdk from "node-appwrite";
 import QRCode from "qrcode";
-import { createWorker } from "tesseract.js";
+// Removed tesseract.js import as OCR is now handled in frontend
 
 /**
  * @class FriendFundAPI
@@ -290,12 +290,18 @@ class FriendFundAPI {
           type: contributionData.type || "donation",
           isAnonymous: contributionData.isAnonymous || false,
           paymentStatus: contributionData.paymentStatus || "pending",
+          // Manual verification fields
+          verificationStatus: contributionData.verificationStatus || "pending",
+          verifiedBy: contributionData.verifiedBy || null,
+          verificationDate: contributionData.verificationDate || null,
+          verificationReason: contributionData.verificationReason || null,
+          rejectionReason: contributionData.rejectionReason || null,
         },
         [Permission.read(Role.any())]
       );
 
       // Only update campaign collected amount if payment is verified
-      if (contributionData.paymentStatus === "verified") {
+      if (contributionData.paymentStatus === "verified" || contributionData.verificationStatus === "auto_verified") {
         const campaign = await this.databases.getDocument(
           this.databaseId,
           this.campaignsCollectionId,
@@ -491,176 +497,12 @@ class FriendFundAPI {
     }
   }
 
-  // OCR-based Payment Processing
-  async processPaymentScreenshot(
-    imageBuffer,
-    expectedAmount,
-    contributorName,
-    campaignId
-  ) {
-    try {
-      // Initialize Tesseract worker
-      const worker = await createWorker("eng");
+  // Legacy OCR method - DEPRECATED
+  // OCR processing is now handled in frontend with improved accuracy
+  // This method is kept for backward compatibility but not used
 
-      // Perform OCR on the image
-      const {
-        data: { text },
-      } = await worker.recognize(imageBuffer);
-      await worker.terminate();
-
-      // Extract payment information from text
-      const paymentInfo = this.extractPaymentInfo(text, expectedAmount);
-
-      // Create contribution with OCR extracted data
-      const contribution = await this.databases.createDocument(
-        this.databaseId,
-        this.contributionsCollectionId,
-        ID.unique(),
-        {
-          campaignId: campaignId,
-          contributorName: contributorName,
-          amount: expectedAmount.toString(),
-          paymentStatus: paymentInfo.isValid ? "verified" : "pending_review",
-          extractedText: text,
-          extractedAmount: paymentInfo.extractedAmount,
-          transactionId: paymentInfo.transactionId,
-          ocrConfidence: paymentInfo.confidence,
-        },
-        [Permission.read(Role.any())]
-      );
-
-      // Update campaign collected amount if payment is verified
-      if (paymentInfo.isValid) {
-        const campaign = await this.databases.getDocument(
-          this.databaseId,
-          this.campaignsCollectionId,
-          campaignId
-        );
-
-        await this.databases.updateDocument(
-          this.databaseId,
-          this.campaignsCollectionId,
-          campaignId,
-          {
-            collectedAmount:
-              (parseFloat(campaign.collectedAmount) || 0) +
-              parseFloat(expectedAmount),
-          }
-        );
-      }
-
-      return {
-        success: true,
-        data: {
-          contribution: contribution,
-          paymentInfo: paymentInfo,
-          autoVerified: paymentInfo.isValid,
-        },
-      };
-    } catch (error) {
-      console.error("Error processing payment screenshot:", error);
-      return {
-        success: false,
-        error: error.message || "Failed to process payment screenshot",
-      };
-    }
-  }
-
-  extractPaymentInfo(text, expectedAmount) {
-    // Common UPI payment patterns
-    const amountPatterns = [
-      /₹\s*(\d+(?:,\d+)*(?:\.\d{2})?)/g,
-      /INR\s*(\d+(?:,\d+)*(?:\.\d{2})?)/g,
-      /Rs\.?\s*(\d+(?:,\d+)*(?:\.\d{2})?)/g,
-      /Amount.*?(\d+(?:,\d+)*(?:\.\d{2})?)/gi,
-    ];
-
-    // Transaction ID patterns - Enhanced to handle UTR numbers with spaces (Paytm style)
-    const transactionPatterns = [
-      // Enhanced patterns for UTR with spaces (like Paytm: "6912629 80414")
-      /(?:UPI\s*Ref\.?\s*No\.?\s*:?\s*)([0-9]{6,8}\s+[0-9]{4,8})/gi, // Paytm specific "UPI Ref. No"
-      /(?:UTR|Ref\.?\s*No\.?)\s*:?\s*([0-9]{6,8}\s+[0-9]{4,8})/gi, // UTR/Ref No with space
-      /(?:Transaction\s*ID)\s*:?\s*([0-9]{6,8}\s+[0-9]{4,8})/gi, // Transaction ID with space
-      
-      // Original patterns for continuous numbers (Google Pay style)
-      /(?:Transaction|Txn|Trans|UPI|ID|Ref)\s*(?:ID|No|Number)?\s*:?\s*([A-Z0-9]+)/gi,
-      /([0-9]{12,16})/g, // Common transaction ID length
-      /([A-Z]{2,4}\d{10,14})/g, // Bank specific patterns
-      
-      // Google transaction ID pattern (like: CICAgOjYzavxdg)
-      /(?:Google\s*transaction\s*ID)\s*:?\s*([A-Za-z0-9]{12,20})/gi,
-      /(?:Google\s*Pay)\s*:?\s*([A-Za-z0-9]{12,20})/gi,
-      
-      // Backup pattern for numbers with spaces
-      /([0-9]{6,8}\s[0-9]{4,8})/g,
-    ];
-
-    // Success indicators
-    const successIndicators = [
-      /success/i,
-      /completed/i,
-      /paid/i,
-      /transferred/i,
-      /sent/i,
-      /debited/i,
-    ];
-
-    let extractedAmount = null;
-    let transactionId = null;
-    let hasSuccessIndicator = false;
-
-    // Extract amount
-    for (const pattern of amountPatterns) {
-      const matches = text.matchAll(pattern);
-      for (const match of matches) {
-        const amount = parseFloat(match[1].replace(/,/g, ""));
-        if (amount > 0) {
-          extractedAmount = amount;
-          break;
-        }
-      }
-      if (extractedAmount) break;
-    }
-
-    // Extract transaction ID
-    for (const pattern of transactionPatterns) {
-      const matches = text.matchAll(pattern);
-      for (const match of matches) {
-        if (match[1] && (match[1].replace(/\s/g, '').length >= 8 || match[1].length >= 8)) {
-          // CRITICAL: Normalize transaction ID same way as UTR for consistency
-          // Always remove spaces to ensure consistent duplicate detection
-          transactionId = match[1].replace(/\s+/g, '').trim();
-          break;
-        }
-      }
-      if (transactionId) break;
-    }
-
-    // Check for success indicators
-    hasSuccessIndicator = successIndicators.some((pattern) =>
-      pattern.test(text)
-    );
-
-    // Calculate confidence and validity
-    let confidence = 0;
-    if (extractedAmount) confidence += 40;
-    if (transactionId) confidence += 30;
-    if (hasSuccessIndicator) confidence += 30;
-
-    const amountMatches =
-      extractedAmount && Math.abs(extractedAmount - expectedAmount) <= 1; // Allow ₹1 difference for fees
-
-    const isValid = confidence >= 70 && amountMatches && hasSuccessIndicator;
-
-    return {
-      extractedAmount,
-      transactionId,
-      hasSuccessIndicator,
-      confidence,
-      isValid,
-      amountMatches,
-    };
-  }
+  // Legacy extractPaymentInfo method - DEPRECATED
+  // Payment analysis is now done in frontend with improved patterns and validation
 
   async uploadPaymentScreenshot(fileBuffer, fileName, contributionId) {
     try {
@@ -1016,6 +858,12 @@ class FriendFundAPI {
           utr: repaymentData.utr,
           paymentScreenshotUrl: repaymentData.paymentScreenshotUrl,
           status: repaymentData.status || "pending",
+          // Manual verification fields
+          verificationStatus: repaymentData.verificationStatus || "pending",
+          verifiedBy: repaymentData.verifiedBy || null,
+          verificationDate: repaymentData.verificationDate || null,
+          verificationReason: repaymentData.verificationReason || null,
+          rejectionReason: repaymentData.rejectionReason || null,
         }
       );
 
@@ -1184,6 +1032,523 @@ class FriendFundAPI {
       };
     }
   }
+
+  // Manual Verification Methods
+
+  /**
+   * Approve a contribution - mark it as manually verified
+   */
+  async approveContribution(contributionId, verificationData, userId) {
+    try {
+      // First, get the contribution to check authorization
+      const contribution = await this.databases.getDocument(
+        this.databaseId,
+        this.contributionsCollectionId,
+        contributionId
+      );
+
+      // Get the campaign to verify the user is the campaign creator
+      const campaign = await this.databases.getDocument(
+        this.databaseId,
+        this.campaignsCollectionId,
+        contribution.campaignId
+      );
+
+      // Check authorization - only campaign creator can verify
+      if (campaign.hostId !== userId) {
+        return {
+          success: false,
+          error: "Unauthorized: Only campaign creator can verify contributions",
+        };
+      }
+
+      // Update contribution with verification data
+      const updatedContribution = await this.databases.updateDocument(
+        this.databaseId,
+        this.contributionsCollectionId,
+        contributionId,
+        {
+          verificationStatus: "manually_verified",
+          verifiedBy: userId,
+          verificationDate: verificationData.verificationDate || new Date().toISOString(),
+          paymentStatus: "verified",
+          verificationReason: verificationData.verificationReason || "Manually approved by campaign creator",
+        }
+      );
+
+      // Update campaign collected amount if not already counted
+      if (contribution.paymentStatus !== "verified") {
+        await this.databases.updateDocument(
+          this.databaseId,
+          this.campaignsCollectionId,
+          contribution.campaignId,
+          {
+            collectedAmount: (parseFloat(campaign.collectedAmount) || 0) + parseFloat(contribution.amount),
+          }
+        );
+      }
+
+      return {
+        success: true,
+        data: updatedContribution,
+        message: "Contribution approved successfully",
+      };
+    } catch (error) {
+      console.error("Error approving contribution:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to approve contribution",
+      };
+    }
+  }
+
+  /**
+   * Reject a contribution - mark it as rejected
+   */
+  async rejectContribution(contributionId, verificationData, userId) {
+    try {
+      // First, get the contribution to check authorization
+      const contribution = await this.databases.getDocument(
+        this.databaseId,
+        this.contributionsCollectionId,
+        contributionId
+      );
+
+      // Get the campaign to verify the user is the campaign creator
+      const campaign = await this.databases.getDocument(
+        this.databaseId,
+        this.campaignsCollectionId,
+        contribution.campaignId
+      );
+
+      // Check authorization - only campaign creator can verify
+      if (campaign.hostId !== userId) {
+        return {
+          success: false,
+          error: "Unauthorized: Only campaign creator can reject contributions",
+        };
+      }
+
+      // Update contribution with rejection data
+      const updatedContribution = await this.databases.updateDocument(
+        this.databaseId,
+        this.contributionsCollectionId,
+        contributionId,
+        {
+          verificationStatus: "rejected",
+          verifiedBy: userId,
+          verificationDate: verificationData.verificationDate || new Date().toISOString(),
+          paymentStatus: "failed",
+          rejectionReason: verificationData.rejectionReason || "Rejected by campaign creator",
+        }
+      );
+
+      return {
+        success: true,
+        data: updatedContribution,
+        message: "Contribution rejected successfully",
+      };
+    } catch (error) {
+      console.error("Error rejecting contribution:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to reject contribution",
+      };
+    }
+  }
+
+  /**
+   * Get contribution screenshot URL
+   */
+  async getContributionScreenshot(contributionId, userId) {
+    try {
+      // Get the contribution  
+      const contribution = await this.databases.getDocument(
+        this.databaseId,
+        this.contributionsCollectionId,
+        contributionId
+      );
+
+      // Get the campaign to verify authorization
+      const campaign = await this.databases.getDocument(
+        this.databaseId,
+        this.campaignsCollectionId,
+        contribution.campaignId
+      );
+
+      // Check authorization - only campaign creator or contributor can view
+      if (campaign.hostId !== userId && contribution.contributorId !== userId) {
+        return {
+          success: false,
+          error: "Unauthorized: Only campaign creator or contributor can view screenshot",
+        };
+      }
+
+      return {
+        success: true,
+        data: {
+          screenshotUrl: contribution.paymentScreenshotUrl,
+          uploadedAt: contribution.$createdAt,
+        },
+      };
+    } catch (error) {
+      console.error("Error getting contribution screenshot:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to get contribution screenshot",
+      };
+    }
+  }
+
+  /**
+   * Approve a loan repayment - mark it as manually verified
+   */
+  async approveLoanRepayment(repaymentId, verificationData, userId) {
+    try {
+      // Get the repayment
+      const repayment = await this.databases.getDocument(
+        this.databaseId,
+        this.loanRepaymentsCollectionId,
+        repaymentId
+      );
+
+      // Get the original loan contribution
+      const loanContribution = await this.databases.getDocument(
+        this.databaseId,
+        this.contributionsCollectionId,
+        repayment.loanContributionId
+      );
+
+      // Check authorization - only the original lender can verify repayment
+      if (loanContribution.contributorId !== userId) {
+        return {
+          success: false,
+          error: "Unauthorized: Only the lender can verify loan repayment",
+        };
+      }
+
+      // Update repayment with verification data
+      const updatedRepayment = await this.databases.updateDocument(
+        this.databaseId,
+        this.loanRepaymentsCollectionId,
+        repaymentId,
+        {
+          verificationStatus: "manually_verified",
+          verifiedBy: userId,
+          verificationDate: verificationData.verificationDate || new Date().toISOString(),
+          status: "verified",
+          verificationReason: verificationData.verificationReason || "Manually approved by lender",
+        }
+      );
+
+      // Update the original loan contribution status
+      await this.databases.updateDocument(
+        this.databaseId,
+        this.contributionsCollectionId,
+        repayment.loanContributionId,
+        {
+          repaymentStatus: "repaid",
+          repaidAt: new Date().toISOString(),
+        }
+      );
+
+      return {
+        success: true,
+        data: updatedRepayment,
+        message: "Loan repayment approved successfully",
+      };
+    } catch (error) {
+      console.error("Error approving loan repayment:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to approve loan repayment",
+      };
+    }
+  }
+
+  /**
+   * Reject a loan repayment - mark it as rejected
+   */
+  async rejectLoanRepayment(repaymentId, verificationData, userId) {
+    try {
+      // Get the repayment
+      const repayment = await this.databases.getDocument(
+        this.databaseId,
+        this.loanRepaymentsCollectionId,
+        repaymentId
+      );
+
+      // Get the original loan contribution
+      const loanContribution = await this.databases.getDocument(
+        this.databaseId,
+        this.contributionsCollectionId,
+        repayment.loanContributionId
+      );
+
+      // Check authorization - only the original lender can verify repayment
+      if (loanContribution.contributorId !== userId) {
+        return {
+          success: false,
+          error: "Unauthorized: Only the lender can reject loan repayment",
+        };
+      }
+
+      // Update repayment with rejection data
+      const updatedRepayment = await this.databases.updateDocument(
+        this.databaseId,
+        this.loanRepaymentsCollectionId,
+        repaymentId,
+        {
+          verificationStatus: "rejected",
+          verifiedBy: userId,
+          verificationDate: verificationData.verificationDate || new Date().toISOString(),
+          status: "rejected",
+          rejectionReason: verificationData.rejectionReason || "Rejected by lender",
+        }
+      );
+
+      return {
+        success: true,
+        data: updatedRepayment,
+        message: "Loan repayment rejected successfully",
+      };
+    } catch (error) {
+      console.error("Error rejecting loan repayment:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to reject loan repayment",
+      };
+    }
+  }
+
+  /**
+   * Get loan repayment screenshot URL
+   */
+  async getLoanRepaymentScreenshot(repaymentId, userId) {
+    try {
+      // Get the repayment
+      const repayment = await this.databases.getDocument(
+        this.databaseId,
+        this.loanRepaymentsCollectionId,
+        repaymentId
+      );
+
+      // Get the original loan contribution to check authorization
+      const loanContribution = await this.databases.getDocument(
+        this.databaseId,
+        this.contributionsCollectionId,
+        repayment.loanContributionId
+      );
+
+      // Check authorization - lender or repayer can view
+      if (loanContribution.contributorId !== userId && repayment.repayerId !== userId) {
+        return {
+          success: false,
+          error: "Unauthorized: Only lender or repayer can view screenshot",
+        };
+      }
+
+      return {
+        success: true,
+        data: {
+          screenshotUrl: repayment.paymentScreenshotUrl,
+          uploadedAt: repayment.$createdAt,
+        },
+      };
+    } catch (error) {
+      console.error("Error getting loan repayment screenshot:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to get loan repayment screenshot",
+      };
+    }
+  }
+
+  /**
+   * Get verification statistics for a campaign
+   */
+  async getVerificationStats(campaignId, userId) {
+    try {
+      // Get the campaign to verify authorization
+      const campaign = await this.databases.getDocument(
+        this.databaseId,
+        this.campaignsCollectionId,
+        campaignId
+      );
+
+      // Check authorization - only campaign creator can view stats
+      if (campaign.hostId !== userId) {
+        return {
+          success: false,
+          error: "Unauthorized: Only campaign creator can view verification stats",
+        };
+      }
+
+      // Get all contributions for this campaign
+      const contributions = await this.databases.listDocuments(
+        this.databaseId,
+        this.contributionsCollectionId,
+        [Query.equal("campaignId", campaignId)]
+      );
+
+      // Get all loan repayments for this campaign's loans
+      const loanContributions = contributions.documents.filter(c => c.type === "loan");
+      const loanContributionIds = loanContributions.map(c => c.$id);
+      
+      let loanRepayments = [];
+      if (loanContributionIds.length > 0) {
+        const repaymentsResponse = await this.databases.listDocuments(
+          this.databaseId,
+          this.loanRepaymentsCollectionId,
+          [Query.equal("loanContributionId", loanContributionIds)]
+        );
+        loanRepayments = repaymentsResponse.documents;
+      }
+
+      // Calculate contribution statistics
+      const contributionStats = {
+        total: contributions.total,
+        autoVerified: contributions.documents.filter(c => c.verificationStatus === "auto_verified").length,
+        manuallyVerified: contributions.documents.filter(c => c.verificationStatus === "manually_verified").length,
+        pending: contributions.documents.filter(c => c.verificationStatus === "pending").length,
+        rejected: contributions.documents.filter(c => c.verificationStatus === "rejected").length,
+      };
+
+      // Calculate loan repayment statistics
+      const loanRepaymentStats = {
+        total: loanRepayments.length,
+        autoVerified: loanRepayments.filter(r => r.verificationStatus === "auto_verified").length,
+        manuallyVerified: loanRepayments.filter(r => r.verificationStatus === "manually_verified").length,
+        pending: loanRepayments.filter(r => r.verificationStatus === "pending").length,
+        rejected: loanRepayments.filter(r => r.verificationStatus === "rejected").length,
+      };
+
+      return {
+        success: true,
+        data: {
+          campaignId: campaignId,
+          contributions: contributionStats,
+          loanRepayments: loanRepaymentStats,
+          lastUpdated: new Date().toISOString(),
+        },
+      };
+    } catch (error) {
+      console.error("Error getting verification stats:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to get verification stats",
+      };
+    }
+  }
+
+  /**
+   * Get pending verifications for a campaign
+   */
+  async getPendingVerifications(campaignId, userId) {
+    try {
+      // Get the campaign to verify authorization
+      const campaign = await this.databases.getDocument(
+        this.databaseId,
+        this.campaignsCollectionId,
+        campaignId
+      );
+
+      // Check authorization - only campaign creator can view pending verifications
+      if (campaign.hostId !== userId) {
+        return {
+          success: false,
+          error: "Unauthorized: Only campaign creator can view pending verifications",
+        };
+      }
+
+      // Get pending contributions
+      const pendingContributions = await this.databases.listDocuments(
+        this.databaseId,
+        this.contributionsCollectionId,
+        [
+          Query.equal("campaignId", campaignId),
+          Query.equal("verificationStatus", "pending")
+        ]
+      );
+
+      // Get pending loan repayments for this campaign's loans
+      const loanContributions = await this.databases.listDocuments(
+        this.databaseId,
+        this.contributionsCollectionId,
+        [
+          Query.equal("campaignId", campaignId),
+          Query.equal("type", "loan")
+        ]
+      );
+
+      const loanContributionIds = loanContributions.documents.map(c => c.$id);
+      let pendingLoanRepayments = [];
+      
+      if (loanContributionIds.length > 0) {
+        const repaymentsResponse = await this.databases.listDocuments(
+          this.databaseId,
+          this.loanRepaymentsCollectionId,
+          [
+            Query.equal("loanContributionId", loanContributionIds),
+            Query.equal("verificationStatus", "pending")
+          ]
+        );
+        pendingLoanRepayments = repaymentsResponse.documents;
+      }
+
+      return {
+        success: true,
+        data: {
+          contributions: pendingContributions.documents,
+          loanRepayments: pendingLoanRepayments,
+        },
+      };
+    } catch (error) {
+      console.error("Error getting pending verifications:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to get pending verifications",
+      };
+    }
+  }
+
+  /**
+   * Bulk approve multiple contributions
+   */
+  async bulkApproveContributions(contributionIds, verificationData, userId) {
+    try {
+      const results = {
+        approved: [],
+        failed: [],
+        total: contributionIds.length,
+      };
+
+      for (const contributionId of contributionIds) {
+        try {
+          const result = await this.approveContribution(contributionId, verificationData, userId);
+          if (result.success) {
+            results.approved.push(contributionId);
+          } else {
+            results.failed.push({ contributionId, error: result.error });
+          }
+        } catch (error) {
+          results.failed.push({ contributionId, error: error.message });
+        }
+      }
+
+      return {
+        success: true,
+        data: results,
+        message: `${results.approved.length} contributions approved successfully`,
+      };
+    } catch (error) {
+      console.error("Error bulk approving contributions:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to bulk approve contributions",
+      };
+    }
+  }
 }
 
 /**
@@ -1252,10 +1617,27 @@ export default async ({ req, res, log, error: logError }) => {
     } else if (path.startsWith("/campaigns/")) {
       const pathParts = path.split("/").filter((p) => p);
       const campaignId = pathParts[1];
+      const userId = req.headers['x-user-id'];
 
       if (pathParts[2] === "contribute" && method === "GET") {
         // GET /campaigns/{id}/contribute - Get campaign details for contribution form
         result = await friendFundAPI.getCampaignForContribution(campaignId);
+      } else if (pathParts[2] === "verification-stats" && method === "GET") {
+        // GET /campaigns/{id}/verification-stats
+        if (!userId) {
+          result = { success: false, error: "User authentication required" };
+          statusCode = 401;
+        } else {
+          result = await friendFundAPI.getVerificationStats(campaignId, userId);
+        }
+      } else if (pathParts[2] === "pending-verifications" && method === "GET") {
+        // GET /campaigns/{id}/pending-verifications
+        if (!userId) {
+          result = { success: false, error: "User authentication required" };
+          statusCode = 401;
+        } else {
+          result = await friendFundAPI.getPendingVerifications(campaignId, userId);
+        }
       } else if (method === "GET") {
         result = await friendFundAPI.getCampaign(campaignId);
       } else if (method === "PATCH") {
@@ -1269,6 +1651,7 @@ export default async ({ req, res, log, error: logError }) => {
       }
     } else if (path.startsWith("/contributions/")) {
       const pathParts = path.split("/").filter((p) => p);
+      const userId = req.headers['x-user-id'];
 
       if (pathParts[1] === "campaign" && pathParts[2]) {
         // GET /contributions/campaign/{id}
@@ -1278,6 +1661,42 @@ export default async ({ req, res, log, error: logError }) => {
         // GET /contributions/user/{id}
         const userId = pathParts[2];
         result = await friendFundAPI.getUserContributions(userId);
+      } else if (pathParts[1] && pathParts[2] === "verify" && method === "PUT") {
+        // PUT /contributions/{id}/verify
+        const contributionId = pathParts[1];
+        if (!userId) {
+          result = { success: false, error: "User authentication required" };
+          statusCode = 401;
+        } else {
+          result = await friendFundAPI.approveContribution(contributionId, parsedBody, userId);
+        }
+      } else if (pathParts[1] && pathParts[2] === "reject" && method === "PUT") {
+        // PUT /contributions/{id}/reject
+        const contributionId = pathParts[1];
+        if (!userId) {
+          result = { success: false, error: "User authentication required" };
+          statusCode = 401;
+        } else {
+          result = await friendFundAPI.rejectContribution(contributionId, parsedBody, userId);
+        }
+      } else if (pathParts[1] && pathParts[2] === "screenshot" && method === "GET") {
+        // GET /contributions/{id}/screenshot
+        const contributionId = pathParts[1];
+        if (!userId) {
+          result = { success: false, error: "User authentication required" };
+          statusCode = 401;
+        } else {
+          result = await friendFundAPI.getContributionScreenshot(contributionId, userId);
+        }
+      } else if (pathParts[1] === "bulk-verify" && method === "POST") {
+        // POST /contributions/bulk-verify
+        if (!userId) {
+          result = { success: false, error: "User authentication required" };
+          statusCode = 401;
+        } else {
+          const { contributionIds, ...verificationData } = parsedBody;
+          result = await friendFundAPI.bulkApproveContributions(contributionIds, verificationData, userId);
+        }
       } else if (pathParts[1] && method === "PATCH") {
         // PATCH /contributions/{id}
         const contributionId = pathParts[1];
@@ -1351,25 +1770,8 @@ export default async ({ req, res, log, error: logError }) => {
         result = { success: false, error: "Method not allowed" };
         statusCode = 405;
       }
-    } else if (path === "/payment/process-screenshot") {
-      if (method === "POST") {
-        const { imageBase64, expectedAmount, contributorName, campaignId } =
-          parsedBody;
-
-        // Convert base64 to buffer
-        const imageBuffer = Buffer.from(imageBase64, "base64");
-
-        result = await friendFundAPI.processPaymentScreenshot(
-          imageBuffer,
-          expectedAmount,
-          contributorName,
-          campaignId
-        );
-        statusCode = 201;
-      } else {
-        result = { success: false, error: "Method not allowed" };
-        statusCode = 405;
-      }
+    // Removed deprecated /payment/process-screenshot endpoint
+    // OCR processing is now handled in frontend with better accuracy
     } else if (path === "/payment/upload-screenshot") {
       if (method === "POST") {
         const { fileBase64, fileName, contributionId } = parsedBody;
@@ -1406,6 +1808,7 @@ export default async ({ req, res, log, error: logError }) => {
       }
     } else if (path.startsWith("/loan-repayments/")) {
       const pathParts = path.split("/").filter((p) => p);
+      const userId = req.headers['x-user-id'];
 
       if (pathParts[1] === "user" && pathParts[2]) {
         // GET /loan-repayments/user/{userId}
@@ -1415,12 +1818,39 @@ export default async ({ req, res, log, error: logError }) => {
         // GET /loan-repayments/received/{userId}
         const userId = pathParts[2];
         result = await friendFundAPI.getReceivedLoanRepayments(userId);
+      } else if (pathParts[1] && pathParts[2] === "verify" && method === "PUT") {
+        // PUT /loan-repayments/{id}/verify
+        const repaymentId = pathParts[1];
+        if (!userId) {
+          result = { success: false, error: "User authentication required" };
+          statusCode = 401;
+        } else {
+          result = await friendFundAPI.approveLoanRepayment(repaymentId, parsedBody, userId);
+        }
+      } else if (pathParts[1] && pathParts[2] === "reject" && method === "PUT") {
+        // PUT /loan-repayments/{id}/reject
+        const repaymentId = pathParts[1];
+        if (!userId) {
+          result = { success: false, error: "User authentication required" };
+          statusCode = 401;
+        } else {
+          result = await friendFundAPI.rejectLoanRepayment(repaymentId, parsedBody, userId);
+        }
+      } else if (pathParts[1] && pathParts[2] === "screenshot" && method === "GET") {
+        // GET /loan-repayments/{id}/screenshot
+        const repaymentId = pathParts[1];
+        if (!userId) {
+          result = { success: false, error: "User authentication required" };
+          statusCode = 401;
+        } else {
+          result = await friendFundAPI.getLoanRepaymentScreenshot(repaymentId, userId);
+        }
       } else if (
         pathParts[1] &&
         pathParts[2] === "verify" &&
         method === "POST"
       ) {
-        // POST /loan-repayments/{id}/verify
+        // POST /loan-repayments/{id}/verify (legacy endpoint)
         const repaymentId = pathParts[1];
         result = await friendFundAPI.verifyLoanRepayment(
           repaymentId,
@@ -1448,11 +1878,20 @@ export default async ({ req, res, log, error: logError }) => {
           "GET /campaigns/{id} - Get specific campaign",
           "PATCH /campaigns/{id} - Update campaign",
           "DELETE /campaigns/{id} - Delete campaign",
+          "GET /campaigns/{id}/verification-stats - Get campaign verification statistics",
+          "GET /campaigns/{id}/pending-verifications - Get pending verifications for campaign",
           "GET /contributions/campaign/{id} - Get campaign contributions",
           "GET /contributions/user/{id} - Get user contributions",
+          "GET /contributions/check-utr/{campaignId}/{utrNumber} - Check UTR duplication",
           "POST /contributions - Create contribution",
           "PATCH /contributions/{id} - Update contribution",
+          "PUT /contributions/{id}/verify - Approve contribution",
+          "PUT /contributions/{id}/reject - Reject contribution",
+          "GET /contributions/{id}/screenshot - Get contribution screenshot",
+          "POST /contributions/bulk-verify - Bulk approve contributions",
           "GET /qr/{campaignId} - Generate QR code",
+          "POST /payment-qr/{campaignId} - Generate payment QR code",
+          "POST /payment/upload-screenshot - Upload screenshot to storage",
           "GET /users/{id} - Get user info",
           "GET /users/{id}/dashboard - Get user dashboard with stats",
           "GET /users/{id}/overdue-loans - Get user's overdue loans",
@@ -1461,7 +1900,10 @@ export default async ({ req, res, log, error: logError }) => {
           "POST /loan-repayments - Create loan repayment",
           "GET /loan-repayments/user/{userId} - Get user's loan repayments",
           "GET /loan-repayments/received/{userId} - Get received loan repayments",
-          "POST /loan-repayments/{id}/verify - Verify loan repayment",
+          "POST /loan-repayments/{id}/verify - Verify loan repayment (legacy)",
+          "PUT /loan-repayments/{id}/verify - Approve loan repayment",
+          "PUT /loan-repayments/{id}/reject - Reject loan repayment",
+          "GET /loan-repayments/{id}/screenshot - Get loan repayment screenshot",
         ],
       };
       statusCode = 404;
